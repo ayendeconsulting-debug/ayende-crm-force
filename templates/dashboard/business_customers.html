@@ -1,0 +1,230 @@
+{% extends 'dashboard/business_base.html' %}
+
+{% block title %}Manage Customers - {{ tenant.name }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2>Customer Management</h2>
+        <p class="text-muted">View and manage all your customers</p>
+    </div>
+</div>
+
+<!-- Search and Filter -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-5">
+                        <input type="text" 
+                               name="search" 
+                               class="form-control" 
+                               placeholder="Search by name, email, or phone..." 
+                               value="{{ search_query }}">
+                    </div>
+                    <div class="col-md-3">
+                        <select name="status" class="form-select">
+                            <option value="">All Customers</option>
+                            <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active Only</option>
+                            <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive Only</option>
+                            <option value="vip" {% if status_filter == 'vip' %}selected{% endif %}>VIP Only</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-search"></i> Search
+                        </button>
+                    </div>
+                    <div class="col-md-2">
+                        <a href="{% url 'dashboard:manage_customers' %}" class="btn btn-outline-secondary w-100">
+                            <i class="bi bi-arrow-clockwise"></i> Reset
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Customer Stats Summary -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <h3 class="text-primary mb-0">{{ total_customers }}</h3>
+                <p class="text-muted mb-0">Total Customers</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <h3 class="text-success mb-0">{{ customers.paginator.count }}</h3>
+                <p class="text-muted mb-0">Matching Results</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <h3 class="text-warning mb-0">-</h3>
+                <p class="text-muted mb-0">VIP Customers</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <button class="btn btn-success w-100">
+                    <i class="bi bi-person-plus"></i> Add Customer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Customer List -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Customer List</h5>
+                <div>
+                    <button class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-download"></i> Export
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if customers %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Customer</th>
+                                    <th>Contact</th>
+                                    <th>Joined</th>
+                                    <th>Loyalty Points</th>
+                                    <th>Total Spent</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for tc in customers %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="avatar-circle me-2">
+                                                    {{ tc.customer.initials }}
+                                                </div>
+                                                <div>
+                                                    <strong>{{ tc.customer.get_full_name }}</strong>
+                                                    {% if tc.is_vip %}
+                                                        <span class="badge bg-warning ms-1">VIP</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div>{{ tc.customer.email }}</div>
+                                            {% if tc.customer.phone %}
+                                                <small class="text-muted">{{ tc.customer.phone }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ tc.joined_at|date:"M d, Y" }}</td>
+                                        <td>
+                                            <span class="badge bg-primary">{{ tc.loyalty_points }} pts</span>
+                                        </td>
+                                        <td>${{ tc.total_spent|default:tc.total_purchases|floatformat:2 }}</td>
+                                        <td>
+                                            {% if tc.is_active %}
+                                                <span class="badge bg-success">Active</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Inactive</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'dashboard:customer_detail' tc.id %}" 
+                                               class="btn btn-sm btn-outline-primary"
+                                               title="View Details">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <button class="btn btn-sm btn-outline-secondary" title="Edit">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if customers.has_other_pages %}
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination justify-content-center mt-4">
+                                {% if customers.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ customers.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">
+                                            Previous
+                                        </a>
+                                    </li>
+                                {% endif %}
+
+                                {% for num in customers.paginator.page_range %}
+                                    {% if customers.number == num %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ num }}</span>
+                                        </li>
+                                    {% elif num > customers.number|add:'-3' and num < customers.number|add:'3' %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">
+                                                {{ num }}
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if customers.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ customers.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">
+                                            Next
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    {% endif %}
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-people fs-1 text-muted"></i>
+                        <p class="text-muted mt-3">No customers found.</p>
+                        {% if search_query or status_filter %}
+                            <a href="{% url 'dashboard:manage_customers' %}" class="btn btn-outline-primary">
+                                Clear Filters
+                            </a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .avatar-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #3498db;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+</style>
+{% endblock %}

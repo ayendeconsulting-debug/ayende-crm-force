@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ tenant.name }} - Business Dashboard{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #27ae60;
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+            --light-gray: #ecf0f1;
+            --dark-gray: #95a5a6;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            min-height: 100vh;
+        }
+        
+        .navbar-brand {
+            font-weight: 600;
+            font-size: 1.5rem;
+        }
+        
+        .navbar {
+            background-color: var(--primary-color) !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,.1);
+        }
+        
+        .navbar-dark .navbar-nav .nav-link {
+            color: rgba(255,255,255,.9);
+            transition: color 0.3s;
+        }
+        
+        .navbar-dark .navbar-nav .nav-link:hover,
+        .navbar-dark .navbar-nav .nav-link.active {
+            color: var(--secondary-color);
+        }
+        
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,.08);
+            margin-bottom: 20px;
+        }
+        
+        .card-header {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            border-radius: 10px 10px 0 0 !important;
+        }
+        
+        .btn-primary {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+            padding: 10px 30px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+            border-color: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,.15);
+        }
+        
+        .alert {
+            border-radius: 8px;
+            border: none;
+        }
+        
+        footer {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 20px 0;
+            margin-top: 50px;
+        }
+        
+        .badge {
+            padding: 0.4em 0.8em;
+            font-weight: 500;
+        }
+        
+        .business-badge {
+            background-color: #e67e22;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{% url 'dashboard:home' %}">
+                {{ tenant.name }}
+                <span class="business-badge ms-2">BUSINESS</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="{% url 'dashboard:home' %}">
+                            <i class="bi bi-speedometer2"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'customers' in request.path %}active{% endif %}" href="{% url 'dashboard:manage_customers' %}">
+                            <i class="bi bi-people"></i> Customers
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">
+                            <i class="bi bi-megaphone"></i> Promotions
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">
+                            <i class="bi bi-bell"></i> Notifications
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">
+                            <i class="bi bi-bar-chart"></i> Reports
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> {{ user.first_name }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{% url 'dashboard:profile' %}">
+                                <i class="bi bi-person"></i> My Profile
+                            </a></li>
+                            <li><a class="dropdown-item" href="#">
+                                <i class="bi bi-gear"></i> Settings
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'dashboard:logout' %}">
+                                <i class="bi bi-box-arrow-right"></i> Logout
+                            </a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Messages -->
+    {% if messages %}
+        <div class="container-fluid mt-3">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Main Content -->
+    <main class="container-fluid my-4">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center">
+        <div class="container">
+            <p class="mb-0">&copy; 2025 {{ tenant.name }}. All rights reserved.</p>
+            <p class="mb-0 mt-2">
+                <small>Powered by Ayende CRMForce - Business Dashboard</small>
+            </p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

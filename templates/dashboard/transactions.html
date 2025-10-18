@@ -1,0 +1,181 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Transaction History - {{ tenant.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-4">
+        <h2>Transaction History</h2>
+        <p class="text-muted">View all your past purchases and transactions</p>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h5 class="card-title">Total Spent</h5>
+                <h2 class="mb-0">${{ total_spent|floatformat:2 }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title">Total Transactions</h5>
+                <h2 class="mb-0">{{ total_transactions }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <h5 class="card-title">Points Earned</h5>
+                <h2 class="mb-0">{{ total_points_earned }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Status</label>
+                        <select name="status" class="form-control">
+                            <option value="">All Statuses</option>
+                            <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+                            <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                            <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                            <option value="refunded" {% if status_filter == 'refunded' %}selected{% endif %}>Refunded</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">From Date</label>
+                        <input type="date" name="date_from" class="form-control" value="{{ request.GET.date_from }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">To Date</label>
+                        <input type="date" name="date_to" class="form-control" value="{{ request.GET.date_to }}">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">Filter</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Transactions Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-receipt"></i> Recent Transactions
+            </div>
+            <div class="card-body">
+                {% if transactions %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Transaction ID</th>
+                                    <th>Description</th>
+                                    <th>Amount</th>
+                                    <th>Points</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for transaction in transactions %}
+                                <tr>
+                                    <td>{{ transaction.transaction_date|date:"M d, Y H:i" }}</td>
+                                    <td>
+                                        <code>{{ transaction.transaction_id }}</code>
+                                    </td>
+                                    <td>
+                                        {{ transaction.items_description|default:"Purchase"|truncatewords:5 }}
+                                    </td>
+                                    <td>
+                                        <strong>${{ transaction.total|floatformat:2 }}</strong>
+                                    </td>
+                                    <td>
+                                        {% if transaction.points_earned > 0 %}
+                                            <span class="badge bg-success">+{{ transaction.points_earned }}</span>
+                                        {% endif %}
+                                        {% if transaction.points_redeemed > 0 %}
+                                            <span class="badge bg-warning">-{{ transaction.points_redeemed }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if transaction.status == 'completed' %}
+                                            <span class="badge bg-success">Completed</span>
+                                        {% elif transaction.status == 'pending' %}
+                                            <span class="badge bg-warning">Pending</span>
+                                        {% elif transaction.status == 'cancelled' %}
+                                            <span class="badge bg-danger">Cancelled</span>
+                                        {% elif transaction.status == 'refunded' %}
+                                            <span class="badge bg-info">Refunded</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'dashboard:transaction_detail' transaction.transaction_id %}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i> View
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if transactions.has_other_pages %}
+                    <nav aria-label="Transaction pagination">
+                        <ul class="pagination justify-content-center">
+                            {% if transactions.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1">First</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ transactions.previous_page_number }}">Previous</a>
+                                </li>
+                            {% endif %}
+
+                            <li class="page-item active">
+                                <span class="page-link">
+                                    Page {{ transactions.number }} of {{ transactions.paginator.num_pages }}
+                                </span>
+                            </li>
+
+                            {% if transactions.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ transactions.next_page_number }}">Next</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ transactions.paginator.num_pages }}">Last</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-inbox" style="font-size: 4rem; color: #ccc;"></i>
+                        <p class="text-muted mt-3">No transactions found.</p>
+                        <p class="text-muted">Start shopping to see your transaction history here!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

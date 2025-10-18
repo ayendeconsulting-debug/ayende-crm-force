@@ -1,0 +1,184 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Transaction Details - {{ tenant.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-3">
+        <a href="{% url 'dashboard:transactions' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Transactions
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-receipt"></i> Transaction Details
+                </h4>
+            </div>
+            <div class="card-body">
+                <!-- Transaction Header -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h5>Transaction ID</h5>
+                        <p><code class="fs-5">{{ transaction.transaction_id }}</code></p>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <h5>Status</h5>
+                        <p>
+                            {% if transaction.status == 'completed' %}
+                                <span class="badge bg-success fs-6">✓ Completed</span>
+                            {% elif transaction.status == 'pending' %}
+                                <span class="badge bg-warning fs-6">⏳ Pending</span>
+                            {% elif transaction.status == 'cancelled' %}
+                                <span class="badge bg-danger fs-6">✗ Cancelled</span>
+                            {% elif transaction.status == 'refunded' %}
+                                <span class="badge bg-info fs-6">↩ Refunded</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+
+                <hr>
+
+                <!-- Transaction Information -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <p class="mb-2">
+                            <strong>Date & Time:</strong><br>
+                            {{ transaction.transaction_date|date:"F d, Y \a\t h:i A" }}
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-2">
+                            <strong>Payment Method:</strong><br>
+                            {{ transaction.get_payment_method_display }}
+                        </p>
+                    </div>
+                </div>
+
+                {% if transaction.receipt_number %}
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <p class="mb-2">
+                            <strong>Receipt Number:</strong><br>
+                            {{ transaction.receipt_number }}
+                        </p>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if transaction.items_description %}
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <p class="mb-2">
+                            <strong>Items:</strong><br>
+                            {{ transaction.items_description }}
+                        </p>
+                    </div>
+                </div>
+                {% endif %}
+
+                <hr>
+
+                <!-- Financial Breakdown -->
+                <div class="row">
+                    <div class="col-12">
+                        <h5 class="mb-3">Financial Breakdown</h5>
+                        <table class="table">
+                            <tbody>
+                                <tr>
+                                    <td><strong>Subtotal:</strong></td>
+                                    <td class="text-end">${{ transaction.amount|floatformat:2 }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Tax:</strong></td>
+                                    <td class="text-end">${{ transaction.tax|floatformat:2 }}</td>
+                                </tr>
+                                <tr class="table-primary">
+                                    <td><strong>Total:</strong></td>
+                                    <td class="text-end"><strong>${{ transaction.total|floatformat:2 }}</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Loyalty Points -->
+                {% if transaction.points_earned > 0 or transaction.points_redeemed > 0 %}
+                <hr>
+                <div class="row">
+                    <div class="col-12">
+                        <h5 class="mb-3">Loyalty Points</h5>
+                        {% if transaction.points_earned > 0 %}
+                        <p class="mb-2">
+                            <span class="badge bg-success me-2">+{{ transaction.points_earned }}</span>
+                            Points earned from this transaction
+                        </p>
+                        {% endif %}
+                        {% if transaction.points_redeemed > 0 %}
+                        <p class="mb-2">
+                            <span class="badge bg-warning me-2">-{{ transaction.points_redeemed }}</span>
+                            Points redeemed in this transaction
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if transaction.notes %}
+                <hr>
+                <div class="row">
+                    <div class="col-12">
+                        <h5 class="mb-3">Notes</h5>
+                        <p class="text-muted">{{ transaction.notes }}</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <!-- Quick Actions -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <i class="bi bi-lightning-fill"></i> Quick Actions
+            </div>
+            <div class="card-body">
+                <button class="btn btn-outline-primary w-100 mb-2" onclick="window.print()">
+                    <i class="bi bi-printer"></i> Print Receipt
+                </button>
+                {% if transaction.status == 'completed' %}
+                <a href="#" class="btn btn-outline-secondary w-100 mb-2">
+                    <i class="bi bi-arrow-repeat"></i> Request Refund
+                </a>
+                {% endif %}
+                <a href="mailto:{{ tenant.business_email }}?subject=Question about Transaction {{ transaction.transaction_id }}" 
+                   class="btn btn-outline-info w-100">
+                    <i class="bi bi-question-circle"></i> Contact Support
+                </a>
+            </div>
+        </div>
+
+        <!-- Business Info -->
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-shop"></i> {{ tenant.name }}
+            </div>
+            <div class="card-body">
+                <p class="mb-2">
+                    <i class="bi bi-envelope"></i> {{ tenant.business_email }}
+                </p>
+                <p class="mb-0">
+                    <i class="bi bi-telephone"></i> {{ tenant.business_phone }}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

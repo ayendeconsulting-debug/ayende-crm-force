@@ -1,0 +1,226 @@
+{% extends 'dashboard/business_base.html' %}
+
+{% block title %}{{ customer_rel.customer.get_full_name }} - Customer Details{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <a href="{% url 'dashboard:manage_customers' %}" class="btn btn-outline-secondary mb-3">
+            <i class="bi bi-arrow-left"></i> Back to Customers
+        </a>
+        <h2>Customer Details</h2>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Customer Profile Card -->
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="avatar-circle-large mx-auto mb-3">
+                    {{ customer_rel.customer.initials }}
+                </div>
+                <h4>{{ customer_rel.customer.get_full_name }}</h4>
+                <p class="text-muted mb-3">{{ customer_rel.customer.email }}</p>
+                
+                {% if customer_rel.is_vip %}
+                    <span class="badge bg-warning mb-3">VIP Customer</span>
+                {% endif %}
+                
+                {% if customer_rel.is_active %}
+                    <span class="badge bg-success mb-3">Active</span>
+                {% else %}
+                    <span class="badge bg-secondary mb-3">Inactive</span>
+                {% endif %}
+                
+                <hr>
+                
+                <div class="text-start">
+                    <p class="mb-2">
+                        <i class="bi bi-envelope text-muted"></i>
+                        <strong>Email:</strong><br>
+                        <span class="ms-4">{{ customer_rel.customer.email }}</span>
+                    </p>
+                    {% if customer_rel.customer.phone %}
+                        <p class="mb-2">
+                            <i class="bi bi-telephone text-muted"></i>
+                            <strong>Phone:</strong><br>
+                            <span class="ms-4">{{ customer_rel.customer.phone }}</span>
+                        </p>
+                    {% endif %}
+                    <p class="mb-2">
+                        <i class="bi bi-calendar text-muted"></i>
+                        <strong>Member Since:</strong><br>
+                        <span class="ms-4">{{ customer_rel.joined_at|date:"M d, Y" }}</span>
+                    </p>
+                    {% if customer_rel.last_purchase_date %}
+                        <p class="mb-2">
+                            <i class="bi bi-cart text-muted"></i>
+                            <strong>Last Purchase:</strong><br>
+                            <span class="ms-4">{{ customer_rel.last_purchase_date|date:"M d, Y" }}</span>
+                        </p>
+                    {% endif %}
+                </div>
+                
+                <hr>
+                
+                <div class="d-grid gap-2">
+                    <button class="btn btn-primary">
+                        <i class="bi bi-pencil"></i> Edit Customer
+                    </button>
+                    <button class="btn btn-outline-success">
+                        <i class="bi bi-envelope"></i> Send Message
+                    </button>
+                    <button class="btn btn-outline-danger">
+                        <i class="bi bi-trash"></i> Delete Customer
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notification Preferences -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">Notification Preferences</h6>
+            </div>
+            <div class="card-body">
+                <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" {% if customer_rel.email_notifications %}checked{% endif %} disabled>
+                    <label class="form-check-label">
+                        Email Notifications
+                    </label>
+                </div>
+                <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" {% if customer_rel.sms_notifications %}checked{% endif %} disabled>
+                    <label class="form-check-label">
+                        SMS Notifications
+                    </label>
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" {% if customer_rel.push_notifications %}checked{% endif %} disabled>
+                    <label class="form-check-label">
+                        Push Notifications
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Stats and Activity -->
+    <div class="col-md-8">
+        <!-- Stats Cards -->
+        <div class="row mb-4">
+            <div class="col-md-4 mb-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body">
+                        <h3>{{ customer_rel.loyalty_points }}</h3>
+                        <p class="mb-0">Loyalty Points</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body">
+                        <h3>${{ customer_rel.total_spent|default:customer_rel.total_purchases|floatformat:2 }}</h3>
+                        <p class="mb-0">Total Spent</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card bg-info text-white">
+                    <div class="card-body">
+                        <h3>{{ customer_rel.purchase_count }}</h3>
+                        <p class="mb-0">Total Purchases</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Transactions -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Recent Transactions</h5>
+                <a href="#" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if customer_transactions %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Transaction ID</th>
+                                    <th>Items</th>
+                                    <th>Amount</th>
+                                    <th>Points</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for transaction in customer_transactions %}
+                                    <tr>
+                                        <td>{{ transaction.transaction_date|date:"M d, Y" }}</td>
+                                        <td>
+                                            <small class="font-monospace">{{ transaction.transaction_id }}</small>
+                                        </td>
+                                        <td>{{ transaction.items_description|truncatewords:5 }}</td>
+                                        <td>${{ transaction.total|floatformat:2 }}</td>
+                                        <td>
+                                            <span class="badge bg-warning">+{{ transaction.points_earned }}</span>
+                                        </td>
+                                        <td>
+                                            {% if transaction.status == 'completed' %}
+                                                <span class="badge bg-success">Completed</span>
+                                            {% elif transaction.status == 'pending' %}
+                                                <span class="badge bg-warning">Pending</span>
+                                            {% elif transaction.status == 'cancelled' %}
+                                                <span class="badge bg-danger">Cancelled</span>
+                                            {% elif transaction.status == 'refunded' %}
+                                                <span class="badge bg-info">Refunded</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center py-4">No transactions yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Customer Notes -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Internal Notes</h5>
+            </div>
+            <div class="card-body">
+                {% if customer_rel.notes %}
+                    <p>{{ customer_rel.notes }}</p>
+                {% else %}
+                    <p class="text-muted">No notes added yet.</p>
+                {% endif %}
+                <button class="btn btn-sm btn-outline-primary mt-2">
+                    <i class="bi bi-pencil"></i> Edit Notes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .avatar-circle-large {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background-color: #3498db;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 2.5rem;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,188 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Dashboard - {{ tenant.name }}{% endblock %}
+
+{% block content %}
+<!-- Welcome Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <h2>Welcome back, {{ user.first_name }}! 👋</h2>
+        <p class="text-muted">Here's your activity at {{ tenant.name }}</p>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row">
+    <!-- Loyalty Points -->
+    <div class="col-md-4">
+        <div class="stats-card">
+            <i class="bi bi-star-fill" style="font-size: 2rem; opacity: 0.8;"></i>
+            <h3 class="mt-2">{{ loyalty_points|default:0 }}</h3>
+            <p>Loyalty Points</p>
+        </div>
+    </div>
+
+    <!-- Total Purchases -->
+    <div class="col-md-4">
+        <div class="stats-card" style="background: linear-gradient(135deg, #27ae60, #229954);">
+            <i class="bi bi-cart-fill" style="font-size: 2rem; opacity: 0.8;"></i>
+            <h3 class="mt-2">{{ total_purchases|default:0 }}</h3>
+            <p>Total Purchases</p>
+        </div>
+    </div>
+
+    <!-- Total Spent -->
+    <div class="col-md-4">
+        <div class="stats-card" style="background: linear-gradient(135deg, #f39c12, #e67e22);">
+            <i class="bi bi-currency-dollar" style="font-size: 2rem; opacity: 0.8;"></i>
+            <h3 class="mt-2">${{ total_spent|default:0|floatformat:2 }}</h3>
+            <p>Total Spent</p>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-lightning-fill"></i> Quick Actions
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'dashboard:profile' %}" class="btn btn-outline-primary w-100">
+                            <i class="bi bi-person-circle"></i><br>
+                            <span class="mt-2 d-block">My Profile</span>
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'dashboard:transactions' %}" class="btn btn-outline-primary w-100">
+                            <i class="bi bi-clock-history"></i><br>
+                            <span class="mt-2 d-block">Transaction History</span>
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="#" class="btn btn-outline-primary w-100">
+                            <i class="bi bi-gift"></i><br>
+                            <span class="mt-2 d-block">Rewards</span>
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="#" class="btn btn-outline-primary w-100">
+                            <i class="bi bi-bell"></i><br>
+                            <span class="mt-2 d-block">Notifications</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Transactions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-receipt"></i> Recent Transactions</span>
+                <a href="{% url 'dashboard:transactions' %}" class="btn btn-sm btn-primary">
+                    View All <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+            <div class="card-body">
+                {% if recent_transactions %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Description</th>
+                                    <th>Amount</th>
+                                    <th>Points</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for transaction in recent_transactions %}
+                                <tr>
+                                    <td>{{ transaction.transaction_date|date:"M d, Y" }}</td>
+                                    <td>{{ transaction.items_description|default:"Purchase"|truncatewords:5 }}</td>
+                                    <td><strong>${{ transaction.total|floatformat:2 }}</strong></td>
+                                    <td>
+                                        {% if transaction.points_earned > 0 %}
+                                            <span class="badge bg-success">+{{ transaction.points_earned }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if transaction.status == 'completed' %}
+                                            <span class="badge bg-success">Completed</span>
+                                        {% elif transaction.status == 'pending' %}
+                                            <span class="badge bg-warning">Pending</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center py-4">
+                        <i class="bi bi-inbox" style="font-size: 3rem;"></i><br>
+                        No recent transactions yet. Start shopping to see your history here!
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Business Info -->
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-info-circle"></i> About {{ tenant.name }}
+            </div>
+            <div class="card-body">
+                <p><strong>Email:</strong> {{ tenant.business_email }}</p>
+                <p><strong>Phone:</strong> {{ tenant.business_phone }}</p>
+                {% if tenant.website %}
+                    <p><strong>Website:</strong> <a href="{{ tenant.website }}" target="_blank">{{ tenant.website }}</a></p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-gear"></i> Your Preferences
+            </div>
+            <div class="card-body">
+                <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" id="emailNotif" 
+                           {% if tenant_customer.email_notifications %}checked{% endif %}>
+                    <label class="form-check-label" for="emailNotif">
+                        Email Notifications
+                    </label>
+                </div>
+                <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" id="smsNotif"
+                           {% if tenant_customer.sms_notifications %}checked{% endif %}>
+                    <label class="form-check-label" for="smsNotif">
+                        SMS Notifications
+                    </label>
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="pushNotif"
+                           {% if tenant_customer.push_notifications %}checked{% endif %}>
+                    <label class="form-check-label" for="pushNotif">
+                        Push Notifications
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
