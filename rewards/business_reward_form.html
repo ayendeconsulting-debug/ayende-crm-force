@@ -1,0 +1,178 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}{{ action }} Reward - {{ tenant.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header">
+                    <h3>{{ action }} Reward</h3>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <!-- Basic Information -->
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label class="form-label">Reward Name *</label>
+                                {{ form.name }}
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label class="form-label">Description *</label>
+                                {{ form.description }}
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Reward Type *</label>
+                                {{ form.reward_type }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Image</label>
+                                {{ form.image }}
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <!-- Points and Discounts -->
+                        <h5>Points & Discounts</h5>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Points Required *</label>
+                                {{ form.points_required }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Discount Type</label>
+                                {{ form.discount_type }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Discount Value</label>
+                                {{ form.discount_value }}
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label class="form-label">Minimum Purchase Amount</label>
+                                {{ form.minimum_purchase }}
+                                <small class="text-muted">For discount rewards only</small>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <!-- Stock Management -->
+                        <h5>Stock Management</h5>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    {{ form.has_stock_limit }}
+                                    <label class="form-check-label">Enable Stock Limit</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Total Stock</label>
+                                {{ form.total_stock }}
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <!-- Expiration & Limits -->
+                        <h5>Expiration & Limits</h5>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-check mb-2">
+                                    {{ form.has_expiration }}
+                                    <label class="form-check-label">Enable Expiration</label>
+                                </div>
+                                <label class="form-label">Expires At</label>
+                                {{ form.expires_at }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Limit Per Customer</label>
+                                {{ form.limit_per_customer }}
+                                <small class="text-muted">0 = unlimited</small>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label class="form-label">Validity Days After Redemption</label>
+                                {{ form.validity_days }}
+                                <small class="text-muted">How long the reward is valid after customer redeems it (0 = no expiration)</small>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <!-- Status & Display -->
+                        <h5>Status & Display</h5>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Status *</label>
+                                {{ form.status }}
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    {{ form.is_featured }}
+                                    <label class="form-check-label">Featured Reward</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Display Order</label>
+                                {{ form.display_order }}
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <!-- Terms & Conditions -->
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label class="form-label">Terms & Conditions</label>
+                                {{ form.terms_conditions }}
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <!-- Form Errors -->
+                        {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <strong>Please correct the following errors:</strong>
+                            <ul>
+                                {% for field, errors in form.errors.items %}
+                                    {% for error in errors %}
+                                        <li>{{ field }}: {{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+
+                        <!-- Submit Buttons -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                {{ action }} Reward
+                            </button>
+                            <a href="{% url 'rewards:manage' %}" class="btn btn-outline-secondary">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

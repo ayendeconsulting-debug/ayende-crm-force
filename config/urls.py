@@ -4,16 +4,12 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
-    # Admin interface
     path('admin/', admin.site.urls),
-    
-    # Dashboard (customer-facing) - at root level
     path('', include('dashboard.urls')),
-    
-    # API endpoints (will be created later)
-    # path('api/', include('api.urls')),
+    path('notifications/', include('notifications.urls')),
+    path('rewards/', include('rewards.urls')),  # ADD THIS
+   path('profile/', include('profile.urls')),  # Not 'dashboard.profile.urls' # ADD THIS
 ]
-
 # Serve media files in development
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

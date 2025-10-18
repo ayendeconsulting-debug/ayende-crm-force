@@ -1,0 +1,245 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}{{ notification.title }} - {{ tenant.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .notification-view-container {
+        padding: 20px;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #228B22;
+        text-decoration: none;
+        margin-bottom: 20px;
+        font-weight: 500;
+    }
+    
+    .back-link:hover {
+        text-decoration: underline;
+    }
+    
+    .notification-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    
+    .notification-header {
+        padding: 30px;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .category-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 500;
+        margin-bottom: 15px;
+    }
+    
+    .badge-promotion {
+        background: #fff3cd;
+        color: #856404;
+    }
+    
+    .badge-announcement {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+    
+    .badge-birthday {
+        background: #f8d7da;
+        color: #721c24;
+    }
+    
+    .badge-reminder {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .badge-alert {
+        background: #f5c6cb;
+        color: #721c24;
+    }
+    
+    .badge-update {
+        background: #e7f3ff;
+        color: #004085;
+    }
+    
+    .notification-title {
+        font-size: 32px;
+        font-weight: 700;
+        color: #333;
+        margin: 0 0 15px 0;
+        line-height: 1.2;
+    }
+    
+    .notification-meta {
+        display: flex;
+        gap: 20px;
+        color: #666;
+        font-size: 14px;
+    }
+    
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .notification-body {
+        padding: 30px;
+        font-size: 16px;
+        line-height: 1.6;
+        color: #333;
+    }
+    
+    .notification-body p {
+        margin-bottom: 15px;
+    }
+    
+    .notification-footer {
+        padding: 20px 30px;
+        background: #f9f9f9;
+        border-top: 1px solid #f0f0f0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .footer-info {
+        font-size: 13px;
+        color: #666;
+    }
+    
+    .btn-mark-unread {
+        padding: 10px 20px;
+        background: #6c757d;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.3s;
+    }
+    
+    .btn-mark-unread:hover {
+        background: #5a6268;
+    }
+    
+    .priority-banner {
+        padding: 15px 30px;
+        background: #fff3cd;
+        border-left: 4px solid #ffc107;
+        margin-bottom: 0;
+    }
+    
+    .priority-banner.high {
+        background: #f8d7da;
+        border-left-color: #dc3545;
+    }
+    
+    .priority-banner.urgent {
+        background: #f5c6cb;
+        border-left-color: #721c24;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="notification-view-container">
+    <a href="{% url 'notifications:inbox' %}" class="back-link">
+        ← Back to Inbox
+    </a>
+    
+    <div class="notification-card">
+        {% if notification.priority == 'high' or notification.priority == 'urgent' %}
+            <div class="priority-banner {{ notification.priority }}">
+                <strong>⚠️ {{ notification.get_priority_display }} Priority</strong>
+            </div>
+        {% endif %}
+        
+        <div class="notification-header">
+            <div class="category-badge badge-{{ notification.category }}">
+                {% if notification.category == 'promotion' %}🎉
+                {% elif notification.category == 'announcement' %}📢
+                {% elif notification.category == 'birthday' %}🎂
+                {% elif notification.category == 'reminder' %}🔔
+                {% elif notification.category == 'alert' %}⚠️
+                {% elif notification.category == 'update' %}✨
+                {% else %}📋{% endif %}
+                {{ notification.get_category_display }}
+            </div>
+            
+            <h1 class="notification-title">{{ notification.title }}</h1>
+            
+            <div class="notification-meta">
+                <div class="meta-item">
+                    <span>📅</span>
+                    <span>{{ recipient.delivered_at|date:"F d, Y" }}</span>
+                </div>
+                <div class="meta-item">
+                    <span>🕐</span>
+                    <span>{{ recipient.delivered_at|time:"g:i A" }}</span>
+                </div>
+                {% if recipient.is_read and recipient.read_at %}
+                    <div class="meta-item">
+                        <span>👁️</span>
+                        <span>Read {{ recipient.read_at|timesince }} ago</span>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="notification-body">
+            {{ notification.message|linebreaks }}
+        </div>
+        
+        <div class="notification-footer">
+            <div class="footer-info">
+                Sent by {{ tenant.name }}
+            </div>
+            
+            {% if recipient.is_read %}
+                <button onclick="markAsUnread('{{ recipient.id }}')" class="btn-mark-unread">
+                    Mark as Unread
+                </button>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function markAsUnread(recipientId) {
+    fetch(`/notifications/api/mark-unread/${recipientId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.href = "{% url 'notifications:inbox' %}";
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+</script>
+{% endblock %}

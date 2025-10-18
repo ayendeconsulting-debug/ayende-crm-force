@@ -1,0 +1,136 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Redemption {{ redemption.redemption_code }} - {{ tenant.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Redemption Details</h3>
+                </div>
+                <div class="card-body">
+                    <!-- Redemption Code -->
+                    <div class="text-center mb-4">
+                        <h2 class="font-monospace">{{ redemption.redemption_code }}</h2>
+                        <span class="badge bg-{{ redemption.status }} fs-5">{{ redemption.get_status_display }}</span>
+                    </div>
+
+                    <hr>
+
+                    <!-- Customer Information -->
+                    <h5>Customer Information</h5>
+                    <div class="row mb-2">
+                        <div class="col-5"><strong>Name:</strong></div>
+                        <div class="col-7">
+                            {% if redemption.tenant_customer %}
+                            <a href="{% url 'dashboard:customer_detail' redemption.tenant_customer.id %}">
+                                {{ redemption.customer.get_full_name }}
+                            </a>
+                            {% else %}
+                            {{ redemption.customer.get_full_name }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-5"><strong>Email:</strong></div>
+                        <div class="col-7">{{ redemption.customer.email }}</div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Reward Information -->
+                    <h5>Reward Information</h5>
+                    <div class="row mb-2">
+                        <div class="col-5"><strong>Reward:</strong></div>
+                        <div class="col-7">{{ redemption.reward.name }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-5"><strong>Points Spent:</strong></div>
+                        <div class="col-7">{{ redemption.points_spent }}</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-5"><strong>Reward Type:</strong></div>
+                        <div class="col-7">{{ redemption.reward.get_reward_type_display }}</div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Dates -->
+                    <h5>Dates</h5>
+                    <div class="row mb-2">
+                        <div class="col-5"><strong>Redeemed On:</strong></div>
+                        <div class="col-7">{{ redemption.redeemed_at|date:"M d, Y g:i A" }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-5"><strong>Valid From:</strong></div>
+                        <div class="col-7">{{ redemption.valid_from|date:"M d, Y" }}</div>
+                    </div>
+                    {% if redemption.valid_until %}
+                    <div class="row mb-2">
+                        <div class="col-5"><strong>Valid Until:</strong></div>
+                        <div class="col-7">
+                            {{ redemption.valid_until|date:"M d, Y" }}
+                            {% if redemption.is_expired %}
+                            <span class="badge bg-danger">Expired</span>
+                            {% elif redemption.days_until_expiry <= 3 %}
+                            <span class="badge bg-warning">Expires in {{ redemption.days_until_expiry }} days</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if redemption.used_at %}
+                    <div class="row mb-3">
+                        <div class="col-5"><strong>Used On:</strong></div>
+                        <div class="col-7">{{ redemption.used_at|date:"M d, Y g:i A" }}</div>
+                    </div>
+                    {% endif %}
+
+                    {% if redemption.customer_note %}
+                    <hr>
+                    <h5>Customer Note</h5>
+                    <p class="text-muted">{{ redemption.customer_note }}</p>
+                    {% endif %}
+
+                    {% if redemption.staff_note %}
+                    <hr>
+                    <h5>Staff Note</h5>
+                    <p class="text-muted">{{ redemption.staff_note }}</p>
+                    {% endif %}
+
+                    <hr>
+
+                    <!-- Actions -->
+                    <div class="d-grid gap-2">
+                        {% if redemption.status == 'approved' and redemption.is_valid %}
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="use">
+                            <button type="submit" class="btn btn-success btn-lg w-100">
+                                <i class="bi bi-check-circle"></i> Mark as Used
+                            </button>
+                        </form>
+                        {% endif %}
+
+                        {% if redemption.status in 'pending,approved' %}
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="cancel">
+                            <button type="submit" class="btn btn-warning w-100" onclick="return confirm('Cancel this redemption and refund points?')">
+                                <i class="bi bi-x-circle"></i> Cancel & Refund Points
+                            </button>
+                        </form>
+                        {% endif %}
+
+                        <a href="{% url 'rewards:manage_redemptions' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Back to Redemptions
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

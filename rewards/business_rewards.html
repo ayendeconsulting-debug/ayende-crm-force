@@ -1,0 +1,135 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Manage Rewards - {{ tenant.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Rewards Management</h2>
+        <a href="{% url 'rewards:create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Create New Reward
+        </a>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card p-3">
+                <h4>{{ total_rewards }}</h4>
+                <small class="text-muted">Total Rewards</small>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card p-3">
+                <h4>{{ active_rewards }}</h4>
+                <small class="text-muted">Active Rewards</small>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card p-3">
+                <h4>{{ total_redemptions }}</h4>
+                <small class="text-muted">Total Redemptions</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filter -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-8">
+                    <input type="text" name="search" class="form-control" placeholder="Search rewards..." value="{{ search_query }}">
+                </div>
+                <div class="col-md-3">
+                    <select name="status" class="form-control">
+                        <option value="">All Status</option>
+                        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                        <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+                        <option value="expired" {% if status_filter == 'expired' %}selected{% endif %}>Expired</option>
+                        <option value="out_of_stock" {% if status_filter == 'out_of_stock' %}selected{% endif %}>Out of Stock</option>
+                    </select>
+                </div>
+                <div class="col-md-1">
+                    <button type="submit" class="btn btn-primary w-100">Filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Rewards Table -->
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Reward</th>
+                        <th>Type</th>
+                        <th>Points</th>
+                        <th>Stock</th>
+                        <th>Redeemed</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for reward in rewards %}
+                    <tr>
+                        <td>
+                            <strong>{{ reward.name }}</strong>
+                            {% if reward.is_featured %}
+                            <span class="badge bg-warning">Featured</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ reward.get_reward_type_display }}</td>
+                        <td>{{ reward.points_required }}</td>
+                        <td>
+                            {% if reward.has_stock_limit %}
+                                {{ reward.stock_remaining }}/{{ reward.total_stock }}
+                                {% if reward.is_low_stock %}
+                                <span class="badge bg-danger">Low</span>
+                                {% endif %}
+                            {% else %}
+                                Unlimited
+                            {% endif %}
+                        </td>
+                        <td>{{ reward.redeemed_count }}</td>
+                        <td>
+                            <span class="badge bg-{{ reward.status }}">
+                                {{ reward.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{% url 'rewards:edit' reward.id %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                            <a href="{% url 'rewards:delete' reward.id %}" class="btn btn-sm btn-outline-danger">Delete</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <p class="text-muted">No rewards found.</p>
+                            <a href="{% url 'rewards:create' %}" class="btn btn-primary">Create Your First Reward</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if rewards.has_other_pages %}
+    <nav class="mt-3">
+        <ul class="pagination justify-content-center">
+            {% if rewards.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page={{ rewards.previous_page_number }}">Previous</a></li>
+            {% endif %}
+            <li class="page-item active"><span class="page-link">{{ rewards.number }}</span></li>
+            {% if rewards.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ rewards.next_page_number }}">Next</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}

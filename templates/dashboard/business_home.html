@@ -84,10 +84,12 @@
                 <i class="bi bi-people"></i>
                 <span>Manage Customers</span>
             </a>
-            <a href="#" class="quick-action-btn" onclick="alert('Feature coming soon!'); return false;">
-                <i class="bi bi-megaphone"></i>
-                <span>Send Promotion</span>
-            </a>
+           <div class="action-card">
+             <a href="{% url 'notifications:compose' %}" class="action-btn" style="text-decoration: none; display: block;">
+                 <i class="bi bi-megaphone"></i>
+                     Send Promotion
+              </a>
+</div>
             <a href="#" class="quick-action-btn" onclick="alert('Feature coming soon!'); return false;">
                 <i class="bi bi-bar-chart"></i>
                 <span>View Reports</span>

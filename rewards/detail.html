@@ -1,0 +1,107 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}{{ reward.name }} - {{ tenant.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'rewards:catalog' %}">Rewards</a></li>
+            <li class="breadcrumb-item active">{{ reward.name }}</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-md-6">
+            {% if reward.image %}
+            <img src="{{ reward.image.url }}" class="img-fluid rounded" alt="{{ reward.name }}">
+            {% else %}
+            <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 300px;">
+                <i class="bi bi-gift" style="font-size: 5rem;"></i>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <span class="badge bg-{{ reward.reward_type }} mb-2">{{ reward.get_reward_type_display }}</span>
+                    <h2>{{ reward.name }}</h2>
+                    <p class="text-muted">{{ reward.description }}</p>
+
+                    <hr>
+
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Points Required:</span>
+                        <strong class="h4">{{ reward.points_required }}</strong>
+                    </div>
+
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Your Points:</span>
+                        <strong>{{ tenant_customer.loyalty_points }}</strong>
+                    </div>
+
+                    {% if reward.has_stock_limit %}
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Available:</span>
+                        <strong>{{ reward.stock_remaining }} left</strong>
+                    </div>
+                    {% endif %}
+
+                    {% if reward.has_expiration %}
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Expires:</span>
+                        <strong>{{ reward.expires_at|date:"M d, Y" }}</strong>
+                    </div>
+                    {% endif %}
+
+                    {% if reward.validity_days > 0 %}
+                    <div class="alert alert-info">
+                        Valid for {{ reward.validity_days }} days after redemption
+                    </div>
+                    {% endif %}
+
+                    <hr>
+
+                    {% if can_redeem %}
+                    <a href="{% url 'rewards:redeem' reward.id %}" class="btn btn-primary btn-lg w-100">
+                        Redeem Now
+                    </a>
+                    {% else %}
+                    <button class="btn btn-secondary btn-lg w-100" disabled>
+                        {{ redemption_message }}
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if reward.terms_conditions %}
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h5>Terms & Conditions</h5>
+                    <p class="small">{{ reward.terms_conditions }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if previous_redemptions %}
+    <div class="mt-4">
+        <h4>Your Previous Redemptions</h4>
+        <div class="list-group">
+            {% for redemption in previous_redemptions %}
+            <a href="{% url 'rewards:redemption_detail' redemption.id %}" class="list-group-item list-group-item-action">
+                <div class="d-flex justify-content-between">
+                    <span>{{ redemption.redemption_code }}</span>
+                    <span class="badge bg-{{ redemption.status }}">{{ redemption.get_status_display }}</span>
+                </div>
+                <small class="text-muted">{{ redemption.redeemed_at|date:"M d, Y" }}</small>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

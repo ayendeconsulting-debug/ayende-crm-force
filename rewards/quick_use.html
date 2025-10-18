@@ -1,0 +1,118 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Quick Redemption Lookup - {{ tenant.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="bi bi-qr-code"></i> Quick Redemption Lookup</h3>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Enter the customer's redemption code to mark it as used.</p>
+                    
+                    <form method="post" id="quickUseForm">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Redemption Code</label>
+                            {{ form.redemption_code }}
+                            <small class="text-muted">Format: RWD-XXXXXX</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Notes (Optional)</label>
+                            {{ form.staff_note }}
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-check-circle"></i> Use Redemption
+                            </button>
+                            <a href="{% url 'rewards:manage_redemptions' %}" class="btn btn-outline-secondary">
+                                Back to All Redemptions
+                            </a>
+                        </div>
+                    </form>
+
+                    <!-- Result Display -->
+                    <div id="result" class="mt-4" style="display: none;">
+                        <div id="resultContent"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Redemptions -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5>Recent Used Redemptions</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item">
+                        <small class="text-muted">Last used redemptions will appear here</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('quickUseForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const resultDiv = document.getElementById('result');
+    const resultContent = document.getElementById('resultContent');
+    
+    // Show loading
+    resultContent.innerHTML = '<div class="alert alert-info">Processing...</div>';
+    resultDiv.style.display = 'block';
+    
+    fetch(window.location.href, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            resultContent.innerHTML = `
+                <div class="alert alert-success">
+                    <h5><i class="bi bi-check-circle"></i> Success!</h5>
+                    <p class="mb-1">${data.message}</p>
+                    <small><strong>Customer:</strong> ${data.customer}</small><br>
+                    <small><strong>Reward:</strong> ${data.reward}</small>
+                </div>
+            `;
+            // Clear form
+            this.reset();
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                resultDiv.style.display = 'none';
+            }, 5000);
+        } else {
+            resultContent.innerHTML = `
+                <div class="alert alert-danger">
+                    <h5><i class="bi bi-x-circle"></i> Error</h5>
+                    <p>${data.error}</p>
+                </div>
+            `;
+        }
+    })
+    .catch(error => {
+        resultContent.innerHTML = `
+            <div class="alert alert-danger">
+                <h5>Error</h5>
+                <p>An error occurred. Please try again.</p>
+            </div>
+        `;
+    });
+});
+</script>
+{% endblock %}

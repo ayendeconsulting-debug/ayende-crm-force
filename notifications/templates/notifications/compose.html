@@ -1,0 +1,415 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Compose Notification - {{ tenant.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .compose-container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .compose-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        padding: 30px;
+        margin-bottom: 20px;
+    }
+    
+    .form-section {
+        margin-bottom: 25px;
+    }
+    
+    .form-section-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #228B22;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-group label {
+        display: block;
+        font-weight: 500;
+        color: #555;
+        margin-bottom: 8px;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 10px 15px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: border-color 0.3s;
+    }
+    
+    .form-control:focus {
+        outline: none;
+        border-color: #228B22;
+        box-shadow: 0 0 0 3px rgba(34, 139, 34, 0.1);
+    }
+    
+    textarea.form-control {
+        resize: vertical;
+        min-height: 120px;
+        font-family: inherit;
+    }
+    
+    .radio-group, .checkbox-group {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .radio-option, .checkbox-option {
+        display: flex;
+        align-items: center;
+        padding: 12px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    
+    .radio-option:hover, .checkbox-option:hover {
+        border-color: #228B22;
+        background: #f8fff8;
+    }
+    
+    .radio-option input[type="radio"],
+    .checkbox-option input[type="checkbox"] {
+        margin-right: 10px;
+        cursor: pointer;
+    }
+    
+    .radio-option.selected {
+        border-color: #228B22;
+        background: #f0f8f0;
+    }
+    
+    .conditional-field {
+        display: none;
+        margin-top: 15px;
+        padding: 15px;
+        background: #f9f9f9;
+        border-radius: 6px;
+    }
+    
+    .conditional-field.active {
+        display: block;
+    }
+    
+    .recipient-count {
+        display: inline-block;
+        background: #228B22;
+        color: white;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 13px;
+        margin-left: 10px;
+    }
+    
+    .help-text {
+        font-size: 13px;
+        color: #666;
+        margin-top: 5px;
+    }
+    
+    .btn-group {
+        display: flex;
+        gap: 15px;
+        margin-top: 30px;
+    }
+    
+    .btn {
+        padding: 12px 30px;
+        border: none;
+        border-radius: 6px;
+        font-size: 16px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    
+    .btn-primary {
+        background: #228B22;
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background: #1a6b1a;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(34, 139, 34, 0.3);
+    }
+    
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .btn-secondary:hover {
+        background: #5a6268;
+    }
+    
+    .error-message {
+        color: #dc3545;
+        font-size: 13px;
+        margin-top: 5px;
+    }
+    
+    .customer-list {
+        max-height: 300px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        padding: 10px;
+    }
+    
+    .customer-item {
+        padding: 8px;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .customer-item:last-child {
+        border-bottom: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="compose-container">
+    <div style="margin-bottom: 20px;">
+        <a href="{% url 'notifications:notification_list' %}" style="color: #228B22; text-decoration: none;">
+            ← Back to Notifications
+        </a>
+    </div>
+    
+    <div class="compose-card">
+        <h1 style="font-size: 28px; margin-bottom: 10px;">Compose Notification</h1>
+        <p style="color: #666; margin-bottom: 30px;">Send targeted notifications to your customers</p>
+        
+        <form method="post" id="composeForm">
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+                <div style="background: #fee; border-left: 4px solid #dc3545; padding: 15px; margin-bottom: 20px; border-radius: 4px;">
+                    {% for error in form.non_field_errors %}
+                        <p style="margin: 0; color: #dc3545;">{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            
+            <!-- Basic Information -->
+            <div class="form-section">
+                <div class="form-section-title">Basic Information</div>
+                
+                <div class="form-group">
+                    <label for="{{ form.title.id_for_label }}">{{ form.title.label }}</label>
+                    {{ form.title }}
+                    {% if form.title.errors %}
+                        <div class="error-message">{{ form.title.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.category.id_for_label }}">{{ form.category.label }}</label>
+                    {{ form.category }}
+                    {% if form.category.errors %}
+                        <div class="error-message">{{ form.category.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.priority.id_for_label }}">{{ form.priority.label }}</label>
+                    {{ form.priority }}
+                    {% if form.priority.errors %}
+                        <div class="error-message">{{ form.priority.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.message.id_for_label }}">{{ form.message.label }}</label>
+                    {{ form.message }}
+                    <div class="help-text">Enter your notification message here</div>
+                    {% if form.message.errors %}
+                        <div class="error-message">{{ form.message.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Target Audience -->
+            <div class="form-section">
+                <div class="form-section-title">Target Audience</div>
+                
+                <div class="radio-group">
+                    {% for choice in form.target_audience %}
+                        <label class="radio-option" data-target="{{ choice.choice_value }}">
+                            {{ choice.tag }}
+                            <span style="flex: 1;">{{ choice.choice_label }}</span>
+                            {% if choice.choice_value == 'all' %}
+                                <span class="recipient-count">{{ all_customers_count }} customers</span>
+                            {% elif choice.choice_value == 'vip' %}
+                                <span class="recipient-count">{{ vip_customers_count }} VIP customers</span>
+                            {% endif %}
+                        </label>
+                    {% endfor %}
+                </div>
+                
+                <!-- Points Range Fields -->
+                <div id="pointsRangeFields" class="conditional-field">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="form-group">
+                            <label for="{{ form.points_min.id_for_label }}">{{ form.points_min.label }}</label>
+                            {{ form.points_min }}
+                            {% if form.points_min.errors %}
+                                <div class="error-message">{{ form.points_min.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.points_max.id_for_label }}">{{ form.points_max.label }}</label>
+                            {{ form.points_max }}
+                            {% if form.points_max.errors %}
+                                <div class="error-message">{{ form.points_max.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="help-text">Target customers within a specific loyalty points range</div>
+                </div>
+                
+                <!-- Specific Customers Fields -->
+                <div id="specificCustomersFields" class="conditional-field">
+                    <div class="customer-list">
+                        {% for choice in form.specific_customers %}
+                            <div class="customer-item">
+                                <label class="checkbox-option">
+                                    {{ choice.tag }}
+                                    {{ choice.choice_label }}
+                                </label>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="help-text">Select specific customers to receive this notification</div>
+                </div>
+            </div>
+            
+            <!-- Scheduling -->
+            <div class="form-section">
+                <div class="form-section-title">Delivery Timing</div>
+                
+                <div class="radio-group">
+                    {% for choice in form.send_option %}
+                        <label class="radio-option" data-send="{{ choice.choice_value }}">
+                            {{ choice.tag }}
+                            <span>{{ choice.choice_label }}</span>
+                        </label>
+                    {% endfor %}
+                </div>
+                
+                <div id="scheduleFields" class="conditional-field">
+                    <div class="form-group">
+                        <label for="{{ form.scheduled_datetime.id_for_label }}">{{ form.scheduled_datetime.label }}</label>
+                        {{ form.scheduled_datetime }}
+                        <div class="help-text">{{ form.scheduled_datetime.help_text }}</div>
+                        {% if form.scheduled_datetime.errors %}
+                            <div class="error-message">{{ form.scheduled_datetime.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Internal Notes -->
+            <div class="form-section">
+                <div class="form-section-title">Internal Notes (Optional)</div>
+                
+                <div class="form-group">
+                    <label for="{{ form.notes.id_for_label }}">{{ form.notes.label }}</label>
+                    {{ form.notes }}
+                    <div class="help-text">These notes are only visible to business staff</div>
+                </div>
+            </div>
+            
+            <!-- Submit Buttons -->
+            <div class="btn-group">
+                <button type="submit" class="btn btn-primary">
+                    Send Notification
+                </button>
+                <a href="{% url 'notifications:notification_list' %}" class="btn btn-secondary">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle target audience selection
+    const targetRadios = document.querySelectorAll('input[name="target_audience"]');
+    const pointsRangeFields = document.getElementById('pointsRangeFields');
+    const specificCustomersFields = document.getElementById('specificCustomersFields');
+    
+    targetRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            // Update visual selection
+            document.querySelectorAll('.radio-option[data-target]').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            this.closest('.radio-option').classList.add('selected');
+            
+            // Show/hide conditional fields
+            if (this.value === 'points_range') {
+                pointsRangeFields.classList.add('active');
+                specificCustomersFields.classList.remove('active');
+            } else if (this.value === 'specific') {
+                specificCustomersFields.classList.add('active');
+                pointsRangeFields.classList.remove('active');
+            } else {
+                pointsRangeFields.classList.remove('active');
+                specificCustomersFields.classList.remove('active');
+            }
+        });
+        
+        // Initialize on page load
+        if (radio.checked) {
+            radio.dispatchEvent(new Event('change'));
+        }
+    });
+    
+    // Handle send option selection
+    const sendRadios = document.querySelectorAll('input[name="send_option"]');
+    const scheduleFields = document.getElementById('scheduleFields');
+    
+    sendRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            // Update visual selection
+            document.querySelectorAll('.radio-option[data-send]').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            this.closest('.radio-option').classList.add('selected');
+            
+            // Show/hide schedule fields
+            if (this.value === 'schedule') {
+                scheduleFields.classList.add('active');
+            } else {
+                scheduleFields.classList.remove('active');
+            }
+        });
+        
+        // Initialize on page load
+        if (radio.checked) {
+            radio.dispatchEvent(new Event('change'));
+        }
+    });
+});
+</script>
+{% endblock %}

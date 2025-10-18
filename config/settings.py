@@ -71,6 +71,9 @@ INSTALLED_APPS = [
     'customers',
     'dashboard',
     'messaging',
+    'notifications',  # ADD THIS LINE
+    'rewards',  # ADD THIS
+    'profile',  # ADD THIS
 ]
 
 MIDDLEWARE = [

@@ -1,0 +1,70 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Delete Reward - {{ tenant.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h3>Delete Reward</h3>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>Are you sure you want to delete this reward?</strong>
+                    </div>
+
+                    <div class="mb-3">
+                        <h5>{{ reward.name }}</h5>
+                        <p class="text-muted">{{ reward.description }}</p>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <strong>Points Required:</strong>
+                        </div>
+                        <div class="col-6">
+                            {{ reward.points_required }}
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <strong>Times Redeemed:</strong>
+                        </div>
+                        <div class="col-6">
+                            {{ reward.redeemed_count }}
+                        </div>
+                    </div>
+
+                    {% if reward.redeemed_count > 0 %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        This reward has been redeemed {{ reward.redeemed_count }} time(s). Instead of deleting, it will be deactivated to preserve redemption history.
+                    </div>
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger">
+                                {% if reward.redeemed_count > 0 %}
+                                    Deactivate Reward
+                                {% else %}
+                                    Delete Reward
+                                {% endif %}
+                            </button>
+                            <a href="{% url 'rewards:manage' %}" class="btn btn-outline-secondary">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

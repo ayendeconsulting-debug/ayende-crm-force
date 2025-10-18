@@ -1,0 +1,65 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Redemption {{ redemption.redemption_code }} - {{ tenant.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Redemption Details</h3>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <h2 class="font-monospace">{{ redemption.redemption_code }}</h2>
+                        <span class="badge bg-{{ redemption.status }} fs-5">{{ redemption.get_status_display }}</span>
+                    </div>
+
+                    <hr>
+
+                    <div class="row mb-3">
+                        <div class="col-6"><strong>Reward:</strong></div>
+                        <div class="col-6 text-end">{{ redemption.reward.name }}</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-6"><strong>Points Spent:</strong></div>
+                        <div class="col-6 text-end">{{ redemption.points_spent }}</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-6"><strong>Redeemed On:</strong></div>
+                        <div class="col-6 text-end">{{ redemption.redeemed_at|date:"M d, Y g:i A" }}</div>
+                    </div>
+                    {% if redemption.valid_until %}
+                    <div class="row mb-3">
+                        <div class="col-6"><strong>Valid Until:</strong></div>
+                        <div class="col-6 text-end">{{ redemption.valid_until|date:"M d, Y" }}</div>
+                    </div>
+                    {% endif %}
+
+                    {% if redemption.status == 'approved' %}
+                    <div class="alert alert-success mt-4">
+                        <h5>Ready to Use!</h5>
+                        <p>Show this code to the staff to claim your reward.</p>
+                        {% if redemption.days_until_expiry %}
+                        <small>Expires in {{ redemption.days_until_expiry }} days</small>
+                        {% endif %}
+                    </div>
+                    {% elif redemption.status == 'used' %}
+                    <div class="alert alert-info mt-4">
+                        <p>This reward was used on {{ redemption.used_at|date:"M d, Y" }}</p>
+                    </div>
+                    {% endif %}
+
+                    <div class="d-grid mt-4">
+                        <a href="{% url 'rewards:my_redemptions' %}" class="btn btn-secondary">
+                            Back to My Redemptions
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

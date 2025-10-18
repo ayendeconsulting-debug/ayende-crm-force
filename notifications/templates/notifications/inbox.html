@@ -1,0 +1,461 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Inbox - {{ tenant.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .notification-badge {
+        background-color: #dc3545;
+        color: white;
+        border-radius: 50%;
+        padding: 2px 6px;
+        font-size: 0.75rem;
+        font-weight: bold;
+        margin-left: 5px;
+    }
+    
+    .unread-notification {
+        background-color: #f8f9fa;
+        border-left: 4px solid #0d6efd;
+        font-weight: 500;
+    }
+    
+    .notification-item {
+        transition: background-color 0.2s;
+    }
+    
+    .notification-item:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .new-message-alert {
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        z-index: 1000;
+        animation: slideIn 0.3s ease-out;
+    }
+    
+    @keyframes slideIn {
+        from {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+    }
+    
+    .notification-sound-toggle {
+        cursor: pointer;
+        padding: 5px 10px;
+        border-radius: 5px;
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+    }
+    
+    .notification-sound-toggle:hover {
+        background-color: #e9ecef;
+    }
+    
+    .pulse-badge {
+        animation: pulse 1s ease-in-out infinite;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- New Message Alert -->
+    <div id="newMessageAlert" class="new-message-alert" style="display: none;">
+        <div class="alert alert-info alert-dismissible fade show shadow-lg" role="alert">
+            <i class="bi bi-bell-fill"></i> <strong>New notification!</strong> You have unread messages.
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    </div>
+
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>
+                <i class="bi bi-inbox"></i> Inbox
+                {% if unread_count > 0 %}
+                <span class="notification-badge pulse-badge">{{ unread_count }}</span>
+                {% endif %}
+            </h2>
+            <p class="text-muted">Your notifications from {{ tenant.name }}</p>
+        </div>
+        <div class="d-flex gap-2">
+            <!-- Sound Toggle -->
+            <div class="notification-sound-toggle" id="soundToggle" title="Toggle notification sound">
+                <i class="bi bi-volume-up-fill" id="soundIcon"></i>
+                <span id="soundText">Sound On</span>
+            </div>
+            
+            <!-- Refresh Button -->
+            <button class="btn btn-outline-primary" onclick="checkNewNotifications(true)">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card p-3 text-center">
+                <h4 id="unreadCount">{{ unread_count }}</h4>
+                <small class="text-muted">Unread</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card p-3 text-center">
+                <h4>{{ total_count }}</h4>
+                <small class="text-muted">Total Messages</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card p-3 text-center">
+                <h4>{{ today_count }}</h4>
+                <small class="text-muted">Today</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card p-3 text-center">
+                <h4>{{ this_week_count }}</h4>
+                <small class="text-muted">This Week</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Tabs -->
+    <ul class="nav nav-tabs mb-3">
+        <li class="nav-item">
+            <a class="nav-link {% if not status_filter and not category_filter %}active{% endif %}" href="{% url 'notifications:inbox' %}">
+                All
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if status_filter == 'unread' %}active{% endif %}" href="?status=unread">
+                Unread
+                {% if unread_count > 0 %}
+                <span class="badge bg-danger">{{ unread_count }}</span>
+                {% endif %}
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if status_filter == 'read' %}active{% endif %}" href="?status=read">
+                Read
+            </a>
+        </li>
+    </ul>
+
+    <!-- Notifications List -->
+    <div class="list-group" id="notificationsList">
+        {% for recipient in notifications %}
+        <div class="list-group-item notification-item {% if not recipient.is_read %}unread-notification{% endif %}" data-notification-id="{{ recipient.id }}">
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                    <a href="{% url 'notifications:view_notification' recipient.id %}" class="text-decoration-none text-dark">
+                        <div class="d-flex align-items-center mb-2">
+                            {% if not recipient.is_read %}
+                            <span class="badge bg-primary me-2">NEW</span>
+                            {% endif %}
+                            
+                            <span class="badge 
+                                {% if recipient.notification.category == 'promotion' %}bg-success
+                                {% elif recipient.notification.category == 'announcement' %}bg-info
+                                {% elif recipient.notification.category == 'birthday' %}bg-warning
+                                {% elif recipient.notification.category == 'reminder' %}bg-secondary
+                                {% else %}bg-primary{% endif %}">
+                                {{ recipient.notification.get_category_display }}
+                            </span>
+                            
+                            {% if recipient.notification.priority == 'high' %}
+                            <span class="badge bg-warning ms-1">High Priority</span>
+                            {% elif recipient.notification.priority == 'urgent' %}
+                            <span class="badge bg-danger ms-1">URGENT</span>
+                            {% endif %}
+                        </div>
+                        
+                        <h5 class="mb-1">{{ recipient.notification.title }}</h5>
+                        <p class="mb-2 text-muted">{{ recipient.notification.message|truncatewords:30 }}</p>
+                        <small class="text-muted">
+                            <i class="bi bi-clock"></i> {{ recipient.delivered_at|timesince }} ago
+                        </small>
+                    </a>
+                </div>
+                
+                <div class="ms-3">
+                    {% if not recipient.is_read %}
+                    <button class="btn btn-sm btn-outline-primary mark-read-btn" 
+                            data-notification-id="{{ recipient.id }}"
+                            onclick="markAsRead('{{ recipient.id }}', event)">
+                        <i class="bi bi-check"></i> Mark Read
+                    </button>
+                    {% else %}
+                    <button class="btn btn-sm btn-outline-secondary mark-unread-btn" 
+                            data-notification-id="{{ recipient.id }}"
+                            onclick="markAsUnread('{{ recipient.id }}', event)">
+                        <i class="bi bi-envelope"></i> Mark Unread
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="list-group-item text-center py-5">
+            <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
+            <p class="text-muted mt-3">No notifications yet. Check back later!</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if notifications.has_other_pages %}
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if notifications.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ notifications.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}">
+                    Previous
+                </a>
+            </li>
+            {% endif %}
+            
+            <li class="page-item active">
+                <span class="page-link">{{ notifications.number }}</span>
+            </li>
+            
+            {% if notifications.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ notifications.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}">
+                    Next
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Sound notification preferences
+let soundEnabled = localStorage.getItem('notificationSoundEnabled') !== 'false';
+let lastUnreadCount = {{ unread_count }};
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateSoundToggle();
+    
+    // Start checking for new notifications every 30 seconds
+    setInterval(checkNewNotifications, 30000);
+    
+    // Request browser notification permission
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+});
+
+// Toggle sound on/off
+document.getElementById('soundToggle').addEventListener('click', function() {
+    soundEnabled = !soundEnabled;
+    localStorage.setItem('notificationSoundEnabled', soundEnabled);
+    updateSoundToggle();
+    
+    // Play test sound
+    if (soundEnabled) {
+        playNotificationSound();
+    }
+});
+
+function updateSoundToggle() {
+    const icon = document.getElementById('soundIcon');
+    const text = document.getElementById('soundText');
+    
+    if (soundEnabled) {
+        icon.className = 'bi bi-volume-up-fill';
+        text.textContent = 'Sound On';
+    } else {
+        icon.className = 'bi bi-volume-mute-fill';
+        text.textContent = 'Sound Off';
+    }
+}
+
+// Play notification sound using Web Audio API (no file needed!)
+function playNotificationSound() {
+    if (soundEnabled) {
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // Create two tones for a pleasant "ding-dong" effect
+            const playTone = (frequency, startTime, duration) => {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = frequency;
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0.3, startTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+                
+                oscillator.start(startTime);
+                oscillator.stop(startTime + duration);
+            };
+            
+            // First tone (higher pitch)
+            playTone(800, audioContext.currentTime, 0.15);
+            // Second tone (lower pitch)
+            playTone(600, audioContext.currentTime + 0.1, 0.15);
+            
+        } catch (e) {
+            console.log('Could not play sound:', e);
+        }
+    }
+}
+
+// Check for new notifications
+function checkNewNotifications(showAlert = false) {
+    fetch('{% url "notifications:unread_count" %}')
+        .then(response => response.json())
+        .then(data => {
+            const newUnreadCount = data.unread_count;
+            
+            // Update unread count display
+            document.getElementById('unreadCount').textContent = newUnreadCount;
+            
+            // Check if there are new notifications
+            if (newUnreadCount > lastUnreadCount) {
+                // Play sound
+                playNotificationSound();
+                
+                // Show visual alert
+                showNewMessageAlert();
+                
+                // Show browser notification
+                showBrowserNotification(newUnreadCount - lastUnreadCount);
+                
+                // Reload page if manual refresh
+                if (showAlert) {
+                    location.reload();
+                }
+            }
+            
+            lastUnreadCount = newUnreadCount;
+        })
+        .catch(error => console.error('Error checking notifications:', error));
+}
+
+// Show new message alert
+function showNewMessageAlert() {
+    const alert = document.getElementById('newMessageAlert');
+    alert.style.display = 'block';
+    
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+        alert.style.display = 'none';
+    }, 5000);
+}
+
+// Show browser notification
+function showBrowserNotification(count) {
+    if ('Notification' in window && Notification.permission === 'granted') {
+        const notification = new Notification('{{ tenant.name }}', {
+            body: `You have ${count} new notification${count > 1 ? 's' : ''}`,
+            icon: '/static/images/logo.png',
+            badge: '/static/images/badge.png',
+            tag: 'new-notification',
+            renotify: true
+        });
+        
+        notification.onclick = function() {
+            window.focus();
+            location.href = '{% url "notifications:inbox" %}';
+            this.close();
+        };
+        
+        // Auto-close after 5 seconds
+        setTimeout(() => notification.close(), 5000);
+    }
+}
+
+// Mark notification as read
+function markAsRead(notificationId, event) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    fetch(`/notifications/api/mark-read/${notificationId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const item = document.querySelector(`[data-notification-id="${notificationId}"]`);
+            item.classList.remove('unread-notification');
+            
+            const button = item.querySelector('.mark-read-btn');
+            button.className = 'btn btn-sm btn-outline-secondary mark-unread-btn';
+            button.innerHTML = '<i class="bi bi-envelope"></i> Mark Unread';
+            button.onclick = function(e) { markAsUnread(notificationId, e); };
+            
+            const badge = item.querySelector('.badge.bg-primary');
+            if (badge && badge.textContent === 'NEW') {
+                badge.remove();
+            }
+            
+            checkNewNotifications();
+        }
+    });
+}
+
+// Mark notification as unread
+function markAsUnread(notificationId, event) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    fetch(`/notifications/api/mark-unread/${notificationId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const item = document.querySelector(`[data-notification-id="${notificationId}"]`);
+            item.classList.add('unread-notification');
+            
+            const button = item.querySelector('.mark-unread-btn');
+            button.className = 'btn btn-sm btn-outline-primary mark-read-btn';
+            button.innerHTML = '<i class="bi bi-check"></i> Mark Read';
+            button.onclick = function(e) { markAsRead(notificationId, e); };
+            
+            const badgeContainer = item.querySelector('.d-flex.align-items-center.mb-2');
+            const newBadge = document.createElement('span');
+            newBadge.className = 'badge bg-primary me-2';
+            newBadge.textContent = 'NEW';
+            badgeContainer.insertBefore(newBadge, badgeContainer.firstChild);
+            
+            checkNewNotifications();
+        }
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,439 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}{{ notification.title }} - Details - {{ tenant.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .detail-container {
+        padding: 20px;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #228B22;
+        text-decoration: none;
+        margin-bottom: 20px;
+        font-weight: 500;
+    }
+    
+    .back-link:hover {
+        text-decoration: underline;
+    }
+    
+    .notification-overview {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        padding: 30px;
+        margin-bottom: 20px;
+    }
+    
+    .overview-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        margin-bottom: 20px;
+    }
+    
+    .overview-title h1 {
+        font-size: 28px;
+        margin: 0 0 10px 0;
+    }
+    
+    .overview-meta {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+    
+    .meta-badge {
+        display: inline-block;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 500;
+    }
+    
+    .badge-sent {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .badge-category {
+        background: #e7f3ff;
+        color: #004085;
+    }
+    
+    .notification-message {
+        background: #f9f9f9;
+        padding: 20px;
+        border-radius: 8px;
+        border-left: 4px solid #228B22;
+        margin: 20px 0;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-top: 20px;
+    }
+    
+    .stat-box {
+        background: linear-gradient(135deg, #f5f5f5 0%, #e9e9e9 100%);
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+    }
+    
+    .stat-value {
+        font-size: 32px;
+        font-weight: 700;
+        color: #228B22;
+        margin: 5px 0;
+    }
+    
+    .stat-label {
+        font-size: 13px;
+        color: #666;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .recipients-section {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        overflow: hidden;
+        margin-top: 20px;
+    }
+    
+    .section-header {
+        padding: 20px 30px;
+        border-bottom: 1px solid #f0f0f0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .section-header h2 {
+        font-size: 20px;
+        margin: 0;
+    }
+    
+    .filter-tabs {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .filter-tab {
+        padding: 8px 16px;
+        border-radius: 6px;
+        text-decoration: none;
+        color: #666;
+        background: #f0f0f0;
+        font-size: 13px;
+        transition: all 0.3s;
+    }
+    
+    .filter-tab:hover,
+    .filter-tab.active {
+        background: #228B22;
+        color: white;
+    }
+    
+    .recipients-table {
+        width: 100%;
+    }
+    
+    .recipients-table th {
+        background: #f9f9f9;
+        padding: 15px 30px;
+        text-align: left;
+        font-weight: 600;
+        color: #333;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .recipients-table td {
+        padding: 15px 30px;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .recipients-table tr:last-child td {
+        border-bottom: none;
+    }
+    
+    .customer-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    .customer-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #228B22, #32CD32);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 16px;
+    }
+    
+    .customer-details {
+        flex: 1;
+    }
+    
+    .customer-name {
+        font-weight: 600;
+        color: #333;
+        margin: 0 0 3px 0;
+    }
+    
+    .customer-email {
+        font-size: 13px;
+        color: #666;
+        margin: 0;
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+    
+    .status-read {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .status-unread {
+        background: #fff3cd;
+        color: #856404;
+    }
+    
+    .timestamp {
+        font-size: 13px;
+        color: #666;
+    }
+    
+    .pagination {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        padding: 20px;
+    }
+    
+    .pagination a,
+    .pagination span {
+        padding: 8px 16px;
+        border-radius: 6px;
+        text-decoration: none;
+        color: #333;
+        background: #f0f0f0;
+    }
+    
+    .pagination a:hover {
+        background: #228B22;
+        color: white;
+    }
+    
+    .pagination .current {
+        background: #228B22;
+        color: white;
+    }
+    
+    .btn-resend {
+        background: #228B22;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s;
+        border: none;
+        cursor: pointer;
+    }
+    
+    .btn-resend:hover {
+        background: #1a6b1a;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(34, 139, 34, 0.3);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="detail-container">
+    <a href="{% url 'notifications:notification_list' %}" class="back-link">
+        ← Back to Notifications
+    </a>
+    
+    <!-- Notification Overview -->
+    <div class="notification-overview">
+        <div class="overview-header">
+            <div class="overview-title">
+                <h1>{{ notification.title }}</h1>
+                <div class="overview-meta">
+                    <span class="meta-badge badge-sent">{{ notification.get_status_display }}</span>
+                    <span class="meta-badge badge-category">{{ notification.get_category_display }}</span>
+                    <span class="meta-badge">Priority: {{ notification.get_priority_display }}</span>
+                </div>
+            </div>
+            
+            {% if notification.status == 'sent' %}
+                <form method="post" action="{% url 'notifications:resend_notification' notification.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-resend">
+                        <span>🔄</span>
+                        Resend
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+        
+        <div class="notification-message">
+            <strong>Message:</strong>
+            <p style="margin: 10px 0 0 0;">{{ notification.message }}</p>
+        </div>
+        
+        <!-- Statistics -->
+        <div class="stats-grid">
+            <div class="stat-box">
+                <div class="stat-label">Total Recipients</div>
+                <div class="stat-value">{{ notification.total_recipients }}</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Delivered</div>
+                <div class="stat-value">{{ notification.total_delivered }}</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Read</div>
+                <div class="stat-value">{{ notification.total_read }}</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Read Rate</div>
+                <div class="stat-value">{{ notification.read_rate }}%</div>
+            </div>
+        </div>
+        
+        <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #f0f0f0; font-size: 14px; color: #666;">
+            <p style="margin: 5px 0;"><strong>Created:</strong> {{ notification.created_at|date:"F d, Y g:i A" }}</p>
+            {% if notification.sent_at %}
+                <p style="margin: 5px 0;"><strong>Sent:</strong> {{ notification.sent_at|date:"F d, Y g:i A" }}</p>
+            {% endif %}
+            {% if notification.created_by %}
+                <p style="margin: 5px 0;"><strong>Created by:</strong> {{ notification.created_by.get_full_name }}</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Recipients List -->
+    <div class="recipients-section">
+        <div class="section-header">
+            <h2>Recipients</h2>
+            <div class="filter-tabs">
+                <a href="{% url 'notifications:notification_detail' notification.id %}" 
+                   class="filter-tab {% if not read_filter %}active{% endif %}">
+                    All
+                </a>
+                <a href="?read_status=read" 
+                   class="filter-tab {% if read_filter == 'read' %}active{% endif %}">
+                    Read
+                </a>
+                <a href="?read_status=unread" 
+                   class="filter-tab {% if read_filter == 'unread' %}active{% endif %}">
+                    Unread
+                </a>
+            </div>
+        </div>
+        
+        {% if recipients %}
+            <table class="recipients-table">
+                <thead>
+                    <tr>
+                        <th>Customer</th>
+                        <th>Status</th>
+                        <th>Delivered</th>
+                        <th>Read</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for recipient in recipients %}
+                        <tr>
+                            <td>
+                                <div class="customer-info">
+                                    <div class="customer-avatar">
+                                        {{ recipient.tenant_customer.customer.initials }}
+                                    </div>
+                                    <div class="customer-details">
+                                        <p class="customer-name">
+                                            {{ recipient.tenant_customer.customer.get_full_name }}
+                                        </p>
+                                        <p class="customer-email">
+                                            {{ recipient.tenant_customer.customer.email }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if recipient.is_read %}
+                                    <span class="status-badge status-read">✓ Read</span>
+                                {% else %}
+                                    <span class="status-badge status-unread">Unread</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="timestamp">{{ recipient.delivered_at|date:"M d, Y g:i A" }}</span>
+                            </td>
+                            <td>
+                                {% if recipient.is_read %}
+                                    <span class="timestamp">{{ recipient.read_at|date:"M d, Y g:i A" }}</span>
+                                {% else %}
+                                    <span style="color: #999;">—</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+            <!-- Pagination -->
+            {% if recipients.has_other_pages %}
+                <div class="pagination">
+                    {% if recipients.has_previous %}
+                        <a href="?page=1{% if read_filter %}&read_status={{ read_filter }}{% endif %}">First</a>
+                        <a href="?page={{ recipients.previous_page_number }}{% if read_filter %}&read_status={{ read_filter }}{% endif %}">Previous</a>
+                    {% endif %}
+                    
+                    <span class="current">Page {{ recipients.number }} of {{ recipients.paginator.num_pages }}</span>
+                    
+                    {% if recipients.has_next %}
+                        <a href="?page={{ recipients.next_page_number }}{% if read_filter %}&read_status={{ read_filter }}{% endif %}">Next</a>
+                        <a href="?page={{ recipients.paginator.num_pages }}{% if read_filter %}&read_status={{ read_filter }}{% endif %}">Last</a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        {% else %}
+            <div style="text-align: center; padding: 40px; color: #666;">
+                No recipients found
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

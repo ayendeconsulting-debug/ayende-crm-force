@@ -1,0 +1,47 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Redeem {{ reward.name }} - {{ tenant.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Confirm Redemption</h3>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <h4>{{ reward.name }}</h4>
+                        <p class="text-muted">{{ reward.description }}</p>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <strong>You are about to redeem this reward for {{ reward.points_required }} points.</strong>
+                        <br>Your balance after redemption will be: <strong>{{ tenant_customer.loyalty_points|add:reward.points_required|make_list|join:""|slice:":-2" }} points</strong>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            {{ form.customer_note.label_tag }}
+                            {{ form.customer_note }}
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                Confirm Redemption
+                            </button>
+                            <a href="{% url 'rewards:detail' reward.id %}" class="btn btn-outline-secondary">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

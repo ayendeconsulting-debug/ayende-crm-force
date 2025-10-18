@@ -1,0 +1,85 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}My Redemptions - {{ tenant.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h2>My Redemptions</h2>
+    
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card p-3">
+                <h5>{{ tenant_customer.loyalty_points }}</h5>
+                <small>Current Points</small>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card p-3">
+                <h5>{{ total_points_spent }}</h5>
+                <small>Points Spent</small>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card p-3">
+                <h5>{{ active_redemptions }}</h5>
+                <small>Active Redemptions</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-10">
+                    <select name="status" class="form-control">
+                        <option value="">All Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="approved">Approved</option>
+                        <option value="used">Used</option>
+                        <option value="expired">Expired</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">Filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="list-group">
+        {% for redemption in redemptions %}
+        <a href="{% url 'rewards:redemption_detail' redemption.id %}" class="list-group-item list-group-item-action">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h5>{{ redemption.reward.name }}</h5>
+                    <p class="mb-1"><strong>Code:</strong> {{ redemption.redemption_code }}</p>
+                    <small class="text-muted">Redeemed: {{ redemption.redeemed_at|date:"M d, Y" }}</small>
+                </div>
+                <div class="text-end">
+                    <span class="badge bg-{{ redemption.status }}">{{ redemption.get_status_display }}</span>
+                    <br><small>{{ redemption.points_spent }} pts</small>
+                </div>
+            </div>
+        </a>
+        {% empty %}
+        <div class="alert alert-info">No redemptions yet. <a href="{% url 'rewards:catalog' %}">Browse rewards</a></div>
+        {% endfor %}
+    </div>
+
+    {% if redemptions.has_other_pages %}
+    <nav class="mt-3">
+        <ul class="pagination">
+            {% if redemptions.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page={{ redemptions.previous_page_number }}">Previous</a></li>
+            {% endif %}
+            <li class="page-item active"><span class="page-link">{{ redemptions.number }}</span></li>
+            {% if redemptions.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ redemptions.next_page_number }}">Next</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}

@@ -133,7 +133,19 @@
         <div class="quick-actions">
             <a href="{% url 'dashboard:profile' %}" class="quick-action-btn">
                 <i class="bi bi-person"></i>
-                <span>My Profile</span>
+                            <span>My Profile</span>
+                            <!-- Profile Card -->
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5><i class="bi bi-person-circle"></i> My Profile</h5>
+                        <p>Manage your profile and preferences</p>
+                        <a href="{% url 'profile:enhanced_profile' %}" class="btn btn-primary">
+                            View Profile
+                        </a>
+                    </div>
+                </div>
+            </div>
             </a>
             <a href="{% url 'dashboard:transactions' %}" class="quick-action-btn">
                 <i class="bi bi-receipt"></i>
@@ -143,9 +155,9 @@
                 <i class="bi bi-gift"></i>
                 <span>Redeem Rewards</span>
             </a>
-            <a href="#" class="quick-action-btn" onclick="alert('Feature coming soon!'); return false;">
-                <i class="bi bi-bell"></i>
-                <span>Notifications</span>
+            <a href="{% url 'notifications:inbox' %}" class="quick-action-btn">
+                <i class="bi bi-bell{% if unread_count > 0 %}-fill{% endif %}"></i>
+                <span>Inbox{% if unread_count > 0 %} <span class="badge bg-danger rounded-pill" style="font-size: 0.7rem;">{{ unread_count }}</span>{% endif %}</span>
             </a>
         </div>
     </div>

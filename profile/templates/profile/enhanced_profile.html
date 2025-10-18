@@ -1,0 +1,342 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}My Profile - {{ tenant.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .profile-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 10px;
+        margin-bottom: 2rem;
+    }
+    
+    .profile-avatar {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        border: 4px solid white;
+        object-fit: cover;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    .avatar-initials {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: white;
+        color: #667eea;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        font-weight: bold;
+        border: 4px solid white;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    .completion-badge {
+        background: rgba(255,255,255,0.2);
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        display: inline-block;
+    }
+    
+    .section-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .section-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    
+    .progress {
+        height: 8px;
+    }
+    
+    .stat-box {
+        text-align: center;
+        padding: 1.5rem;
+        background: #f8f9fa;
+        border-radius: 10px;
+    }
+    
+    .stat-box h3 {
+        margin: 0;
+        color: #667eea;
+    }
+    
+    .stat-box p {
+        margin: 0.5rem 0 0 0;
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    
+    <!-- Profile Header -->
+    <div class="profile-header">
+        <div class="row align-items-center">
+            <div class="col-md-3 text-center">
+                {% if request.user.profile_picture %}
+                    <img src="{{ request.user.profile_picture.url }}" alt="Profile" class="profile-avatar">
+                {% else %}
+                    <div class="avatar-initials">
+                        {{ request.user.initials }}
+                    </div>
+                {% endif %}
+                <div class="mt-3">
+                    <a href="{% url 'profile:upload_picture' %}" class="btn btn-sm btn-light">
+                        <i class="bi bi-camera"></i> Change Photo
+                    </a>
+                    {% if request.user.profile_picture %}
+                    <form method="post" action="{% url 'profile:delete_picture' %}" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-light" onclick="return confirm('Remove profile picture?')">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="col-md-9">
+                <h2>{{ request.user.get_full_name }}</h2>
+                <p class="mb-3">
+                    <i class="bi bi-envelope"></i> {{ request.user.email }}
+                    {% if request.user.phone %}
+                    &nbsp;&nbsp;
+                    <i class="bi bi-telephone"></i> {{ request.user.phone }}
+                    {% endif %}
+                </p>
+                
+                <div class="completion-badge">
+                    <strong>Profile Completion:</strong> {{ completion_percentage }}%
+                    <div class="progress mt-2" style="height: 8px;">
+                        <div class="progress-bar bg-success" role="progressbar" 
+                             style="width: {{ completion_percentage }}%"></div>
+                    </div>
+                </div>
+                
+                {% if completion_percentage < 100 %}
+                <p class="mt-2 mb-0">
+                    <small><i class="bi bi-info-circle"></i> Complete your profile to earn <strong>50 bonus points</strong>!</small>
+                </p>
+                {% else %}
+                <p class="mt-2 mb-0">
+                    <small><i class="bi bi-check-circle-fill text-success"></i> Your profile is complete!</small>
+                </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stat-box">
+                <h3>{{ tenant_customer.loyalty_points }}</h3>
+                <p>Loyalty Points</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-box">
+                <h3>{{ tenant_customer.purchase_count }}</h3>
+                <p>Total Purchases</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-box">
+                <h3>${{ tenant_customer.total_spent|floatformat:2 }}</h3>
+                <p>Total Spent</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-box">
+                <h3>{{ tenant_customer.joined_at|date:"M Y" }}</h3>
+                <p>Member Since</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Sections -->
+    <div class="row">
+        
+        <!-- Basic Information -->
+        <div class="col-md-6 mb-4">
+            <div class="card section-card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5><i class="bi bi-person-circle"></i> Basic Information</h5>
+                        <span class="badge bg-primary">
+                            {{ profile_sections.basic_info.percentage }}%
+                        </span>
+                    </div>
+                    
+                    <div class="progress mb-3" style="height: 6px;">
+                        <div class="progress-bar" style="width: {{ profile_sections.basic_info.percentage }}%"></div>
+                    </div>
+                    
+                    <div class="mb-2">
+                        <strong>Name:</strong> {{ request.user.get_full_name }}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Email:</strong> {{ request.user.email }}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Phone:</strong> {{ request.user.phone|default:"Not provided" }}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Language:</strong> {{ request.user.get_preferred_language_display }}
+                    </div>
+                    
+                    <a href="{% url 'profile:edit_info' %}" class="btn btn-primary btn-sm w-100">
+                        <i class="bi bi-pencil-fill"></i> Edit Information
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Address -->
+        <div class="col-md-6 mb-4">
+            <div class="card section-card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5><i class="bi bi-geo-alt"></i> Address</h5>
+                        <span class="badge bg-primary">
+                            {{ profile_sections.address.percentage }}%
+                        </span>
+                    </div>
+                    
+                    <div class="progress mb-3" style="height: 6px;">
+                        <div class="progress-bar" style="width: {{ profile_sections.address.percentage }}%"></div>
+                    </div>
+                    
+                    {% if request.user.address %}
+                    <div class="mb-2">{{ request.user.address }}</div>
+                    <div class="mb-2">
+                        {{ request.user.city }}{% if request.user.postal_code %}, {{ request.user.postal_code }}{% endif %}
+                    </div>
+                    <div class="mb-3">{{ request.user.country }}</div>
+                    {% else %}
+                    <p class="text-muted">No address information provided</p>
+                    {% endif %}
+                    
+                    <a href="{% url 'profile:edit_info' %}" class="btn btn-outline-primary btn-sm w-100">
+                        <i class="bi bi-pencil"></i> Edit Address
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Personal Details -->
+        <div class="col-md-6 mb-4">
+            <div class="card section-card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5><i class="bi bi-calendar-heart"></i> Personal Details</h5>
+                        <span class="badge bg-primary">
+                            {{ profile_sections.personal.percentage }}%
+                        </span>
+                    </div>
+                    
+                    <div class="progress mb-3" style="height: 6px;">
+                        <div class="progress-bar" style="width: {{ profile_sections.personal.percentage }}%"></div>
+                    </div>
+                    
+                    <div class="mb-2">
+                        <strong>Date of Birth:</strong> 
+                        {% if request.user.date_of_birth %}
+                            {{ request.user.date_of_birth|date:"F d, Y" }}
+                        {% else %}
+                            Not provided
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Profile Picture:</strong> 
+                        {% if request.user.profile_picture %}
+                            <i class="bi bi-check-circle text-success"></i> Uploaded
+                        {% else %}
+                            <i class="bi bi-x-circle text-danger"></i> Not uploaded
+                        {% endif %}
+                    </div>
+                    
+                    <a href="{% url 'profile:edit_info' %}" class="btn btn-outline-primary btn-sm w-100">
+                        <i class="bi bi-pencil"></i> Edit Details
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preferences -->
+        <div class="col-md-6 mb-4">
+            <div class="card section-card h-100">
+                <div class="card-body">
+                    <h5 class="mb-3"><i class="bi bi-bell"></i> Notification Preferences</h5>
+                    
+                    <div class="mb-2">
+                        <i class="bi bi-envelope"></i> Email Notifications: 
+                        <strong>{{ tenant_customer.email_notifications|yesno:"On,Off" }}</strong>
+                    </div>
+                    <div class="mb-2">
+                        <i class="bi bi-phone"></i> SMS Notifications: 
+                        <strong>{{ tenant_customer.sms_notifications|yesno:"On,Off" }}</strong>
+                    </div>
+                    <div class="mb-3">
+                        <i class="bi bi-app-indicator"></i> Push Notifications: 
+                        <strong>{{ tenant_customer.push_notifications|yesno:"On,Off" }}</strong>
+                    </div>
+                    
+                    <a href="{% url 'profile:edit_preferences' %}" class="btn btn-outline-primary btn-sm w-100">
+                        <i class="bi bi-gear"></i> Manage Preferences
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Security Section -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="mb-3"><i class="bi bi-shield-check"></i> Security & Privacy</h5>
+                
+                <div class="list-group">
+                    <a href="{% url 'profile:change_password' %}" class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1"><i class="bi bi-key-fill"></i> Password</h6>
+                                <small class="text-muted">Change your password</small>
+                            </div>
+                            <i class="bi bi-chevron-right"></i>
+                        </div>
+                    </a>
+                    
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1"><i class="bi bi-shield-check"></i> Account Status</h6>
+                                <small class="text-muted">
+                                    {% if request.user.is_active %}
+                                        Active and verified
+                                    {% else %}
+                                        Inactive
+                                    {% endif %}
+                                </small>
+                            </div>
+                            <span class="badge bg-success">Verified</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -186,6 +186,11 @@ def customer_dashboard(request, tenant, tenant_customer):
                 status='completed'
             )
         )
+    from notifications.models import NotificationRecipient
+    unread_count = NotificationRecipient.objects.filter(
+        tenant_customer=tenant_customer,
+        is_read=False
+    ).count()
     
     context = {
         'tenant': tenant,
