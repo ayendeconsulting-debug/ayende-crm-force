@@ -1,188 +1,325 @@
 {% extends 'dashboard/base.html' %}
+{% load static %}
 
 {% block title %}Dashboard - {{ tenant.name }}{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<style>
+    .loyalty-progress {
+        height: 25px;
+        border-radius: 20px;
+        overflow: hidden;
+        background: #f8f9fa;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,.05);
+    }
+    
+    .loyalty-progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 0.85rem;
+        transition: width 1s ease;
+    }
+    
+    .reward-card {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        padding: 25px;
+        border-radius: 15px;
+        box-shadow: 0 8px 20px rgba(240, 147, 251, 0.3);
+        margin-bottom: 25px;
+    }
+    
+    .reward-card h3 {
+        font-size: 3rem;
+        font-weight: 700;
+        margin: 0;
+        text-shadow: 0 2px 4px rgba(0,0,0,.1);
+    }
+    
+    .reward-card p {
+        margin: 10px 0 0 0;
+        opacity: 0.95;
+        font-size: 1.1rem;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <!-- Welcome Section -->
-<div class="row mb-4">
-    <div class="col-12">
-        <h2>Welcome back, {{ user.first_name }}! 👋</h2>
-        <p class="text-muted">Here's your activity at {{ tenant.name }}</p>
-    </div>
+<div class="welcome-banner fade-in-up">
+    <h2>Welcome back, {{ user.first_name }}!</h2>
+    <p>You're earning rewards with {{ tenant.name }}</p>
 </div>
 
-<!-- Stats Cards -->
+<!-- Loyalty Points Card -->
 <div class="row">
-    <!-- Loyalty Points -->
-    <div class="col-md-4">
-        <div class="stats-card">
-            <i class="bi bi-star-fill" style="font-size: 2rem; opacity: 0.8;"></i>
-            <h3 class="mt-2">{{ loyalty_points|default:0 }}</h3>
+    <div class="col-md-4 mb-4">
+        <div class="reward-card fade-in-up">
+            <h3>{{ tenant_customer.loyalty_points }}</h3>
             <p>Loyalty Points</p>
+            <div class="mt-3">
+                <small style="opacity: 0.85;">
+                    <i class="bi bi-star-fill"></i> Keep earning to unlock rewards!
+                </small>
+            </div>
         </div>
     </div>
 
-    <!-- Total Purchases -->
-    <div class="col-md-4">
-        <div class="stats-card" style="background: linear-gradient(135deg, #27ae60, #229954);">
-            <i class="bi bi-cart-fill" style="font-size: 2rem; opacity: 0.8;"></i>
-            <h3 class="mt-2">{{ total_purchases|default:0 }}</h3>
-            <p>Total Purchases</p>
-        </div>
-    </div>
-
-    <!-- Total Spent -->
-    <div class="col-md-4">
-        <div class="stats-card" style="background: linear-gradient(135deg, #f39c12, #e67e22);">
-            <i class="bi bi-currency-dollar" style="font-size: 2rem; opacity: 0.8;"></i>
-            <h3 class="mt-2">${{ total_spent|default:0|floatformat:2 }}</h3>
-            <p>Total Spent</p>
-        </div>
-    </div>
-</div>
-
-<!-- Quick Actions -->
-<div class="row mt-4">
-    <div class="col-12">
-        <div class="card">
+    <div class="col-md-8 mb-4">
+        <div class="card fade-in-up">
             <div class="card-header">
-                <i class="bi bi-lightning-fill"></i> Quick Actions
+                <i class="bi bi-trophy"></i> Your Progress
             </div>
             <div class="card-body">
-                <div class="row">
-                    <div class="col-md-3 mb-3">
-                        <a href="{% url 'dashboard:profile' %}" class="btn btn-outline-primary w-100">
-                            <i class="bi bi-person-circle"></i><br>
-                            <span class="mt-2 d-block">My Profile</span>
-                        </a>
+                <div class="row text-center">
+                    <div class="col-6 col-md-3 mb-3">
+                        <div class="stats-card green" style="padding: 20px;">
+                            <div class="stat-value" style="font-size: 2rem;">{{ tenant_customer.total_purchases }}</div>
+                            <div class="stat-label" style="font-size: 0.85rem;">Total Purchases</div>
+                        </div>
                     </div>
-                    <div class="col-md-3 mb-3">
-                        <a href="{% url 'dashboard:transactions' %}" class="btn btn-outline-primary w-100">
-                            <i class="bi bi-clock-history"></i><br>
-                            <span class="mt-2 d-block">Transaction History</span>
-                        </a>
+                    <div class="col-6 col-md-3 mb-3">
+                        <div class="stats-card orange" style="padding: 20px;">
+                            <div class="stat-value" style="font-size: 2rem;">${{ total_spent|floatformat:2 }}</div>
+                            <div class="stat-label" style="font-size: 0.85rem;">Total Spent</div>
+                        </div>
                     </div>
-                    <div class="col-md-3 mb-3">
-                        <a href="#" class="btn btn-outline-primary w-100">
-                            <i class="bi bi-gift"></i><br>
-                            <span class="mt-2 d-block">Rewards</span>
-                        </a>
+                    <div class="col-6 col-md-3 mb-3">
+                        <div class="stats-card teal" style="padding: 20px;">
+                            <div class="stat-value" style="font-size: 2rem;">{{ tenant_customer.loyalty_points }}</div>
+                            <div class="stat-label" style="font-size: 0.85rem;">Points Earned</div>
+                        </div>
                     </div>
-                    <div class="col-md-3 mb-3">
-                        <a href="#" class="btn btn-outline-primary w-100">
-                            <i class="bi bi-bell"></i><br>
-                            <span class="mt-2 d-block">Notifications</span>
-                        </a>
+                    <div class="col-6 col-md-3 mb-3">
+                        <div class="stats-card pink" style="padding: 20px;">
+                            <div class="stat-value" style="font-size: 2rem;">
+                                {% if tenant_customer.is_vip %}VIP{% else %}MEMBER{% endif %}
+                            </div>
+                            <div class="stat-label" style="font-size: 0.85rem;">Status</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Progress to Next Reward -->
+                <div class="mt-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Progress to 1,000 points</span>
+                        <span class="fw-bold">{{ tenant_customer.loyalty_points }}/1000</span>
+                    </div>
+                    <div class="loyalty-progress">
+                        <div class="loyalty-progress-bar" 
+                             style="width: {% widthratio tenant_customer.loyalty_points 1000 100 %}%">
+                            {% widthratio tenant_customer.loyalty_points 1000 100 %}%
+                        </div>
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Links -->
+<div class="card mb-4 slide-in">
+    <div class="card-header">
+        <i class="bi bi-lightning-charge"></i> Quick Actions
+    </div>
+    <div class="card-body">
+        <div class="quick-actions">
+            <a href="{% url 'dashboard:profile' %}" class="quick-action-btn">
+                <i class="bi bi-person"></i>
+                <span>My Profile</span>
+            </a>
+            <a href="{% url 'dashboard:transactions' %}" class="quick-action-btn">
+                <i class="bi bi-receipt"></i>
+                <span>View Transactions</span>
+            </a>
+            <a href="#" class="quick-action-btn" onclick="alert('Feature coming soon!'); return false;">
+                <i class="bi bi-gift"></i>
+                <span>Redeem Rewards</span>
+            </a>
+            <a href="#" class="quick-action-btn" onclick="alert('Feature coming soon!'); return false;">
+                <i class="bi bi-bell"></i>
+                <span>Notifications</span>
+            </a>
         </div>
     </div>
 </div>
 
 <!-- Recent Transactions -->
-<div class="row mt-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-receipt"></i> Recent Transactions</span>
-                <a href="{% url 'dashboard:transactions' %}" class="btn btn-sm btn-primary">
-                    View All <i class="bi bi-arrow-right"></i>
-                </a>
-            </div>
-            <div class="card-body">
-                {% if recent_transactions %}
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Description</th>
-                                    <th>Amount</th>
-                                    <th>Points</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for transaction in recent_transactions %}
-                                <tr>
-                                    <td>{{ transaction.transaction_date|date:"M d, Y" }}</td>
-                                    <td>{{ transaction.items_description|default:"Purchase"|truncatewords:5 }}</td>
-                                    <td><strong>${{ transaction.total|floatformat:2 }}</strong></td>
-                                    <td>
-                                        {% if transaction.points_earned > 0 %}
-                                            <span class="badge bg-success">+{{ transaction.points_earned }}</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if transaction.status == 'completed' %}
-                                            <span class="badge bg-success">Completed</span>
-                                        {% elif transaction.status == 'pending' %}
-                                            <span class="badge bg-warning">Pending</span>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% else %}
-                    <p class="text-muted text-center py-4">
-                        <i class="bi bi-inbox" style="font-size: 3rem;"></i><br>
-                        No recent transactions yet. Start shopping to see your history here!
-                    </p>
-                {% endif %}
-            </div>
+<div class="card slide-in">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-clock-history"></i> Recent Transactions</span>
+        <a href="{% url 'dashboard:transactions' %}" class="btn btn-sm btn-action-outline">View All</a>
+    </div>
+    <div class="card-body p-0">
+        {% if recent_transactions %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Description</th>
+                        <th>Amount</th>
+                        <th>Points</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for transaction in recent_transactions %}
+                    <tr>
+                        <td>
+                            <small class="text-muted">
+                                {{ transaction.transaction_date|date:"M d, Y" }}<br>
+                                {{ transaction.transaction_date|time:"g:i A" }}
+                            </small>
+                        </td>
+                        <td>
+                            <strong>Transaction #{{ transaction.transaction_id|slice:":8" }}</strong><br>
+                            <small class="text-muted">{{ transaction.description|default:"Purchase" }}</small>
+                        </td>
+                        <td>
+                            <strong>${{ transaction.total|floatformat:2 }}</strong>
+                        </td>
+                        <td>
+                            <span class="points-display" style="font-size: 0.85rem; padding: 4px 10px;">
+                                <i class="bi bi-star-fill"></i>
+                                +{{ transaction.points_earned }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge badge-success">
+                                <i class="bi bi-check-circle"></i> {{ transaction.get_status_display }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="bi bi-receipt"></i>
+            <h3>No Transactions Yet</h3>
+            <p>Your purchase history will appear here once you make your first transaction.</p>
+            <a href="#" class="btn btn-action-primary">Start Shopping</a>
+        </div>
+        {% endif %}
     </div>
 </div>
 
-<!-- Business Info -->
+<!-- Rewards & Benefits Info -->
 <div class="row mt-4">
-    <div class="col-md-6">
-        <div class="card">
+    <div class="col-md-6 mb-4">
+        <div class="card slide-in">
             <div class="card-header">
-                <i class="bi bi-info-circle"></i> About {{ tenant.name }}
+                <i class="bi bi-gift"></i> Available Rewards
             </div>
             <div class="card-body">
-                <p><strong>Email:</strong> {{ tenant.business_email }}</p>
-                <p><strong>Phone:</strong> {{ tenant.business_phone }}</p>
-                {% if tenant.website %}
-                    <p><strong>Website:</strong> <a href="{{ tenant.website }}" target="_blank">{{ tenant.website }}</a></p>
-                {% endif %}
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item border-0 px-0">
+                        <div class="d-flex align-items-center">
+                            <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; margin-right: 15px;">
+                                <i class="bi bi-percent"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">10% Off Your Next Purchase</h6>
+                                <small class="text-muted">Requires 500 points</small>
+                            </div>
+                            <span class="badge bg-secondary">Locked</span>
+                        </div>
+                    </div>
+                    <div class="list-group-item border-0 px-0">
+                        <div class="d-flex align-items-center">
+                            <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #f093fb, #f5576c); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; margin-right: 15px;">
+                                <i class="bi bi-gift"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">Free Product Sample</h6>
+                                <small class="text-muted">Requires 750 points</small>
+                            </div>
+                            <span class="badge bg-secondary">Locked</span>
+                        </div>
+                    </div>
+                    <div class="list-group-item border-0 px-0">
+                        <div class="d-flex align-items-center">
+                            <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #fa709a, #fee140); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; margin-right: 15px;">
+                                <i class="bi bi-star"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">VIP Membership</h6>
+                                <small class="text-muted">Requires 1000 points</small>
+                            </div>
+                            <span class="badge bg-secondary">Locked</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-    
-    <div class="col-md-6">
-        <div class="card">
+
+    <div class="col-md-6 mb-4">
+        <div class="card slide-in">
             <div class="card-header">
-                <i class="bi bi-gear"></i> Your Preferences
+                <i class="bi bi-info-circle"></i> How It Works
             </div>
             <div class="card-body">
-                <div class="form-check form-switch mb-2">
-                    <input class="form-check-input" type="checkbox" id="emailNotif" 
-                           {% if tenant_customer.email_notifications %}checked{% endif %}>
-                    <label class="form-check-label" for="emailNotif">
-                        Email Notifications
-                    </label>
+                <div class="timeline-item">
+                    <div class="timeline-content">
+                        <h6><i class="bi bi-cart-check text-success"></i> Make a Purchase</h6>
+                        <p class="text-muted mb-0">Earn 1 point for every $1 spent</p>
+                    </div>
                 </div>
-                <div class="form-check form-switch mb-2">
-                    <input class="form-check-input" type="checkbox" id="smsNotif"
-                           {% if tenant_customer.sms_notifications %}checked{% endif %}>
-                    <label class="form-check-label" for="smsNotif">
-                        SMS Notifications
-                    </label>
+                <div class="timeline-item">
+                    <div class="timeline-content">
+                        <h6><i class="bi bi-star-fill text-warning"></i> Collect Points</h6>
+                        <p class="text-muted mb-0">Watch your points grow with each transaction</p>
+                    </div>
                 </div>
-                <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="pushNotif"
-                           {% if tenant_customer.push_notifications %}checked{% endif %}>
-                    <label class="form-check-label" for="pushNotif">
-                        Push Notifications
-                    </label>
+                <div class="timeline-item">
+                    <div class="timeline-content">
+                        <h6><i class="bi bi-gift text-danger"></i> Redeem Rewards</h6>
+                        <p class="text-muted mb-0">Exchange points for exclusive benefits</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-content">
+                        <h6><i class="bi bi-trophy text-primary"></i> Enjoy Perks</h6>
+                        <p class="text-muted mb-0">Get special offers and VIP treatment</p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Animate progress bar on page load
+window.addEventListener('load', function() {
+    const progressBar = document.querySelector('.loyalty-progress-bar');
+    if (progressBar) {
+        progressBar.style.width = '0%';
+        setTimeout(() => {
+            progressBar.style.width = progressBar.getAttribute('style').match(/width:\s*(\d+)%/)[0];
+        }, 500);
+    }
+});
+
+// Add hover effect to cards
+document.querySelectorAll('.card').forEach(card => {
+    card.addEventListener('mouseenter', function() {
+        this.style.transform = 'translateY(-5px)';
+    });
+    card.addEventListener('mouseleave', function() {
+        this.style.transform = 'translateY(0)';
+    });
+});
+</script>
 {% endblock %}

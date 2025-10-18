@@ -1,0 +1,261 @@
+{% extends 'dashboard/business_base.html' %}
+{% load static %}
+
+{% block title %}Delete Customer - {{ tenant.name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<style>
+    .danger-zone {
+        background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+        color: white;
+        padding: 30px;
+        border-radius: 12px;
+        margin-bottom: 25px;
+    }
+    
+    .warning-box {
+        background: #fff3cd;
+        border-left: 4px solid #ffc107;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1 text-danger">
+                <i class="bi bi-exclamation-triangle-fill"></i> Delete Customer
+            </h2>
+            <p class="text-muted">Confirm customer deletion</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'dashboard:customer_detail' customer_rel.id %}" class="btn btn-action-outline">
+                <i class="bi bi-arrow-left"></i> Back to Customer
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 col-md-12">
+            <!-- Danger Zone -->
+            <div class="danger-zone">
+                <h3><i class="bi bi-shield-exclamation"></i> Danger Zone</h3>
+                <p class="mb-0">You are about to permanently delete this customer. Please review the information carefully.</p>
+            </div>
+
+            <!-- Customer Information -->
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <i class="bi bi-person-circle"></i> Customer to be Deleted
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-2 text-center">
+                            <div class="customer-avatar" style="width: 80px; height: 80px; font-size: 2.5rem; margin: 0 auto;">
+                                {{ customer_rel.customer.first_name|first }}{{ customer_rel.customer.last_name|first }}
+                            </div>
+                        </div>
+                        <div class="col-md-10">
+                            <h4 class="mb-2">{{ customer_rel.customer.get_full_name }}</h4>
+                            <div class="row">
+                                <div class="col-md-6 mb-2">
+                                    <strong><i class="bi bi-envelope"></i> Email:</strong>
+                                    <br>{{ customer_rel.customer.email }}
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <strong><i class="bi bi-telephone"></i> Phone:</strong>
+                                    <br>{{ customer_rel.customer.phone|default:"Not provided" }}
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <strong><i class="bi bi-calendar"></i> Member Since:</strong>
+                                    <br>{{ customer_rel.joined_at|date:"F d, Y" }}
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <strong><i class="bi bi-bag-check"></i> Total Purchases:</strong>
+                                    <br>{{ customer_rel.total_purchases }} transaction{{ customer_rel.total_purchases|pluralize }}
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <strong><i class="bi bi-star-fill"></i> Loyalty Points:</strong>
+                                    <br>{{ customer_rel.loyalty_points }} points
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <strong><i class="bi bi-shield-check"></i> Status:</strong>
+                                    <br>
+                                    {% if customer_rel.is_vip %}
+                                        <span class="vip-badge">VIP Customer</span>
+                                    {% else %}
+                                        Regular Member
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Warning Box -->
+            <div class="warning-box">
+                <h5><i class="bi bi-exclamation-triangle"></i> Warning</h5>
+                <ul class="mb-0">
+                    <li>This customer will be removed from your system</li>
+                    <li>All transaction history will be preserved for records</li>
+                    <li>The customer account itself will remain (for other tenants)</li>
+                    <li>This action <strong>cannot be undone</strong></li>
+                    <li>The customer will lose access to your loyalty program</li>
+                </ul>
+            </div>
+
+            <!-- Confirmation Form -->
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <i class="bi bi-shield-exclamation"></i> Confirm Deletion
+                </div>
+                <div class="card-body">
+                    <p class="mb-3">
+                        To confirm deletion, please type the customer's email address below:
+                    </p>
+                    
+                    <form method="post" id="deleteForm">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Customer Email</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="confirmEmail" 
+                                   placeholder="Type {{ customer_rel.customer.email }}"
+                                   required>
+                            <small class="form-text text-muted">
+                                Expected: <strong>{{ customer_rel.customer.email }}</strong>
+                            </small>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" 
+                                    class="btn btn-danger" 
+                                    id="deleteBtn"
+                                    disabled>
+                                <i class="bi bi-trash"></i> Yes, Delete This Customer
+                            </button>
+                            <a href="{% url 'dashboard:customer_detail' customer_rel.id %}" 
+                               class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> No, Keep This Customer
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Impact Summary Sidebar -->
+        <div class="col-lg-4 col-md-12">
+            <div class="card mb-3 border-warning">
+                <div class="card-header bg-warning">
+                    <i class="bi bi-info-circle"></i> What Will Happen
+                </div>
+                <div class="card-body">
+                    <h6 class="mb-3">Deletion Impact:</h6>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="bi bi-x-circle text-danger me-2"></i>
+                            <strong>Will be removed:</strong>
+                        </div>
+                        <ul class="small mb-0">
+                            <li>Customer loyalty membership</li>
+                            <li>Accumulated loyalty points</li>
+                            <li>VIP status (if applicable)</li>
+                            <li>Access to your program</li>
+                            <li>Internal notes</li>
+                        </ul>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="bi bi-check-circle text-success me-2"></i>
+                            <strong>Will be preserved:</strong>
+                        </div>
+                        <ul class="small mb-0">
+                            <li>Transaction records (for accounting)</li>
+                            <li>Purchase history</li>
+                            <li>Payment records</li>
+                            <li>Customer account (for other businesses)</li>
+                        </ul>
+                    </div>
+
+                    <hr>
+
+                    <div class="alert alert-info small mb-0">
+                        <strong>Note:</strong> If you need to temporarily disable a customer, use the "Edit" page to deactivate their account instead of deleting.
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <i class="bi bi-question-circle"></i> Need Help?
+                </div>
+                <div class="card-body">
+                    <p class="small">
+                        If you're unsure about deleting this customer, consider these alternatives:
+                    </p>
+                    <ul class="small mb-3">
+                        <li><strong>Deactivate:</strong> Temporarily disable the account</li>
+                        <li><strong>Reset Points:</strong> Adjust loyalty points to zero</li>
+                        <li><strong>Remove VIP:</strong> Downgrade from VIP status</li>
+                        <li><strong>Add Notes:</strong> Document issues for reference</li>
+                    </ul>
+                    <a href="{% url 'dashboard:edit_customer' customer_rel.id %}" class="btn btn-sm btn-action-outline w-100">
+                        <i class="bi bi-pencil"></i> Edit Customer Instead
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Email confirmation validation
+const expectedEmail = "{{ customer_rel.customer.email }}";
+const confirmInput = document.getElementById('confirmEmail');
+const deleteBtn = document.getElementById('deleteBtn');
+const deleteForm = document.getElementById('deleteForm');
+
+confirmInput.addEventListener('input', function() {
+    if (this.value.toLowerCase() === expectedEmail.toLowerCase()) {
+        deleteBtn.disabled = false;
+        deleteBtn.classList.remove('btn-secondary');
+        deleteBtn.classList.add('btn-danger');
+        this.classList.remove('is-invalid');
+        this.classList.add('is-valid');
+    } else {
+        deleteBtn.disabled = true;
+        deleteBtn.classList.remove('btn-danger');
+        deleteBtn.classList.add('btn-secondary');
+        this.classList.remove('is-valid');
+        if (this.value.length > 0) {
+            this.classList.add('is-invalid');
+        }
+    }
+});
+
+// Final confirmation before submit
+deleteForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    if (confirm('⚠️ FINAL WARNING: Are you absolutely sure you want to delete ' + expectedEmail + '? This action CANNOT be undone!')) {
+        deleteBtn.disabled = true;
+        deleteBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Deleting...';
+        this.submit();
+    }
+});
+</script>
+{% endblock %}

@@ -1,240 +1,389 @@
 {% extends 'dashboard/business_base.html' %}
+{% load static %}
 
 {% block title %}Business Dashboard - {{ tenant.name }}{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<style>
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="row mb-4">
-    <div class="col-12">
-        <h2>Business Dashboard</h2>
-        <p class="text-muted">Welcome back, {{ user.first_name }}! Here's your business overview.</p>
-    </div>
+<!-- Welcome Banner -->
+<div class="welcome-banner fade-in-up">
+    <h2>Welcome back, {{ user.first_name }}!</h2>
+    <p>Here's your business overview for {{ tenant.name }}</p>
 </div>
 
 <!-- Statistics Cards -->
-<div class="row mb-4">
+<div class="dashboard-grid fade-in-up">
     <!-- Total Customers -->
-    <div class="col-md-3 mb-3">
-        <div class="card stats-card bg-primary">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="text-white-50 mb-2">Total Customers</h6>
-                        <h2 class="mb-0">{{ total_customers }}</h2>
-                        <small class="text-white-50">+{{ new_customers }} this month</small>
-                    </div>
-                    <div class="stats-icon">
-                        <i class="bi bi-people fs-1"></i>
-                    </div>
-                </div>
+    <div class="stats-card purple">
+        <div class="stat-content">
+            <div class="stat-value">{{ total_customers }}</div>
+            <div class="stat-label">Total Customers</div>
+            <div class="stat-change positive">
+                <i class="bi bi-arrow-up"></i> {{ new_customers }} new this month
             </div>
         </div>
+        <i class="bi bi-people stat-icon"></i>
     </div>
 
     <!-- Total Revenue -->
-    <div class="col-md-3 mb-3">
-        <div class="card stats-card bg-success">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="text-white-50 mb-2">Total Revenue</h6>
-                        <h2 class="mb-0">${{ total_revenue|floatformat:2 }}</h2>
-                        <small class="text-white-50">All time</small>
-                    </div>
-                    <div class="stats-icon">
-                        <i class="bi bi-currency-dollar fs-1"></i>
-                    </div>
-                </div>
+    <div class="stats-card pink">
+        <div class="stat-content">
+            <div class="stat-value">${{ total_revenue|floatformat:2 }}</div>
+            <div class="stat-label">Total Revenue</div>
+            <div class="stat-change positive">
+                <i class="bi bi-graph-up"></i> All-time earnings
             </div>
         </div>
+        <i class="bi bi-currency-dollar stat-icon"></i>
     </div>
 
     <!-- Total Transactions -->
-    <div class="col-md-3 mb-3">
-        <div class="card stats-card bg-info">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="text-white-50 mb-2">Transactions</h6>
-                        <h2 class="mb-0">{{ total_transactions }}</h2>
-                        <small class="text-white-50">Completed</small>
-                    </div>
-                    <div class="stats-icon">
-                        <i class="bi bi-receipt fs-1"></i>
-                    </div>
-                </div>
+    <div class="stats-card teal">
+        <div class="stat-content">
+            <div class="stat-value">{{ total_transactions }}</div>
+            <div class="stat-label">Transactions</div>
+            <div class="stat-change">
+                <i class="bi bi-receipt"></i> Completed orders
             </div>
         </div>
+        <i class="bi bi-bag-check stat-icon"></i>
     </div>
 
     <!-- Average Order Value -->
-    <div class="col-md-3 mb-3">
-        <div class="card stats-card bg-warning">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="text-white-50 mb-2">Avg. Order Value</h6>
-                        <h2 class="mb-0">${{ avg_transaction_value|floatformat:2 }}</h2>
-                        <small class="text-white-50">Per transaction</small>
-                    </div>
-                    <div class="stats-icon">
-                        <i class="bi bi-graph-up fs-1"></i>
-                    </div>
-                </div>
+    <div class="stats-card orange">
+        <div class="stat-content">
+            <div class="stat-value">${{ avg_transaction_value|floatformat:2 }}</div>
+            <div class="stat-label">Avg. Order Value</div>
+            <div class="stat-change">
+                <i class="bi bi-calculator"></i> Per transaction
             </div>
         </div>
+        <i class="bi bi-graph-up-arrow stat-icon"></i>
     </div>
 </div>
 
 <!-- Quick Actions -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
+<div class="card slide-in">
+    <div class="card-header">
+        <i class="bi bi-lightning-charge"></i> Quick Actions
+    </div>
+    <div class="card-body">
+        <div class="quick-actions">
+            <a href="{% url 'dashboard:manage_customers' %}" class="quick-action-btn">
+                <i class="bi bi-people"></i>
+                <span>Manage Customers</span>
+            </a>
+            <a href="#" class="quick-action-btn" onclick="alert('Feature coming soon!'); return false;">
+                <i class="bi bi-megaphone"></i>
+                <span>Send Promotion</span>
+            </a>
+            <a href="#" class="quick-action-btn" onclick="alert('Feature coming soon!'); return false;">
+                <i class="bi bi-bar-chart"></i>
+                <span>View Reports</span>
+            </a>
+            <a href="#" class="quick-action-btn" onclick="alert('Feature coming soon!'); return false;">
+                <i class="bi bi-gear"></i>
+                <span>Settings</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row">
+    <!-- Revenue Chart -->
+    <div class="col-lg-8 col-md-12 mb-4">
+        <div class="card slide-in">
             <div class="card-header">
-                <h5 class="mb-0">Quick Actions</h5>
+                <i class="bi bi-graph-up"></i> Revenue Overview
             </div>
             <div class="card-body">
-                <div class="row">
-                    <div class="col-md-3 mb-3">
-                        <a href="{% url 'dashboard:manage_customers' %}" class="btn btn-outline-primary w-100">
-                            <i class="bi bi-people"></i><br>
-                            Manage Customers
-                        </a>
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        <a href="#" class="btn btn-outline-success w-100">
-                            <i class="bi bi-megaphone"></i><br>
-                            Send Promotion
-                        </a>
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        <a href="#" class="btn btn-outline-info w-100">
-                            <i class="bi bi-bar-chart"></i><br>
-                            View Reports
-                        </a>
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        <a href="#" class="btn btn-outline-warning w-100">
-                            <i class="bi bi-gear"></i><br>
-                            Settings
-                        </a>
-                    </div>
+                <div class="chart-container">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Growth Chart -->
+    <div class="col-lg-4 col-md-12 mb-4">
+        <div class="card slide-in">
+            <div class="card-header">
+                <i class="bi bi-people"></i> Customer Growth
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="customerChart"></canvas>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Tables Row -->
 <div class="row">
     <!-- Recent Transactions -->
-    <div class="col-md-8 mb-4">
-        <div class="card">
+    <div class="col-lg-8 col-md-12 mb-4">
+        <div class="card slide-in">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Recent Transactions</h5>
-                <a href="#" class="btn btn-sm btn-outline-primary">View All</a>
+                <span><i class="bi bi-clock-history"></i> Recent Transactions</span>
+                <a href="#" class="btn btn-sm btn-action-outline">View All</a>
             </div>
-            <div class="card-body">
+            <div class="card-body p-0">
                 {% if recent_transactions %}
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Customer</th>
-                                    <th>Items</th>
-                                    <th>Amount</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for transaction in recent_transactions %}
-                                    <tr>
-                                        <td>{{ transaction.transaction_date|date:"M d, Y" }}</td>
-                                        <td>{{ transaction.customer.get_full_name }}</td>
-                                        <td>{{ transaction.items_description|truncatewords:5 }}</td>
-                                        <td>${{ transaction.total|floatformat:2 }}</td>
-                                        <td>
-                                            {% if transaction.status == 'completed' %}
-                                                <span class="badge bg-success">Completed</span>
-                                            {% elif transaction.status == 'pending' %}
-                                                <span class="badge bg-warning">Pending</span>
-                                            {% elif transaction.status == 'cancelled' %}
-                                                <span class="badge bg-danger">Cancelled</span>
-                                            {% elif transaction.status == 'refunded' %}
-                                                <span class="badge bg-info">Refunded</span>
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Customer</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for transaction in recent_transactions %}
+                            <tr>
+                                <td>
+                                    <small class="text-muted">
+                                        {{ transaction.transaction_date|date:"M d, Y" }}
+                                    </small>
+                                </td>
+                                <td>
+                                    {% if transaction.tenant_customer %}
+                                    <a href="{% url 'dashboard:customer_detail' transaction.tenant_customer.id %}" 
+                                       class="text-decoration-none text-dark">
+                                        <div class="customer-info">
+                                            <div class="customer-avatar">
+                                                {{ transaction.customer.first_name|first }}{{ transaction.customer.last_name|first }}
+                                            </div>
+                                            <div class="customer-details">
+                                                <h6>{{ transaction.customer.get_full_name }}</h6>
+                                                <p>{{ transaction.customer.email }}</p>
+                                            </div>
+                                        </div>
+                                    </a>
+                                    {% else %}
+                                    <div class="customer-info">
+                                        <div class="customer-avatar">
+                                            {{ transaction.customer.first_name|first }}{{ transaction.customer.last_name|first }}
+                                        </div>
+                                        <div class="customer-details">
+                                            <h6>{{ transaction.customer.get_full_name }}</h6>
+                                            <p>{{ transaction.customer.email }}</p>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <strong>${{ transaction.total|floatformat:2 }}</strong>
+                                </td>
+                                <td>
+                                    <span class="badge badge-success">
+                                        <i class="bi bi-check-circle"></i> {{ transaction.get_status_display }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
                 {% else %}
-                    <p class="text-muted text-center py-4">No transactions yet.</p>
+                <div class="empty-state">
+                    <i class="bi bi-receipt"></i>
+                    <h3>No Transactions Yet</h3>
+                    <p>Transactions will appear here once customers start making purchases.</p>
+                </div>
                 {% endif %}
             </div>
         </div>
     </div>
 
     <!-- Top Customers -->
-    <div class="col-md-4 mb-4">
-        <div class="card">
+    <div class="col-lg-4 col-md-12 mb-4">
+        <div class="card slide-in">
             <div class="card-header">
-                <h5 class="mb-0">Top Customers</h5>
+                <i class="bi bi-star"></i> Top Customers
             </div>
             <div class="card-body">
                 {% if top_customers %}
-                    <div class="list-group list-group-flush">
-                        {% for tc in top_customers %}
-                            <a href="{% url 'dashboard:customer_detail' tc.id %}" class="list-group-item list-group-item-action">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <h6 class="mb-1">{{ tc.customer.get_full_name }}</h6>
-                                        <small class="text-muted">{{ tc.customer.email }}</small>
-                                    </div>
-                                    <div class="text-end">
-                                        <span class="badge bg-warning">{{ tc.loyalty_points }} pts</span>
-                                    </div>
+                <div class="list-group list-group-flush">
+                    {% for customer_rel in top_customers %}
+                    <a href="{% url 'dashboard:customer_detail' customer_rel.id %}" 
+                       class="list-group-item list-group-item-action border-0 mb-2 hover-lift" 
+                       style="border-radius: 8px;">
+                        <div class="d-flex align-items-center">
+                            <div class="customer-avatar">
+                                {{ customer_rel.customer.first_name|first }}{{ customer_rel.customer.last_name|first }}
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">{{ customer_rel.customer.get_full_name }}</h6>
+                                <div class="points-display">
+                                    <i class="bi bi-star-fill"></i>
+                                    {{ customer_rel.loyalty_points }} points
                                 </div>
-                            </a>
-                        {% endfor %}
-                    </div>
+                            </div>
+                            {% if customer_rel.is_vip %}
+                            <span class="vip-badge">VIP</span>
+                            {% endif %}
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
                 {% else %}
-                    <p class="text-muted text-center py-4">No customers yet.</p>
+                <div class="empty-state">
+                    <i class="bi bi-people"></i>
+                    <h3>No Customers Yet</h3>
+                    <p>Top customers will appear here based on loyalty points.</p>
+                </div>
                 {% endif %}
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
 
-<style>
-    .stats-card {
-        border: none;
-        border-radius: 10px;
-        color: white;
-    }
+{% block extra_js %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+// Revenue Chart - FIXED: Proper syntax
+const revenueCtx = document.getElementById('revenueChart');
+if (revenueCtx) {
+    new Chart(revenueCtx, {
+        type: 'line',
+        data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+            datasets: [{
+                label: 'Revenue ($)',
+                data: [1200, 1900, 1500, 2200, 2800, 2100, 2600, 3200, 2900, 3500, 3800, 4200],
+                borderColor: '#3498db',
+                backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                tension: 0.4,
+                fill: true,
+                borderWidth: 3,
+                pointRadius: 5,
+                pointBackgroundColor: '#3498db',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointHoverRadius: 7
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: '#2c3e50',
+                    padding: 12,
+                    titleColor: '#fff',
+                    bodyColor: '#fff',
+                    borderColor: '#3498db',
+                    borderWidth: 2,
+                    displayColors: false,
+                    callbacks: {
+                        label: function(context) {
+                            return '$' + context.parsed.y.toLocaleString();
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value.toLocaleString();
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Customer Growth Chart (Doughnut) - FIXED: Proper syntax
+const customerCtx = document.getElementById('customerChart');
+if (customerCtx) {
+    const totalCustomers = {{ total_customers|default:0 }};
+    const newCustomers = {{ new_customers|default:0 }};
     
-    .stats-card .card-body {
-        padding: 1.5rem;
-    }
-    
-    .stats-icon {
-        opacity: 0.3;
-    }
-    
-    .bg-primary {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-    }
-    
-    .bg-success {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
-    }
-    
-    .bg-info {
-        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%) !important;
-    }
-    
-    .bg-warning {
-        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%) !important;
-    }
-</style>
+    new Chart(customerCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Active', 'VIP', 'New'],
+            datasets: [{
+                data: [totalCustomers, 5, newCustomers],
+                backgroundColor: [
+                    '#3498db',
+                    '#f39c12',
+                    '#27ae60'
+                ],
+                borderWidth: 0,
+                hoverOffset: 10
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 15,
+                        font: {
+                            size: 12
+                        }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: '#2c3e50',
+                    padding: 12,
+                    titleColor: '#fff',
+                    bodyColor: '#fff',
+                    borderColor: '#3498db',
+                    borderWidth: 2
+                }
+            }
+        }
+    });
+}
+
+// Add smooth scroll animation
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+            target.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }
+    });
+});
+</script>
 {% endblock %}

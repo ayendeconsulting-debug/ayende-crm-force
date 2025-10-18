@@ -5,9 +5,17 @@ from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Sum, Count, Q, Avg
 from django.utils import timezone
+from django.http import JsonResponse
 from datetime import timedelta
 from customers.models import Customer, TenantCustomer
-from .forms import CustomerRegistrationForm, CustomerLoginForm, CustomerProfileForm
+from .forms import (
+    CustomerRegistrationForm, 
+    CustomerLoginForm, 
+    CustomerProfileForm,
+    BusinessCustomerAddForm,
+    BusinessCustomerEditForm,
+    CustomerNotesForm
+)
 
 # Check if Transaction model exists, if not, skip transaction views
 try:
@@ -194,6 +202,8 @@ def business_dashboard(request, tenant, tenant_customer):
     """
     Business owner/staff dashboard view.
     Shows business statistics, customer overview, and management tools.
+    
+    CRITICAL FIX: Properly attaches tenant_customer to each transaction
     """
     from django.utils import timezone
     
@@ -207,7 +217,7 @@ def business_dashboard(request, tenant, tenant_customer):
     # Customer statistics
     total_customers = all_customers.count()
     
-    # Get customers who joined in last 30 days - FIXED: Use timezone-aware datetime
+    # Get customers who joined in last 30 days
     thirty_days_ago = timezone.now() - timedelta(days=30)
     new_customers = all_customers.filter(joined_at__gte=thirty_days_ago).count()
     
@@ -223,7 +233,7 @@ def business_dashboard(request, tenant, tenant_customer):
             status='completed'
         )
         
-        # Get aggregated stats - FIXED VERSION
+        # Get aggregated stats
         stats = completed_transactions.aggregate(
             total_revenue=Sum('total'),
             transaction_count=Count('id')
@@ -236,10 +246,24 @@ def business_dashboard(request, tenant, tenant_customer):
         if total_transactions > 0:
             avg_transaction_value = total_revenue / total_transactions
         
-        # Get recent transactions
+        # Get recent transactions with customer relationship
         recent_transactions = completed_transactions.select_related(
             'customer'
         ).order_by('-transaction_date')[:10]
+        
+        # CRITICAL FIX: Attach TenantCustomer to each transaction
+        # This is what fixes the NoReverseMatch error
+        for transaction in recent_transactions:
+            try:
+                # Find the TenantCustomer relationship for this transaction's customer
+                transaction.tenant_customer = TenantCustomer.objects.get(
+                    customer=transaction.customer,
+                    tenant=tenant
+                )
+            except TenantCustomer.DoesNotExist:
+                # If no relationship exists, set to None
+                # Template will handle this gracefully
+                transaction.tenant_customer = None
     
     # Top customers by loyalty points
     top_customers = all_customers.order_by('-loyalty_points')[:5]
@@ -519,3 +543,221 @@ def customer_detail_view(request, customer_id):
     }
     
     return render(request, 'dashboard/business_customer_detail.html', context)
+
+
+@login_required(login_url='dashboard:login')
+def add_customer(request):
+    """
+    Business owner view to manually add a new customer.
+    """
+    tenant = getattr(request, 'tenant', None)
+    
+    if not tenant:
+        messages.error(request, 'Unable to add customer.')
+        return redirect('dashboard:home')
+    
+    # Verify permissions
+    try:
+        tenant_customer = TenantCustomer.objects.get(
+            customer=request.user,
+            tenant=tenant
+        )
+        
+        if not tenant_customer.is_staff_member:
+            messages.error(request, 'You do not have permission to access this page.')
+            return redirect('dashboard:home')
+            
+    except TenantCustomer.DoesNotExist:
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard:login')
+    
+    if request.method == 'POST':
+        form = BusinessCustomerAddForm(request.POST, tenant=tenant)
+        if form.is_valid():
+            new_customer = form.save()
+            messages.success(
+                request,
+                f'Customer {new_customer.customer.get_full_name()} has been added successfully.'
+            )
+            return redirect('dashboard:customer_detail', customer_id=new_customer.id)
+    else:
+        form = BusinessCustomerAddForm(tenant=tenant)
+    
+    context = {
+        'tenant': tenant,
+        'tenant_customer': tenant_customer,
+        'is_business_view': True,
+        'form': form,
+    }
+    
+    return render(request, 'dashboard/business_customer_add.html', context)
+
+
+@login_required(login_url='dashboard:login')
+def edit_customer(request, customer_id):
+    """
+    Business owner view to edit existing customer information.
+    """
+    tenant = getattr(request, 'tenant', None)
+    
+    if not tenant:
+        messages.error(request, 'Unable to edit customer.')
+        return redirect('dashboard:home')
+    
+    # Verify permissions
+    try:
+        tenant_customer = TenantCustomer.objects.get(
+            customer=request.user,
+            tenant=tenant
+        )
+        
+        if not tenant_customer.is_staff_member:
+            messages.error(request, 'You do not have permission to access this page.')
+            return redirect('dashboard:home')
+            
+    except TenantCustomer.DoesNotExist:
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard:login')
+    
+    # Get the customer to edit
+    customer_rel = get_object_or_404(
+        TenantCustomer,
+        id=customer_id,
+        tenant=tenant
+    )
+    
+    if request.method == 'POST':
+        form = BusinessCustomerEditForm(
+            request.POST, 
+            instance=customer_rel,
+            customer=customer_rel.customer
+        )
+        if form.is_valid():
+            form.save()
+            messages.success(
+                request,
+                f'Customer {customer_rel.customer.get_full_name()} has been updated successfully.'
+            )
+            return redirect('dashboard:customer_detail', customer_id=customer_rel.id)
+    else:
+        form = BusinessCustomerEditForm(
+            instance=customer_rel,
+            customer=customer_rel.customer
+        )
+    
+    context = {
+        'tenant': tenant,
+        'tenant_customer': tenant_customer,
+        'is_business_view': True,
+        'form': form,
+        'customer_rel': customer_rel,
+    }
+    
+    return render(request, 'dashboard/business_customer_edit.html', context)
+
+
+@login_required(login_url='dashboard:login')
+def delete_customer(request, customer_id):
+    """
+    Business owner view to delete a customer (with confirmation).
+    """
+    tenant = getattr(request, 'tenant', None)
+    
+    if not tenant:
+        messages.error(request, 'Unable to delete customer.')
+        return redirect('dashboard:home')
+    
+    # Verify permissions
+    try:
+        tenant_customer = TenantCustomer.objects.get(
+            customer=request.user,
+            tenant=tenant
+        )
+        
+        if not tenant_customer.is_staff_member:
+            messages.error(request, 'You do not have permission to access this page.')
+            return redirect('dashboard:home')
+            
+    except TenantCustomer.DoesNotExist:
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard:login')
+    
+    # Get the customer to delete
+    customer_rel = get_object_or_404(
+        TenantCustomer,
+        id=customer_id,
+        tenant=tenant
+    )
+    
+    if request.method == 'POST':
+        customer_name = customer_rel.customer.get_full_name()
+        
+        # Only delete the TenantCustomer relationship, not the Customer
+        # This preserves the customer if they belong to other tenants
+        customer_rel.delete()
+        
+        messages.success(
+            request,
+            f'Customer {customer_name} has been removed from your system.'
+        )
+        return redirect('dashboard:manage_customers')
+    
+    context = {
+        'tenant': tenant,
+        'tenant_customer': tenant_customer,
+        'is_business_view': True,
+        'customer_rel': customer_rel,
+    }
+    
+    return render(request, 'dashboard/business_customer_delete.html', context)
+
+
+@login_required(login_url='dashboard:login')
+def edit_customer_notes(request, customer_id):
+    """
+    Quick edit view for customer notes (AJAX).
+    """
+    tenant = getattr(request, 'tenant', None)
+    
+    if not tenant:
+        return JsonResponse({'success': False, 'error': 'Invalid tenant'})
+    
+    # Verify permissions
+    try:
+        tenant_customer = TenantCustomer.objects.get(
+            customer=request.user,
+            tenant=tenant
+        )
+        
+        if not tenant_customer.is_staff_member:
+            return JsonResponse({'success': False, 'error': 'Permission denied'})
+            
+    except TenantCustomer.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Access denied'})
+    
+    # Get the customer
+    customer_rel = get_object_or_404(
+        TenantCustomer,
+        id=customer_id,
+        tenant=tenant
+    )
+    
+    if request.method == 'POST':
+        form = CustomerNotesForm(request.POST, instance=customer_rel)
+        if form.is_valid():
+            form.save()
+            return JsonResponse({
+                'success': True,
+                'notes': customer_rel.notes
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'errors': form.errors
+            })
+    
+    # GET request - return current notes
+    return JsonResponse({
+        'success': True,
+        'notes': customer_rel.notes
+    })
