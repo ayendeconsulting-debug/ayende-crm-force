@@ -1,96 +1,54 @@
 """
-Django settings for Ayende CX - Multi-Tenant SaaS CRM
-Production-ready configuration with tenant isolation
+Django settings for Ayende CX project.
+Railway Production Configuration
 """
 
 import os
 from pathlib import Path
-from datetime import timedelta
-from django.templatetags.static import static as static_file
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+# Build paths inside the project
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-temp-key-change-in-production')
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-CHANGE-THIS-IN-PRODUCTION-12345')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-# ALLOWED_HOSTS configuration for multi-tenant subdomains
-ALLOWED_HOSTS = [
-    'localhost',
-    '127.0.0.1',
-    '.localhost',  # Allows *.localhost
-    '.nip.io',     # Allows *.nip.io for testing
-    '.railway.app',
-    '*.railway.app',
-]
-
-# Add custom domain if present
-CUSTOM_DOMAIN = os.environ.get('CUSTOM_DOMAIN', '')
-if CUSTOM_DOMAIN:
-    ALLOWED_HOSTS.append(CUSTOM_DOMAIN)
-    ALLOWED_HOSTS.append(f'.{CUSTOM_DOMAIN}')  # Wildcard for subdomains
-
-# CSRF Configuration
-CSRF_TRUSTED_ORIGINS = [
-    'http://localhost:8000',
-    'http://127.0.0.1:8000',
-    'http://*.localhost:8000',
-    'https://*.railway.app',
-    'http://*.railway.app',
-]
-
-if CUSTOM_DOMAIN:
-    CSRF_TRUSTED_ORIGINS.append(f'https://{CUSTOM_DOMAIN}')
-    CSRF_TRUSTED_ORIGINS.append(f'https://*.{CUSTOM_DOMAIN}')
+# Allowed hosts
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '.railway.app,localhost,127.0.0.1').split(',')
 
 # Application definition
 INSTALLED_APPS = [
-    # Unfold admin MUST be before django.contrib.admin
-    'unfold',
-    'unfold.contrib.filters',
-    'unfold.contrib.forms',
-    
-    # Django default apps
+    'unfold',  # Unfold admin theme
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
-    # Third-party apps
     'rest_framework',
-    'rest_framework_simplejwt',
-    'drf_spectacular',
-    'corsheaders',
     
-    # Local apps - Multi-tenant structure
+    # Project apps
     'tenants',
     'customers',
     'dashboard',
-    'messaging',
-    'notifications',  # ADD THIS LINE
-    'rewards',  # ADD THIS
-    'profile',  # ADD THIS
-    'reports', 
+    'notifications',
+    'rewards',
+    'profile',
+    'reports',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # Serve static files
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # WhiteNoise for static files
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    
-    # Custom middleware for multi-tenancy
-    'tenants.middleware.TenantMiddleware',  # IMPORTANT: Identifies tenant from subdomain
+    'tenants.middleware.TenantMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -106,9 +64,6 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                
-                # Custom context processor for tenant
-                'tenants.context_processors.tenant_context',
             ],
         },
     },
@@ -116,169 +71,146 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# Database
+# Database configuration for Railway
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
 
-# For production, use PostgreSQL
-if not DEBUG:
+DATABASE_URL = os.environ.get('DATABASE_URL')
+
+if DATABASE_URL:
+    # Railway PostgreSQL
     import dj_database_url
-    DATABASES['default'] = dj_database_url.config(
-        default=os.environ.get('DATABASE_URL'),
-        conn_max_age=600
-    )
-
-# Custom User Model
-AUTH_USER_MODEL = 'customers.Customer'
-
-# Authentication Backends
-AUTHENTICATION_BACKENDS = [
-    'tenants.backends.TenantAwareAuthBackend',  # Custom backend for tenant isolation
-    'django.contrib.auth.backends.ModelBackend',
-]
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
+    }
+else:
+    # Fallback to SQLite for local development
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-        'OPTIONS': {
-            'min_length': 8,
-        }
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
 # Internationalization
 LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'America/Toronto'  # Adjust to your timezone
+TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_DIRS = [BASE_DIR / 'static']
+STATICFILES_DIRS = []
 
-# Whitenoise configuration for static files
+# Check if static directory exists before adding it
+static_dir = BASE_DIR / 'static'
+if static_dir.exists():
+    STATICFILES_DIRS.append(static_dir)
+
+# WhiteNoise configuration for serving static files
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Media files (User uploads)
+# Media files
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Django REST Framework
+# Custom user model
+AUTH_USER_MODEL = 'customers.Customer'
+
+# Authentication backends
+AUTHENTICATION_BACKENDS = [
+    'tenants.backends.TenantAwareAuthBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+# Email configuration
+EMAIL_BACKEND = os.environ.get(
+    'EMAIL_BACKEND',
+    'django.core.mail.backends.console.EmailBackend'
+)
+
+# Production email settings (if configured)
+if not DEBUG and os.environ.get('EMAIL_HOST'):
+    EMAIL_HOST = os.environ.get('EMAIL_HOST')
+    EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
+    EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
+    EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+    EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+    DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@ayendecx.com')
+
+# Security settings for production
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    
+    # CSRF trusted origins
+    CSRF_TRUSTED_ORIGINS = [
+        'https://*.railway.app',
+    ]
+    
+    # Add custom domain if provided
+    custom_domain = os.environ.get('CUSTOM_DOMAIN')
+    if custom_domain:
+        CSRF_TRUSTED_ORIGINS.append(f'https://{custom_domain}')
+        CSRF_TRUSTED_ORIGINS.append(f'https://*.{custom_domain}')
+
+# REST Framework settings
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
-    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 20,
 }
 
-# JWT Settings
-SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
-    'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': True,
-    'ALGORITHM': 'HS256',
-    'SIGNING_KEY': SECRET_KEY,
-    'AUTH_HEADER_TYPES': ('Bearer',),
-}
-
-# CORS Settings
-CORS_ALLOW_ALL_ORIGINS = DEBUG  # Only in development
-CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOWED_ORIGINS = [
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-]
-
-# Spectacular (API Documentation) Settings
-SPECTACULAR_SETTINGS = {
-    'TITLE': 'Ayende CX API',
-    'DESCRIPTION': 'Multi-tenant SaaS CRM for local businesses',
-    'VERSION': '1.0.0',
-    'SERVE_INCLUDE_SCHEMA': False,
-}
-
-# Django Unfold (Admin UI) Settings
+# Unfold admin theme configuration
 UNFOLD = {
     "SITE_TITLE": "Ayende CX Admin",
-    "SITE_HEADER": "Ayende CX Administration",
+    "SITE_HEADER": "Ayende CX",
     "SITE_URL": "/",
-    
-    # ADD THIS STYLES SECTION:
-    "STYLES": [
-        """
-        <style>
-        .sidebar a,
-        .sidebar .model-link,
-        nav a,
-        .navigation a {
-            color: #e2e8f0 !important;
-        }
-        .sidebar a:hover,
-        .sidebar .model-link:hover {
-            color: #ffffff !important;
-            background: rgba(255, 255, 255, 0.1) !important;
-        }
-        [data-theme="light"] .sidebar a,
-        [data-theme="light"] .sidebar .model-link {
-            color: #1e293b !important;
-        }
-        [data-theme="light"] .sidebar a:hover {
-            color: #000000 !important;
-        }
-        </style>
-        """,
-    ],
-    
+    "SITE_ICON": None,
+    "SITE_LOGO": None,
+    "SITE_SYMBOL": "speed",
+    "SHOW_HISTORY": True,
+    "SHOW_VIEW_ON_SITE": True,
+    "ENVIRONMENT": "production" if not DEBUG else "development",
     "COLORS": {
         "primary": {
-            "500": "16 185 129",  # Nigerian Green
-            # ... rest of your colors
+            "50": "250 245 255",
+            "100": "243 232 255",
+            "200": "233 213 255",
+            "300": "216 180 254",
+            "400": "192 132 252",
+            "500": "168 85 247",
+            "600": "147 51 234",
+            "700": "126 34 206",
+            "800": "107 33 168",
+            "900": "88 28 135",
+            "950": "59 7 100",
         },
     },
-    
-    "SIDEBAR": {
-        "show_search": True,
-        "show_all_applications": True,
-    },
 }
-# Email Configuration (for notifications)
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # Development
-if not DEBUG:
-    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-    EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.sendgrid.net')
-    EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
-    EMAIL_USE_TLS = True
-    EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
-    EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
-    DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@ayendecrm.com')
 
-# Logging Configuration
+# Logging configuration
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -301,25 +233,8 @@ LOGGING = {
     'loggers': {
         'django': {
             'handlers': ['console'],
-            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
-            'propagate': False,
-        },
-        'tenants': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
+            'level': 'INFO',
             'propagate': False,
         },
     },
 }
-
-# Security Settings for Production
-if not DEBUG:
-    SECURE_SSL_REDIRECT = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    SECURE_BROWSER_XSS_FILTER = True
-    SECURE_CONTENT_TYPE_NOSNIFF = True
-    X_FRAME_OPTIONS = 'DENY'
-    SECURE_HSTS_SECONDS = 31536000
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
