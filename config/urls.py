@@ -2,8 +2,13 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from dashboard.views import landing_page
 
 urlpatterns = [
+    # Public landing page (homepage)
+    path('', landing_page, name='landing'),
+    
+    # Admin panel
     path('admin/', admin.site.urls),
     path('', include('dashboard.urls')),
     path('notifications/', include('notifications.urls')),

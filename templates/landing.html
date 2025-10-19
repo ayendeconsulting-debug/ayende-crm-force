@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ayende CX | CRM Software Solutions</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --dark-blue: #0a1e3d;
+            --medium-blue: #1e3a5f;
+            --light-blue: #4a90e2;
+            --bright-blue: #60a5fa;
+            --dark-grey: #2d3748;
+            --light-grey: #e2e8f0;
+            --white: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--dark-grey);
+            background-color: var(--white);
+        }
+
+        /* Navigation */
+        nav {
+            background: linear-gradient(135deg, var(--dark-blue) 0%, var(--medium-blue) 100%);
+            padding: 1rem 0;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--white);
+            text-decoration: none;
+        }
+
+        .logo span {
+            color: var(--bright-blue);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--white);
+            text-decoration: none;
+            transition: color 0.3s;
+            font-weight: 500;
+        }
+
+        .nav-links a:hover {
+            color: var(--bright-blue);
+        }
+
+        /* Mobile Menu Toggle Button */
+        .mobile-menu-toggle {
+            display: none;
+            flex-direction: column;
+            justify-content: space-around;
+            width: 30px;
+            height: 25px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            z-index: 1001;
+        }
+
+        .mobile-menu-toggle span {
+            width: 30px;
+            height: 3px;
+            background: var(--white);
+            border-radius: 3px;
+            transition: all 0.3s ease;
+            transform-origin: center;
+        }
+
+        .mobile-menu-toggle.active span:nth-child(1) {
+            transform: translateY(8px) rotate(45deg);
+        }
+
+        .mobile-menu-toggle.active span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .mobile-menu-toggle.active span:nth-child(3) {
+            transform: translateY(-8px) rotate(-45deg);
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, rgba(10, 30, 61, 0.92) 0%, rgba(30, 77, 139, 0.90) 50%, rgba(37, 99, 184, 0.88) 100%),
+                        url('/static/images/hero-background.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            color: var(--white);
+            padding: 150px 2rem 100px;
+            margin-top: 60px;
+            text-align: center;
+            position: relative;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            animation: fadeInUp 1s ease;
+        }
+
+        .hero .tagline {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            color: var(--bright-blue);
+            font-weight: 600;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            max-width: 800px;
+            margin: 0 auto 2rem;
+            opacity: 0.95;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 1rem 2.5rem;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: var(--bright-blue);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background: var(--light-blue);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(74, 144, 226, 0.4);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--white);
+            border: 2px solid var(--white);
+        }
+
+        .btn-secondary:hover {
+            background: var(--white);
+            color: var(--dark-blue);
+            transform: translateY(-2px);
+        }
+
+        /* Certifications Badge */
+        .certifications {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem 2.5rem;
+            border-radius: 15px;
+            margin-top: 3rem;
+            display: inline-block;
+            border: 2px solid rgba(96, 165, 250, 0.3);
+        }
+
+        .certifications h3 {
+            color: var(--white);
+            margin-bottom: 0.5rem;
+            text-shadow: none;
+            font-size: 1.2rem;
+        }
+        
+        .certifications p {
+            text-shadow: none;
+            opacity: 0.9;
+        }
+
+        .logo-container {
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        /* About Section */
+        .about {
+            padding: 100px 2rem;
+            background: var(--white);
+        }
+
+        .about-content {
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 4rem;
+            align-items: start;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .about-image {
+            width: 100%;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            position: sticky;
+            top: 100px;
+        }
+
+        .about-text h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            color: var(--dark-blue);
+        }
+
+        .about-text p {
+            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
+            color: var(--dark-grey);
+            line-height: 1.8;
+        }
+
+        /* Services Section */
+        .services {
+            padding: 100px 2rem;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+            color: var(--dark-blue);
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .service-card {
+            background: var(--white);
+            padding: 2.5rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            text-align: center;
+        }
+
+        .service-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+        }
+
+        .service-icon {
+            font-size: 3rem;
+            margin-bottom: 1.5rem;
+            color: var(--light-blue);
+        }
+
+        .service-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--dark-blue);
+        }
+
+        .service-card p {
+            color: var(--dark-grey);
+            line-height: 1.6;
+        }
+
+        /* Features Section */
+        .features {
+            padding: 100px 2rem;
+            background: var(--white);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .feature-item {
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .feature-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--light-blue), var(--bright-blue));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            font-size: 2rem;
+            color: var(--white);
+        }
+
+        .feature-item h3 {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            color: var(--dark-blue);
+        }
+
+        .feature-item p {
+            color: var(--dark-grey);
+        }
+
+        /* Pricing Section */
+        .pricing {
+            padding: 100px 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: var(--white);
+        }
+
+        .pricing .section-title {
+            color: var(--white);
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto 3rem;
+        }
+
+        .pricing-card {
+            background: var(--white);
+            color: var(--dark-grey);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+            transition: transform 0.3s;
+            position: relative;
+        }
+
+        .pricing-card:hover {
+            transform: translateY(-10px);
+        }
+
+        .pricing-card.featured {
+            border: 3px solid var(--bright-blue);
+            transform: scale(1.05);
+        }
+
+        .featured-badge {
+            background: var(--bright-blue);
+            color: var(--white);
+            padding: 0.5rem 1.5rem;
+            position: absolute;
+            top: 20px;
+            right: -35px;
+            transform: rotate(45deg);
+            font-weight: 600;
+            font-size: 0.85rem;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+
+        .pricing-header {
+            background: linear-gradient(135deg, var(--dark-blue), var(--medium-blue));
+            color: var(--white);
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .pricing-header h3 {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .pricing-subtitle {
+            opacity: 0.9;
+            font-size: 1rem;
+        }
+
+        .pricing-body {
+            padding: 2rem;
+        }
+
+        .price-display {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .price-amount {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--dark-blue);
+        }
+
+        .price-period {
+            font-size: 1.2rem;
+            color: var(--dark-grey);
+        }
+
+        .price-label {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--dark-blue);
+        }
+
+        .pricing-features {
+            list-style: none;
+            margin-bottom: 2rem;
+        }
+
+        .pricing-features li {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--light-grey);
+        }
+
+        .pricing-features li:before {
+            content: "✓";
+            color: var(--light-blue);
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .pricing-note {
+            text-align: center;
+            font-size: 0.9rem;
+            color: var(--dark-grey);
+            font-style: italic;
+        }
+
+        .pricing-cta {
+            text-align: center;
+            margin-top: 3rem;
+        }
+
+        /* Contact Section */
+        .contact {
+            padding: 100px 2rem;
+            background: var(--white);
+        }
+
+        .contact-content {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--dark-blue);
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid var(--light-grey);
+            border-radius: 10px;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--light-blue);
+        }
+
+        .form-group textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+
+        /* Footer */
+        footer {
+            background: linear-gradient(135deg, var(--dark-blue) 0%, var(--medium-blue) 100%);
+            color: var(--white);
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .nav-links {
+                position: fixed;
+                right: -100%;
+                top: 60px;
+                flex-direction: column;
+                background: var(--dark-blue);
+                width: 100%;
+                text-align: center;
+                transition: right 0.3s;
+                padding: 2rem 0;
+                box-shadow: 0 10px 27px rgba(0,0,0,0.3);
+            }
+
+            .nav-links.active {
+                right: 0;
+            }
+
+            .mobile-menu-toggle {
+                display: flex;
+            }
+
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .hero .tagline {
+                font-size: 1.3rem;
+            }
+
+            .hero p {
+                font-size: 1rem;
+            }
+
+            .about-content {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .about-image {
+                position: relative;
+                top: 0;
+            }
+
+            .pricing-card.featured {
+                transform: scale(1);
+            }
+
+            .section-title {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-container">
+            <a href="#" class="logo-container">
+                <div class="logo">AYEN<span>DE</span></div>
+            </a>
+            <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <ul class="nav-links" id="navLinks">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#services">Services</a></li>
+                <li><a href="#pricing">Pricing</a></li>
+                <li><a href="#contact">Contact</a></li>
+                <li><a href="/admin/" style="background: var(--bright-blue); padding: 0.5rem 1.5rem; border-radius: 25px;">Access Dashboard</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <h1>CRM Software Solutions</h1>
+        <p class="tagline">Certified Salesforce Architect</p>
+        <p>Transform your business with cutting-edge customer relationship management systems tailored to your unique needs. We specialize in Salesforce implementations, custom CRM development, and comprehensive business solutions.</p>
+        <div class="cta-buttons">
+            <a href="/admin/" class="btn btn-primary">Access Dashboard</a>
+            <a href="#contact" class="btn btn-secondary">Learn More</a>
+        </div>
+        <div class="certifications">
+            <h3>Salesforce Certified Professional</h3>
+            <p>Delivering enterprise-grade solutions with proven expertise</p>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="about">
+        <div class="about-content">
+            <img src="/static/images/hero-background.jpg" alt="Ayende CXTeam" class="about-image">
+            <div class="about-text">
+                <h2>About Ayende CX</h2>
+                <p>At Ayende CX, we bridge the gap between technology and business success. As certified Salesforce Architects and experienced Software Engineers, we understand that every business has unique challenges and opportunities.</p>
+                <p>Our mission is to empower local businesses with enterprise-level CRM solutions that are both powerful and accessible. Whether you're looking to implement Salesforce, need a custom CRM system, or want to optimize your existing Customer Management processes, we bring the expertise and dedication to make it happen.</p>
+                <p>With years of experience in software architecture, business improvement, and customer relationship management, we don't just build software – we build partnerships that drive growth and success.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Services Section -->
+    <section id="services" class="services">
+        <div class="container">
+            <h2 class="section-title">Our Services</h2>
+            <div class="services-grid">
+                <div class="service-card">
+                    <div class="service-icon">☁</div>
+                    <h3>Salesforce Solutions</h3>
+                    <p>Expert Salesforce implementation, customization, and optimization. From initial setup to advanced configurations, we ensure your Salesforce instance works perfectly for your business.</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon">⚙</div>
+                    <h3>Custom CRM Development</h3>
+                    <p>Tailored customer relationship management systems built from the ground up to match your exact business processes and requirements.</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon">📊</div>
+                    <h3>Business Analysis</h3>
+                    <p>Comprehensive analysis of your business processes to identify opportunities for automation, optimization, and growth through technology.</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon">🔄</div>
+                    <h3>System Integration</h3>
+                    <p>Seamlessly connect your CRM with existing business tools, payment systems, and third-party applications for a unified workflow.</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon">📱</div>
+                    <h3>Mobile Solutions</h3>
+                    <p>Mobile-first CRM applications that keep your team connected and productive, whether in the office or on the go.</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon">🎓</div>
+                    <h3>Training & Support</h3>
+                    <p>Comprehensive training programs and ongoing support to ensure your team gets the most out of your CRM investment.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="container">
+            <h2 class="section-title">Why Choose Us</h2>
+            <div class="features-grid">
+                <div class="feature-item">
+                    <div class="feature-icon">🎯</div>
+                    <h3>Tailored Solutions</h3>
+                    <p>Every business is unique. We create customized solutions that fit your specific needs and goals.</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Fast Implementation</h3>
+                    <p>Get up and running quickly with our streamlined development and deployment processes.</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">💼</div>
+                    <h3>Business Focused</h3>
+                    <p>We prioritize business outcomes over technical complexity, delivering solutions that drive ROI.</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">🔒</div>
+                    <h3>Secure & Reliable</h3>
+                    <p>Enterprise-grade security and reliability ensure your data is always protected and accessible.</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">📈</div>
+                    <h3>Scalable Growth</h3>
+                    <p>Solutions that grow with your business, from startup to enterprise scale.</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">🤝</div>
+                    <h3>Dedicated Support</h3>
+                    <p>Ongoing support and consultation to ensure your continued success.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="pricing">
+        <div class="container">
+            <h2 class="section-title">Flexible Pricing Models</h2>
+            <p style="text-align: center; font-size: 1.2rem; margin-bottom: 3rem; opacity: 0.95;">Choose the pricing model that works best for your business</p>
+            
+            <div class="pricing-grid">
+                <div class="pricing-card">
+                    <div class="pricing-header">
+                        <h3>Outright Purchase</h3>
+                        <p class="pricing-subtitle">Own Your Solution</p>
+                    </div>
+                    <div class="pricing-body">
+                        <div class="price-display">
+                            <span class="price-label">Custom Quote</span>
+                        </div>
+                        <ul class="pricing-features">
+                            <li>Full ownership of source code</li>
+                            <li>One-time payment</li>
+                            <li>No recurring fees</li>
+                            <li>Lifetime license</li>
+                            <li>Complete customization rights</li>
+                            <li>Optional maintenance packages</li>
+                        </ul>
+                        <p class="pricing-note">Perfect for enterprises and organizations seeking complete control</p>
+                    </div>
+                </div>
+
+                <div class="pricing-card featured">
+                    <div class="featured-badge">Most Popular</div>
+                    <div class="pricing-header">
+                        <h3>Subscription Model</h3>
+                        <p class="pricing-subtitle">Pay As You Grow</p>
+                    </div>
+                    <div class="pricing-body">
+                        <div class="price-display">
+                            <span class="price-amount">Starting at $499</span>
+                            <span class="price-period">/month</span>
+                        </div>
+                        <ul class="pricing-features">
+                            <li>Monthly or annual billing</li>
+                            <li>Regular updates & improvements</li>
+                            <li>Ongoing technical support</li>
+                            <li>Cloud hosting included</li>
+                            <li>Security patches & maintenance</li>
+                            <li>Scale up or down anytime</li>
+                        </ul>
+                        <p class="pricing-note">Ideal for startups and growing businesses</p>
+                    </div>
+                </div>
+
+                <div class="pricing-card">
+                    <div class="pricing-header">
+                        <h3>Hybrid Model</h3>
+                        <p class="pricing-subtitle">Best of Both Worlds</p>
+                    </div>
+                    <div class="pricing-body">
+                        <div class="price-display">
+                            <span class="price-label">Custom Package</span>
+                        </div>
+                        <ul class="pricing-features">
+                            <li>Partial ownership options</li>
+                            <li>Reduced subscription rates</li>
+                            <li>Phased payment structure</li>
+                            <li>Flexible upgrade paths</li>
+                            <li>Customized to your budget</li>
+                            <li>Long-term partnership focus</li>
+                        </ul>
+                        <p class="pricing-note">Tailored solutions for unique business needs</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pricing-cta">
+                <p style="font-size: 1.2rem; margin-bottom: 1rem;">Not sure which model fits your needs?</p>
+                <a href="#contact" class="btn btn-primary">Schedule a Consultation</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="contact">
+        <div class="container">
+            <div class="contact-content">
+                <h2 class="section-title">Let's Build Something Great</h2>
+                <p style="font-size: 1.2rem; margin-bottom: 2rem; text-align: center;">Ready to scale your business with custom software solutions? Get in touch for consultations, project inquiries, or partnerships.</p>
+                
+                <form id="contactForm">
+                    <div class="form-group">
+                        <label for="name">Name</label>
+                        <input type="text" id="name" name="name" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="company">Company</label>
+                        <input type="text" id="company" name="company">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="service">I'm interested in</label>
+                        <select id="service" name="service" required>
+                            <option value="">Select a service</option>
+                            <option value="consultation">Consultation</option>
+                            <option value="project">Project Inquiry</option>
+                            <option value="partnership">Partnership</option>
+                            <option value="salesforce">Salesforce Solutions</option>
+                            <option value="crm">Custom CRM</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="message">Tell us about your project</label>
+                        <textarea id="message" name="message" required></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Send Message</button>
+                </form>
+
+                <p style="margin-top: 2rem; font-size: 1.1rem; text-align: center;">
+                    Or email us directly at <a href="mailto:info@ayendeconsulting.com" style="color: var(--light-blue); font-weight: 600;">info@ayendeconsulting.com</a>
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <p style="font-size: 1.2rem; font-weight: 600;">Ayende CX</p>
+            <p>CRM Software Solutions | Certified Salesforce Architect</p>
+            <p>&copy; 2025 Ayende CX. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+    // Mobile menu toggle
+    const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+    const navLinks = document.getElementById('navLinks');
+
+    mobileMenuToggle.addEventListener('click', function() {
+        this.classList.toggle('active');
+        navLinks.classList.toggle('active');
+    });
+
+    // Close mobile menu when clicking a link
+    document.querySelectorAll('.nav-links a').forEach(link => {
+        link.addEventListener('click', function() {
+            mobileMenuToggle.classList.remove('active');
+            navLinks.classList.remove('active');
+        });
+    });
+
+    // Close mobile menu when clicking outside
+    document.addEventListener('click', function(event) {
+        const isClickInsideNav = navLinks.contains(event.target);
+        const isClickOnToggle = mobileMenuToggle.contains(event.target);
+        
+        if (!isClickInsideNav && !isClickOnToggle && navLinks.classList.contains('active')) {
+            mobileMenuToggle.classList.remove('active');
+            navLinks.classList.remove('active');
+        }
+    });
+
+    // Form handling (simplified - will need backend integration)
+    document.getElementById('contactForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Show success message
+        alert('Thank you for your message! We will get back to you soon.');
+        this.reset();
+    });
+
+    // Smooth scrolling for navigation links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        });
+    });
+    </script>
+</body>
+</html>

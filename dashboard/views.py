@@ -17,6 +17,13 @@ from .forms import (
     CustomerNotesForm
 )
 
+def landing_page(request):
+    """
+    Public landing page view - accessible to everyone
+    This is the homepage for the CRM system
+    """
+    return render(request, 'landing.html')
+    
 # Check if Transaction model exists, if not, skip transaction views
 try:
     from customers.models import Transaction
