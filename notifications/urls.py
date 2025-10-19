@@ -1,5 +1,5 @@
 """
-Notification URLs for Ayende CRMForce
+Notification URLs for Ayende CX
 URL routing for notification system
 """
 

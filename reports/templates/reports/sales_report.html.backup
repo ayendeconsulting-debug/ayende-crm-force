@@ -1,0 +1,446 @@
+{% extends 'dashboard/business_base.html' %}
+{% load static %}
+
+{% block title %}Sales Report - {{ tenant.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .report-header {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 15px;
+        margin-bottom: 30px;
+    }
+    
+    .report-card {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        margin-bottom: 25px;
+    }
+    
+    .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+    }
+    
+    .stat-box {
+        text-align: center;
+        padding: 20px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin: 10px 0;
+    }
+    
+    .stat-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-weight: 600;
+    }
+    
+    .chart-container {
+        position: relative;
+        height: 350px;
+        margin-top: 20px;
+    }
+    
+    .data-table {
+        width: 100%;
+        margin-top: 20px;
+    }
+    
+    .data-table th {
+        background: #f8f9fa;
+        padding: 12px;
+        text-align: left;
+        font-weight: 600;
+        border-bottom: 2px solid #dee2e6;
+    }
+    
+    .data-table td {
+        padding: 12px;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .status-badge {
+        padding: 5px 12px;
+        border-radius: 15px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+    
+    .status-completed {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .status-pending {
+        background: #fff3cd;
+        color: #856404;
+    }
+    
+    .status-cancelled {
+        background: #f8d7da;
+        color: #721c24;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Report Header -->
+<div class="report-header">
+    <div class="d-flex justify-content-between align-items-start">
+        <div>
+            <h1><i class="bi bi-graph-up-arrow"></i> Sales Analytics Report</h1>
+            <p style="opacity: 0.9; margin-bottom: 0;">
+                {{ start_date|date:"M d, Y" }} - {{ end_date|date:"M d, Y" }}
+            </p>
+        </div>
+        <a href="{% url 'reports:dashboard' %}" class="btn btn-light">
+            <i class="bi bi-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<!-- Key Sales Metrics -->
+<div class="stat-grid mb-4">
+    <div class="stat-box">
+        <div class="stat-label">Total Revenue</div>
+        <div class="stat-value">{{ currency_symbol }}{{ revenue_stats.total_revenue|floatformat:2 }}</div>
+    </div>
+    
+    <div class="stat-box">
+        <div class="stat-label">Total Transactions</div>
+        <div class="stat-value">{{ revenue_stats.total_transactions }}</div>
+    </div>
+    
+    <div class="stat-box">
+        <div class="stat-label">Avg. Transaction Value</div>
+        <div class="stat-value">{{ currency_symbol }}{{ revenue_stats.avg_transaction|floatformat:2 }}</div>
+    </div>
+    
+    <div class="stat-box">
+        <div class="stat-label">Completed Sales</div>
+        <div class="stat-value">{{ sales_analytics.total_completed }}</div>
+    </div>
+</div>
+
+<!-- Transaction Volume Trend -->
+<div class="report-card">
+    <h3><i class="bi bi-graph-up"></i> Transaction Volume Trend</h3>
+    <div class="chart-container">
+        <canvas id="volumeChart"></canvas>
+    </div>
+</div>
+
+<!-- Average Transaction Value Trend -->
+<div class="report-card">
+    <h3><i class="bi bi-currency-dollar"></i> Average Transaction Value Trend</h3>
+    <div class="chart-container">
+        <canvas id="avgValueChart"></canvas>
+    </div>
+</div>
+
+<!-- Sales by Day of Week -->
+<div class="report-card">
+    <h3><i class="bi bi-calendar3"></i> Sales by Day of Week</h3>
+    
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Day</th>
+                <th>Transactions</th>
+                <th>Revenue</th>
+                <th>Avg. Value</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for day in daily_sales %}
+            <tr>
+                <td><strong>{{ day.day }}</strong></td>
+                <td>{{ day.count }}</td>
+                <td>{{ currency_symbol }}{{ day.revenue|floatformat:2 }}</td>
+                <td>{{ currency_symbol }}{{ day.revenue|floatformat:2|divisibleby:day.count|default:"0.00" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" class="text-center text-muted">No data available</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Peak Hours Analysis -->
+{% if hourly_sales %}
+<div class="report-card">
+    <h3><i class="bi bi-clock"></i> Peak Hours Analysis</h3>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Hour</th>
+                        <th>Transactions</th>
+                        <th>Revenue</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for hour in hourly_sales %}
+                    <tr>
+                        <td><strong>{{ hour.hour|stringformat:"02d" }}:00</strong></td>
+                        <td>{{ hour.count }}</td>
+                        <td>{{ currency_symbol }}{{ hour.revenue|floatformat:2 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="chart-container" style="height: 400px;">
+                <canvas id="hourlyChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Transaction Status Breakdown -->
+<div class="report-card">
+    <h3><i class="bi bi-pie-chart"></i> Transaction Status Breakdown</h3>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="d-flex justify-content-around text-center" style="margin-top: 30px;">
+                <div>
+                    <div class="stat-value text-success">{{ sales_analytics.total_completed }}</div>
+                    <div class="stat-label">Completed</div>
+                </div>
+                <div>
+                    <div class="stat-value text-warning">{{ sales_analytics.total_pending }}</div>
+                    <div class="stat-label">Pending</div>
+                </div>
+                <div>
+                    <div class="stat-value text-danger">{{ sales_analytics.total_cancelled }}</div>
+                    <div class="stat-label">Cancelled</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="chart-container" style="height: 300px;">
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Key Insights -->
+<div class="report-card">
+    <h3><i class="bi bi-lightbulb"></i> Sales Insights</h3>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <h5>Performance Highlights</h5>
+            <ul style="line-height: 2;">
+                <li>Average transaction value: <strong>{{ currency_symbol }}{{ revenue_stats.avg_transaction|floatformat:2 }}</strong></li>
+                <li>Completion rate: <strong>{% widthratio sales_analytics.total_completed revenue_stats.total_transactions 100 %}%</strong></li>
+                <li>Total revenue generated: <strong>{{ currency_symbol }}{{ revenue_stats.total_revenue|floatformat:2 }}</strong></li>
+            </ul>
+        </div>
+        
+        <div class="col-md-6">
+            <h5>Recommendations</h5>
+            <ul style="line-height: 2;">
+                <li>Focus on peak hours to maximize sales</li>
+                <li>Analyze cancelled transactions to reduce losses</li>
+                <li>Target high-volume days for promotions</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Transaction Volume Chart
+const volumeData = {{ volume_data|safe }};
+const volLabels = Object.keys(volumeData);
+const volValues = Object.values(volumeData);
+
+const ctx1 = document.getElementById('volumeChart');
+new Chart(ctx1, {
+    type: 'bar',
+    data: {
+        labels: volLabels,
+        datasets: [{
+            label: 'Transactions',
+            data: volValues,
+            backgroundColor: 'rgba(79, 172, 254, 0.7)',
+            borderColor: '#4facfe',
+            borderWidth: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1
+                }
+            },
+            x: {
+                ticks: {
+                    maxRotation: 45,
+                    minRotation: 45
+                }
+            }
+        }
+    }
+});
+
+// Average Value Chart
+const avgValueData = {{ avg_value_data|safe }};
+const avgLabels = Object.keys(avgValueData);
+const avgValues = Object.values(avgValueData);
+
+const ctx2 = document.getElementById('avgValueChart');
+new Chart(ctx2, {
+    type: 'line',
+    data: {
+        labels: avgLabels,
+        datasets: [{
+            label: 'Avg. Value ({{ currency_symbol }})',
+            data: avgValues,
+            borderColor: '#00f2fe',
+            backgroundColor: 'rgba(0, 242, 254, 0.1)',
+            borderWidth: 3,
+            tension: 0.4,
+            fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return '{{ currency_symbol }}' + value.toFixed(2);
+                    }
+                }
+            },
+            x: {
+                ticks: {
+                    maxRotation: 45,
+                    minRotation: 45
+                }
+            }
+        }
+    }
+});
+
+// Hourly Sales Chart
+{% if hourly_sales %}
+const ctx3 = document.getElementById('hourlyChart');
+new Chart(ctx3, {
+    type: 'bar',
+    data: {
+        labels: [
+            {% for hour in hourly_sales %}
+            '{{ hour.hour|stringformat:"02d" }}:00'{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ],
+        datasets: [{
+            label: 'Revenue',
+            data: [
+                {% for hour in hourly_sales %}
+                {{ hour.revenue }}{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ],
+            backgroundColor: 'rgba(79, 172, 254, 0.7)',
+            borderColor: '#4facfe',
+            borderWidth: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return '{{ currency_symbol }}' + value.toLocaleString();
+                    }
+                }
+            }
+        }
+    }
+});
+{% endif %}
+
+// Status Chart
+const ctx4 = document.getElementById('statusChart');
+new Chart(ctx4, {
+    type: 'doughnut',
+    data: {
+        labels: ['Completed', 'Pending', 'Cancelled'],
+        datasets: [{
+            data: [
+                {{ sales_analytics.total_completed }},
+                {{ sales_analytics.total_pending }},
+                {{ sales_analytics.total_cancelled }}
+            ],
+            backgroundColor: [
+                '#28a745',
+                '#ffc107',
+                '#dc3545'
+            ],
+            borderWidth: 0
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

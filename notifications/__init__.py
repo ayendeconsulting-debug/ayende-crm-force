@@ -1,5 +1,5 @@
 """
-Notifications App for Ayende CRMForce
+Notifications App for Ayende CX
 In-app notification system with category support and delivery tracking
 """
 

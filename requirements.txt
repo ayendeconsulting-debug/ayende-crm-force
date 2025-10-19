@@ -1,4 +1,4 @@
-# Ayende CRMForce - Python Requirements
+# Ayende CX - Python Requirements
 # Compatible with Python 3.10, 3.11, and 3.12
 
 # Core Framework

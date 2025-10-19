@@ -1,0 +1,415 @@
+{% extends 'dashboard/business_base.html' %}
+{% load static %}
+
+{% block title %}Revenue Report - {{ tenant.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .report-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 15px;
+        margin-bottom: 30px;
+    }
+    
+    .report-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+    }
+    
+    .action-btn {
+        padding: 10px 20px;
+        border-radius: 8px;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+    
+    .btn-export {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    
+    .btn-export:hover {
+        background: rgba(255, 255, 255, 0.3);
+        color: white;
+    }
+    
+    .report-card {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        margin-bottom: 25px;
+    }
+    
+    .stat-box {
+        text-align: center;
+        padding: 20px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin: 10px 0;
+    }
+    
+    .stat-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-weight: 600;
+    }
+    
+    .comparison-box {
+        padding: 15px;
+        border-radius: 10px;
+        margin-top: 15px;
+    }
+    
+    .comparison-box.positive {
+        background: #d4edda;
+        border-left: 4px solid #28a745;
+    }
+    
+    .comparison-box.negative {
+        background: #f8d7da;
+        border-left: 4px solid #dc3545;
+    }
+    
+    .chart-container {
+        position: relative;
+        height: 400px;
+        margin-top: 20px;
+    }
+    
+    .data-table {
+        width: 100%;
+        margin-top: 20px;
+    }
+    
+    .data-table th {
+        background: #f8f9fa;
+        padding: 12px;
+        text-align: left;
+        font-weight: 600;
+        border-bottom: 2px solid #dee2e6;
+    }
+    
+    .data-table td {
+        padding: 12px;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .data-table tr:hover {
+        background: #f8f9fa;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Report Header -->
+<div class="report-header">
+    <div class="d-flex justify-content-between align-items-start">
+        <div>
+            <h1><i class="bi bi-currency-dollar"></i> Revenue Report</h1>
+            <p style="opacity: 0.9; margin-bottom: 0;">
+                {{ start_date|date:"M d, Y" }} - {{ end_date|date:"M d, Y" }}
+            </p>
+        </div>
+        <a href="{% url 'reports:dashboard' %}" class="btn btn-light">
+            <i class="bi bi-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+    
+    <div class="report-actions">
+        <a href="{% url 'reports:export_revenue' %}?period={{ period }}" class="action-btn btn-export">
+            <i class="bi bi-download"></i> Export to CSV
+        </a>
+        <a href="javascript:window.print()" class="action-btn btn-export">
+            <i class="bi bi-printer"></i> Print Report
+        </a>
+    </div>
+</div>
+
+<!-- Key Revenue Metrics -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="stat-box">
+            <div class="stat-label">Total Revenue</div>
+            <div class="stat-value">{{ currency_symbol }}{{ revenue_stats.total_revenue|floatformat:2 }}</div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="stat-box">
+            <div class="stat-label">Total Transactions</div>
+            <div class="stat-value">{{ revenue_stats.total_transactions }}</div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="stat-box">
+            <div class="stat-label">Avg. Transaction</div>
+            <div class="stat-value">{{ currency_symbol }}{{ revenue_stats.avg_transaction|floatformat:2 }}</div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="stat-box">
+            <div class="stat-label">Total Tax Collected</div>
+            <div class="stat-value">{{ currency_symbol }}{{ revenue_stats.total_tax|floatformat:2 }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Period Comparison -->
+<div class="report-card">
+    <h3><i class="bi bi-bar-chart"></i> Period Comparison</h3>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="comparison-box {% if comparison.revenue_growth > 0 %}positive{% else %}negative{% endif %}">
+                <h5>Revenue Growth</h5>
+                <div style="font-size: 1.8rem; font-weight: 700;">
+                    {% if comparison.revenue_growth > 0 %}
+                        <i class="bi bi-arrow-up"></i> +{{ comparison.revenue_growth }}%
+                    {% elif comparison.revenue_growth < 0 %}
+                        <i class="bi bi-arrow-down"></i> {{ comparison.revenue_growth }}%
+                    {% else %}
+                        <i class="bi bi-dash"></i> 0%
+                    {% endif %}
+                </div>
+                <p style="margin: 10px 0 0 0;">
+                    Previous period: {{ currency_symbol }}{{ comparison.previous.total_revenue|floatformat:2 }}
+                </p>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="comparison-box {% if comparison.transaction_growth > 0 %}positive{% else %}negative{% endif %}">
+                <h5>Transaction Growth</h5>
+                <div style="font-size: 1.8rem; font-weight: 700;">
+                    {% if comparison.transaction_growth > 0 %}
+                        <i class="bi bi-arrow-up"></i> +{{ comparison.transaction_growth }}%
+                    {% elif comparison.transaction_growth < 0 %}
+                        <i class="bi bi-arrow-down"></i> {{ comparison.transaction_growth }}%
+                    {% else %}
+                        <i class="bi bi-dash"></i> 0%
+                    {% endif %}
+                </div>
+                <p style="margin: 10px 0 0 0;">
+                    Previous period: {{ comparison.previous.total_transactions }} transactions
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Revenue Trend Chart -->
+<div class="report-card">
+    <h3><i class="bi bi-graph-up"></i> Revenue Trend</h3>
+    <div class="chart-container">
+        <canvas id="revenueTrendChart"></canvas>
+    </div>
+</div>
+
+<!-- Revenue by Payment Method -->
+<div class="report-card">
+    <h3><i class="bi bi-credit-card"></i> Revenue by Payment Method</h3>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Payment Method</th>
+                        <th>Transactions</th>
+                        <th>Total Revenue</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for method in payment_breakdown %}
+                    <tr>
+                        <td>
+                            <i class="bi bi-{% if method.payment_method == 'card' %}credit-card{% elif method.payment_method == 'cash' %}cash{% elif method.payment_method == 'mobile' %}phone{% else %}wallet2{% endif %}"></i>
+                            {{ method.get_payment_method_display|default:method.payment_method|title }}
+                        </td>
+                        <td>{{ method.count }}</td>
+                        <td><strong>{{ currency_symbol }}{{ method.total|floatformat:2 }}</strong></td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="text-center text-muted">No payment data available</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="chart-container" style="height: 300px;">
+                <canvas id="paymentMethodChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Top Revenue Days -->
+<div class="report-card">
+    <h3><i class="bi bi-calendar-check"></i> Top Revenue Days</h3>
+    
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Transactions</th>
+                <th>Revenue</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for day in top_days %}
+            <tr>
+                <td>{{ day.transaction_date__date|date:"D, M d, Y" }}</td>
+                <td>{{ day.transactions }}</td>
+                <td><strong>{{ currency_symbol }}{{ day.revenue|floatformat:2 }}</strong></td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3" class="text-center text-muted">No data available</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Revenue Trend Chart
+const revenueData = {{ revenue_by_day|safe }};
+const labels = Object.keys(revenueData);
+const values = Object.values(revenueData);
+
+const ctx1 = document.getElementById('revenueTrendChart');
+new Chart(ctx1, {
+    type: 'line',
+    data: {
+        labels: labels,
+        datasets: [{
+            label: 'Revenue ({{ currency_symbol }})',
+            data: values,
+            borderColor: '#667eea',
+            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+            borderWidth: 3,
+            tension: 0.4,
+            fill: true,
+            pointRadius: 4,
+            pointBackgroundColor: '#667eea',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return '{{ currency_symbol }}' + context.parsed.y.toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        });
+                    }
+                }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return '{{ currency_symbol }}' + value.toLocaleString();
+                    }
+                }
+            },
+            x: {
+                ticks: {
+                    maxRotation: 45,
+                    minRotation: 45
+                }
+            }
+        }
+    }
+});
+
+// Payment Method Chart
+const ctx2 = document.getElementById('paymentMethodChart');
+const paymentMethods = {{ payment_breakdown|safe|length }};
+
+{% if payment_breakdown %}
+const paymentLabels = [
+    {% for method in payment_breakdown %}
+    '{{ method.get_payment_method_display|default:method.payment_method|title }}'{% if not forloop.last %},{% endif %}
+    {% endfor %}
+];
+const paymentData = [
+    {% for method in payment_breakdown %}
+    {{ method.total }}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+];
+
+new Chart(ctx2, {
+    type: 'doughnut',
+    data: {
+        labels: paymentLabels,
+        datasets: [{
+            data: paymentData,
+            backgroundColor: [
+                '#667eea',
+                '#764ba2',
+                '#f093fb',
+                '#4facfe',
+                '#43e97b'
+            ],
+            borderWidth: 0
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return context.label + ': {{ currency_symbol }}' + context.parsed.toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        });
+                    }
+                }
+            }
+        }
+    }
+});
+{% endif %}
+</script>
+{% endblock %}

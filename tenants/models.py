@@ -1,197 +1,216 @@
 """
-Tenant Models for Ayende CRMForce
-Multi-tenant SaaS platform for local businesses
+Tenants Models - Fixed with subscription_status field
 """
 
 from django.db import models
-from django.contrib.auth import get_user_model
-from django.utils.text import slugify
+from django.utils import timezone
 from django.core.validators import RegexValidator
-import uuid
+
+# DON'T import Customer directly - use string reference to avoid circular imports
 
 
 class Tenant(models.Model):
     """
-    Represents a business/organization using the platform.
-    Each tenant has complete data isolation.
+    Multi-tenant business model
+    Each business is a separate tenant with its own subdomain
     """
     
-    SUBSCRIPTION_STATUS = [
-        ('trial', 'Trial'),
-        ('active', 'Active'),
-        ('past_due', 'Past Due'),
-        ('cancelled', 'Cancelled'),
-        ('suspended', 'Suspended'),
-    ]
+    # Basic Information
+    name = models.CharField(
+        max_length=200,
+        help_text='Business name'
+    )
     
-    # Identification
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=200, help_text="Business name")
     slug = models.SlugField(
-        unique=True, 
-        max_length=100, 
-        help_text="URL-friendly name for subdomain (e.g., 'simifood' for simifood.ayendecrm.com)",
+        max_length=50,
+        unique=True,
         validators=[
             RegexValidator(
-                regex='^[a-z0-9-]+$',
+                regex=r'^[a-z0-9-]+$',
                 message='Slug can only contain lowercase letters, numbers, and hyphens'
             )
-        ]
+        ],
+        help_text='URL-friendly name for subdomain (e.g., "simifood" for simifood.localhost:8000)'
     )
     
-    # Business Information
-    business_email = models.EmailField()
-    business_phone = models.CharField(max_length=20, blank=True)
-    business_address = models.TextField(blank=True)
-    website = models.URLField(blank=True)
-    description = models.TextField(blank=True, help_text="Brief description of the business")
+    description = models.TextField(
+        blank=True,
+        help_text='Brief description of the business'
+    )
+    
+    # FIXED: Use string reference instead of direct import
+    owner = models.ForeignKey(
+        'customers.Customer',  # String reference - no import needed!
+        on_delete=models.CASCADE,
+        related_name='owned_tenants',
+        help_text='Business owner'
+    )
+    
+    # Regional Settings
+    CURRENCY_CHOICES = [
+        ('USD', 'US Dollar ($)'),
+        ('CAD', 'Canadian Dollar (C$)'),
+        ('GBP', 'British Pound (£)'),
+        ('EUR', 'Euro (€)'),
+        ('AUD', 'Australian Dollar (A$)'),
+        ('NGN', 'Nigerian Naira (₦)'),
+        ('ZAR', 'South African Rand (R)'),
+        ('KES', 'Kenyan Shilling (KSh)'),
+        ('GHS', 'Ghanaian Cedi (GH₵)'),
+        ('UGX', 'Ugandan Shilling (USh)'),
+        ('TZS', 'Tanzanian Shilling (TSh)'),
+        ('EGP', 'Egyptian Pound (E£)'),
+        ('MAD', 'Moroccan Dirham (DH)'),
+        ('JPY', 'Japanese Yen (¥)'),
+        ('CNY', 'Chinese Yuan (¥)'),
+        ('INR', 'Indian Rupee (₹)'),
+        ('CHF', 'Swiss Franc (CHF)'),
+    ]
+    
+    currency = models.CharField(
+        max_length=3,
+        choices=CURRENCY_CHOICES,
+        default='USD',
+        help_text='Currency for this business'
+    )
+    
+    currency_symbol = models.CharField(
+        max_length=10,
+        default='$',
+        help_text='Currency symbol to display (e.g., $, £, ₦, €)'
+    )
+    
+    CURRENCY_POSITION_CHOICES = [
+        ('before', 'Before amount ($100)'),
+        ('after', 'After amount (100$)'),
+    ]
+    
+    currency_position = models.CharField(
+        max_length=10,
+        choices=CURRENCY_POSITION_CHOICES,
+        default='before',
+        help_text='Where to display currency symbol'
+    )
+    
+    decimal_places = models.IntegerField(
+        default=2,
+        help_text='Number of decimal places for currency'
+    )
     
     # Branding
-    logo = models.ImageField(upload_to='tenant_logos/', blank=True, null=True)
+    logo = models.ImageField(
+        upload_to='tenant_logos/',
+        blank=True,
+        null=True,
+        help_text='Business logo'
+    )
+    
     primary_color = models.CharField(
-        max_length=7, 
-        default='#228B22', 
-        help_text="Hex color code for primary brand color"
+        max_length=7,
+        default='#228B22',
+        help_text='Hex color code for primary brand color (e.g., #228B22)'
     )
+    
     secondary_color = models.CharField(
-        max_length=7, 
-        default='#FF8C00', 
-        help_text="Hex color code for secondary brand color"
-    )
-    
-    # Subscription & Limits
-    subscription_status = models.CharField(
-        max_length=20,
-        choices=SUBSCRIPTION_STATUS,
-        default='trial'
-    )
-    trial_ends_at = models.DateTimeField(null=True, blank=True)
-    subscription_starts_at = models.DateTimeField(null=True, blank=True)
-    subscription_ends_at = models.DateTimeField(null=True, blank=True)
-    
-    # Usage Limits (will be tied to subscription plans later)
-    max_customers = models.IntegerField(
-        default=100,
-        help_text="Maximum number of customers allowed"
-    )
-    max_storage_gb = models.DecimalField(
-        max_digits=10, 
-        decimal_places=2, 
-        default=5.0,
-        help_text="Maximum storage in GB"
-    )
-    max_users = models.IntegerField(
-        default=3,
-        help_text="Maximum number of staff users"
-    )
-    
-    # Ownership
-    owner = models.ForeignKey(
-        'customers.Customer',
-        on_delete=models.PROTECT,
-        related_name='owned_tenants',
-        help_text="Primary business owner/admin"
+        max_length=7,
+        default='#FF8C00',
+        help_text='Hex color code for secondary brand color'
     )
     
     # Status
-    is_active = models.BooleanField(default=True)
+    is_active = models.BooleanField(
+        default=True,
+        help_text='Whether this business is active'
+    )
+    
+    # Subscription Status - ADDED THIS FIELD
+    SUBSCRIPTION_STATUS_CHOICES = [
+        ('trial', 'Trial'),
+        ('active', 'Active'),
+        ('inactive', 'Inactive'),
+        ('suspended', 'Suspended'),
+        ('cancelled', 'Cancelled'),
+    ]
+    
+    subscription_status = models.CharField(
+        max_length=20,
+        choices=SUBSCRIPTION_STATUS_CHOICES,
+        default='trial',
+        help_text='Current subscription status'
+    )
     
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
-        db_table = 'tenants'
-        ordering = ['-created_at']
         verbose_name = 'Business Tenant'
         verbose_name_plural = 'Business Tenants'
-        indexes = [
-            models.Index(fields=['slug']),
-            models.Index(fields=['subscription_status']),
-            models.Index(fields=['is_active']),
-        ]
+        ordering = ['-created_at']
     
     def __str__(self):
         return self.name
     
-    def save(self, *args, **kwargs):
-        # Auto-generate slug from name if not provided
-        if not self.slug:
-            self.slug = slugify(self.name)
-        
-        # Ensure slug is lowercase
-        self.slug = self.slug.lower()
-        
-        super().save(*args, **kwargs)
-    
-    @property
-    def subdomain_url(self):
-        """Returns the full subdomain URL for this tenant"""
-        from django.conf import settings
-        domain = settings.CUSTOM_DOMAIN or 'ayendecrm.com'
-        return f"https://{self.slug}.{domain}"
-    
-    @property
-    def is_trial(self):
-        """Check if tenant is in trial period"""
-        return self.subscription_status == 'trial'
-    
-    @property
-    def is_subscribed(self):
-        """Check if tenant has an active subscription"""
-        return self.subscription_status == 'active'
-    
-    @property
-    def customer_count(self):
-        """Get current number of customers"""
-        return self.tenant_customers.count()
-    
-    @property
-    def can_add_customers(self):
-        """Check if tenant can add more customers"""
-        return self.customer_count < self.max_customers
-    
-    def get_admin_url(self):
-        """Returns the admin URL for this tenant"""
-        return f"{self.subdomain_url}/admin/"
+    def get_absolute_url(self):
+        """Return the tenant's URL"""
+        return f"http://{self.slug}.localhost:8000/"
 
 
 class TenantSettings(models.Model):
     """
-    Additional settings for each tenant
-    Separated from main Tenant model for flexibility
+    Configuration settings for each tenant
     """
     tenant = models.OneToOneField(
         Tenant,
         on_delete=models.CASCADE,
-        related_name='settings'
+        related_name='settings',
+        primary_key=True
     )
     
-    # Notification Settings
-    enable_email_notifications = models.BooleanField(default=True)
-    enable_push_notifications = models.BooleanField(default=True)
-    enable_sms_notifications = models.BooleanField(default=False)
-    
-    # Customer Settings
+    # Registration Settings
     allow_customer_registration = models.BooleanField(
         default=True,
-        help_text="Allow customers to register themselves"
+        help_text='Allow customers to self-register'
     )
-    require_email_verification = models.BooleanField(default=True)
-    loyalty_points_enabled = models.BooleanField(default=True)
+    
+    require_email_verification = models.BooleanField(
+        default=False,
+        help_text='Require email verification for new customers'
+    )
+    
+    # Limits
+    max_customers = models.IntegerField(
+        default=1000,
+        help_text='Maximum number of customers allowed'
+    )
+    
+    max_staff_members = models.IntegerField(
+        default=10,
+        help_text='Maximum number of staff members'
+    )
+    
+    # Loyalty Program
+    enable_loyalty_points = models.BooleanField(
+        default=True,
+        help_text='Enable loyalty points system'
+    )
+    
+    points_per_dollar = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=1.00,
+        help_text='Points earned per dollar spent'
+    )
+    
+    # Notifications
+    enable_email_notifications = models.BooleanField(default=True)
+    enable_sms_notifications = models.BooleanField(default=False)
     
     # Business Hours
     business_hours = models.JSONField(
         default=dict,
         blank=True,
-        help_text="Store business hours in JSON format"
-    )
-    
-    # Custom fields for customer data
-    custom_fields = models.JSONField(
-        default=dict,
-        blank=True,
-        help_text="Custom fields to collect from customers"
+        help_text='Business operating hours'
     )
     
     # Timestamps
@@ -199,9 +218,8 @@ class TenantSettings(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
-        db_table = 'tenant_settings'
-        verbose_name = 'Tenant Settings'
-        verbose_name_plural = 'Tenant Settings'
+        verbose_name = "Tenant Settings"
+        verbose_name_plural = "Tenant Settings"
     
     def __str__(self):
-        return f"Settings for {self.tenant.name}"
+        return f"{self.tenant.name} - Settings"

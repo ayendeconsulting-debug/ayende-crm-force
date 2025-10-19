@@ -1,5 +1,5 @@
 """
-Rewards Models for Ayende CRMForce
+Rewards Models for Ayende CX
 Comprehensive loyalty rewards and redemption system
 """
 

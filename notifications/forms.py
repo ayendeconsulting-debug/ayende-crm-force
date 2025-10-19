@@ -1,5 +1,5 @@
 """
-Notification Forms for Ayende CRMForce
+Notification Forms for Ayende CX
 Forms for creating and managing notifications
 """
 

@@ -1,11 +1,12 @@
 """
-Django settings for Ayende CRMForce - Multi-Tenant SaaS CRM
+Django settings for Ayende CX - Multi-Tenant SaaS CRM
 Production-ready configuration with tenant isolation
 """
 
 import os
 from pathlib import Path
 from datetime import timedelta
+from django.templatetags.static import static as static_file
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -74,6 +75,7 @@ INSTALLED_APPS = [
     'notifications',  # ADD THIS LINE
     'rewards',  # ADD THIS
     'profile',  # ADD THIS
+    'reports', 
 ]
 
 MIDDLEWARE = [
@@ -215,7 +217,7 @@ CORS_ALLOWED_ORIGINS = [
 
 # Spectacular (API Documentation) Settings
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'Ayende CRMForce API',
+    'TITLE': 'Ayende CX API',
     'DESCRIPTION': 'Multi-tenant SaaS CRM for local businesses',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
@@ -223,25 +225,48 @@ SPECTACULAR_SETTINGS = {
 
 # Django Unfold (Admin UI) Settings
 UNFOLD = {
-    "SITE_TITLE": "Ayende CRMForce Admin",
-    "SITE_HEADER": "CRMForce Administration",
+    "SITE_TITLE": "Ayende CX Admin",
+    "SITE_HEADER": "Ayende CX Administration",
     "SITE_URL": "/",
+    
+    # ADD THIS STYLES SECTION:
+    "STYLES": [
+        """
+        <style>
+        .sidebar a,
+        .sidebar .model-link,
+        nav a,
+        .navigation a {
+            color: #e2e8f0 !important;
+        }
+        .sidebar a:hover,
+        .sidebar .model-link:hover {
+            color: #ffffff !important;
+            background: rgba(255, 255, 255, 0.1) !important;
+        }
+        [data-theme="light"] .sidebar a,
+        [data-theme="light"] .sidebar .model-link {
+            color: #1e293b !important;
+        }
+        [data-theme="light"] .sidebar a:hover {
+            color: #000000 !important;
+        }
+        </style>
+        """,
+    ],
+    
     "COLORS": {
         "primary": {
-            "50": "220 252 231",
-            "100": "187 247 208",
-            "200": "134 239 172",
-            "300": "74 222 128",
-            "400": "34 197 94",
-            "500": "22 163 74",
-            "600": "21 128 61",
-            "700": "22 101 52",
-            "800": "22 78 44",
-            "900": "20 83 45",
+            "500": "16 185 129",  # Nigerian Green
+            # ... rest of your colors
         },
     },
+    
+    "SIDEBAR": {
+        "show_search": True,
+        "show_all_applications": True,
+    },
 }
-
 # Email Configuration (for notifications)
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # Development
 if not DEBUG:

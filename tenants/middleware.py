@@ -1,5 +1,5 @@
 """
-Tenant Middleware for Ayende CRMForce
+Tenant Middleware for Ayende CX
 Identifies and attaches the current tenant to each request based on subdomain
 """
 

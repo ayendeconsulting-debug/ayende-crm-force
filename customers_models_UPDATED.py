@@ -1,5 +1,5 @@
 """
-Customer Models - Ayende CRMForce (Multi-Tenant Version)
+Customer Models - Ayende CX (Multi-Tenant Version)
 Customers are now scoped to specific tenants (businesses)
 """
 

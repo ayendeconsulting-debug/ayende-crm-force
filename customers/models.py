@@ -1,5 +1,5 @@
 """
-Customer Models for Ayende CRMForce
+Customer Models for Ayende CX
 Custom user model with multi-tenant support
 """
 

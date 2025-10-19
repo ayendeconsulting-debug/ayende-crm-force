@@ -39,7 +39,7 @@
     <!-- Total Revenue -->
     <div class="stats-card pink">
         <div class="stat-content">
-            <div class="stat-value">${{ total_revenue|floatformat:2 }}</div>
+            <div class="stat-value">{{ currency_symbol }}{{ total_revenue|floatformat:2 }}</div>
             <div class="stat-label">Total Revenue</div>
             <div class="stat-change positive">
                 <i class="bi bi-graph-up"></i> All-time earnings
@@ -63,7 +63,7 @@
     <!-- Average Order Value -->
     <div class="stats-card orange">
         <div class="stat-content">
-            <div class="stat-value">${{ avg_transaction_value|floatformat:2 }}</div>
+            <div class="stat-value">{{ currency_symbol }}{{ avg_transaction_value|floatformat:2 }}</div>
             <div class="stat-label">Avg. Order Value</div>
             <div class="stat-change">
                 <i class="bi bi-calculator"></i> Per transaction
@@ -90,7 +90,7 @@
                      Send Promotion
               </a>
 </div>
-            <a href="#" class="quick-action-btn" onclick="alert('Feature coming soon!'); return false;">
+            <a href="{% url 'reports:dashboard' %}" class="quick-action-btn">
                 <i class="bi bi-bar-chart"></i>
                 <span>View Reports</span>
             </a>
@@ -189,7 +189,7 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <strong>${{ transaction.total|floatformat:2 }}</strong>
+                                    <strong>{{ currency_symbol }}{{ transaction.total|floatformat:2 }}</strong>
                                 </td>
                                 <td>
                                     <span class="badge badge-success">
@@ -269,7 +269,7 @@ if (revenueCtx) {
         data: {
             labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
             datasets: [{
-                label: 'Revenue ($)',
+                label: 'Revenue ({{ currency_symbol }})',
                 data: [1200, 1900, 1500, 2200, 2800, 2100, 2600, 3200, 2900, 3500, 3800, 4200],
                 borderColor: '#3498db',
                 backgroundColor: 'rgba(52, 152, 219, 0.1)',
@@ -300,7 +300,7 @@ if (revenueCtx) {
                     displayColors: false,
                     callbacks: {
                         label: function(context) {
-                            return '$' + context.parsed.y.toLocaleString();
+                            return '{{ currency_symbol }}' + context.parsed.y.toLocaleString();
                         }
                     }
                 }
@@ -310,7 +310,7 @@ if (revenueCtx) {
                     beginAtZero: true,
                     ticks: {
                         callback: function(value) {
-                            return '$' + value.toLocaleString();
+                            return '{{ currency_symbol }}' + value.toLocaleString();
                         }
                     },
                     grid: {

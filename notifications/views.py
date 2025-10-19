@@ -1,5 +1,5 @@
 """
-Notification Views for Ayende CRMForce
+Notification Views for Ayende CX
 Views for creating, managing, and viewing notifications
 """
 

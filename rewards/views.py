@@ -1,5 +1,5 @@
 """
-Rewards Views for Ayende CRMForce
+Rewards Views for Ayende CX
 Customer redemption catalog and business owner management
 """
 

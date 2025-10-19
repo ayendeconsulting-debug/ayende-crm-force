@@ -1,5 +1,5 @@
 """
-Notification Models for Ayende CRMForce
+Notification Models for Ayende CX
 In-app notification system with category support and delivery tracking
 """
 

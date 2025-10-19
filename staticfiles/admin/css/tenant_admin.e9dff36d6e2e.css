@@ -1,0 +1,318 @@
+/**
+ * Modern Tenant Admin Styling
+ * Enhances the admin interface with contemporary design
+ */
+
+/* Regional Settings Section Enhancement */
+.field-currency,
+.field-currency_symbol,
+.field-currency_position,
+.field-decimal_places {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    padding: 16px;
+    border-radius: 12px;
+    border-left: 4px solid #3b82f6;
+    margin-bottom: 12px;
+}
+
+/* Currency Field Styling */
+#id_currency,
+#id_currency_symbol,
+#id_currency_position,
+#id_decimal_places {
+    font-size: 15px;
+    padding: 10px 14px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+#id_currency:focus,
+#id_currency_symbol:focus,
+#id_currency_position:focus,
+#id_decimal_places:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    outline: none;
+}
+
+/* Currency Symbol Field Special Styling */
+#id_currency_symbol {
+    font-weight: 600;
+    font-size: 18px;
+    font-family: monospace;
+    background: white;
+    color: #1e293b;
+}
+
+/* Fieldset Headers */
+.module h2,
+fieldset h2 {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 10px 10px 0 0;
+    font-weight: 600;
+    font-size: 15px;
+    letter-spacing: 0.3px;
+    margin: 0;
+    border: none;
+}
+
+/* Form Row Improvements */
+.form-row {
+    padding: 12px 20px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.form-row:last-child {
+    border-bottom: none;
+}
+
+/* Labels */
+.form-row label {
+    font-weight: 600;
+    color: #1e293b;
+    font-size: 13px;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+}
+
+/* Required field asterisk */
+.form-row .required::after {
+    content: " *";
+    color: #ef4444;
+    font-weight: 700;
+}
+
+/* Help Text */
+.form-row .help,
+.form-text {
+    color: #64748b;
+    font-size: 13px;
+    font-style: italic;
+    margin-top: 4px;
+    display: block;
+}
+
+/* Submit Row */
+.submit-row {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    padding: 16px 20px;
+    border-radius: 0 0 10px 10px;
+    border-top: 2px solid #e2e8f0;
+}
+
+/* Save Buttons */
+input[type="submit"],
+button[type="submit"],
+.submit-row input[type="submit"] {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+    border: none;
+    padding: 12px 28px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(59, 130, 246, 0.25);
+}
+
+input[type="submit"]:hover,
+button[type="submit"]:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(59, 130, 246, 0.4);
+}
+
+/* Delete Button */
+.deletelink,
+.deletelink-box a {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white !important;
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.3s ease;
+}
+
+.deletelink:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(239, 68, 68, 0.4);
+}
+
+/* Module/Card Styling */
+.module {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    margin-bottom: 20px;
+    border: 1px solid #e2e8f0;
+}
+
+/* Collapse/Expand Sections */
+.collapse h2 {
+    cursor: pointer;
+    position: relative;
+    padding-right: 40px;
+}
+
+.collapse h2::after {
+    content: "▼";
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    transition: transform 0.3s ease;
+}
+
+.collapse.collapsed h2::after {
+    transform: translateY(-50%) rotate(-90deg);
+}
+
+/* Regional Settings Highlight */
+fieldset:has(.field-currency) {
+    border: 2px solid #3b82f6 !important;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+fieldset:has(.field-currency) h2 {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+/* Status Badges in Forms */
+.status-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-trial {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.status-active {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.status-inactive {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .form-row {
+        padding: 10px 15px;
+    }
+    
+    .submit-row {
+        padding: 12px 15px;
+    }
+    
+    input[type="submit"],
+    button[type="submit"] {
+        width: 100%;
+        margin-bottom: 8px;
+    }
+}
+
+/* Readonly Field Enhancement */
+.readonly {
+    background: #f8fafc;
+    padding: 12px;
+    border-radius: 8px;
+    border-left: 4px solid #94a3b8;
+    margin: 8px 0;
+}
+
+/* Error Styling */
+.errorlist {
+    background: #fee2e2;
+    border-left: 4px solid #ef4444;
+    padding: 12px;
+    border-radius: 8px;
+    margin: 8px 0;
+    list-style: none;
+}
+
+.errorlist li {
+    color: #991b1b;
+    font-weight: 600;
+}
+
+/* Success Messages */
+.success {
+    background: #d1fae5;
+    border-left: 4px solid #10b981;
+    padding: 12px 20px;
+    border-radius: 8px;
+    color: #065f46;
+    font-weight: 600;
+    margin: 16px 0;
+}
+
+/* Info Messages */
+.info {
+    background: #dbeafe;
+    border-left: 4px solid #3b82f6;
+    padding: 12px 20px;
+    border-radius: 8px;
+    color: #1e40af;
+    margin: 16px 0;
+}
+
+/* Loading State */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* Tooltip Enhancement */
+[title] {
+    position: relative;
+    cursor: help;
+}
+
+/* File Upload Styling */
+input[type="file"] {
+    padding: 10px;
+    border: 2px dashed #cbd5e1;
+    border-radius: 8px;
+    background: #f8fafc;
+    width: 100%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+input[type="file"]:hover {
+    border-color: #3b82f6;
+    background: #eff6ff;
+}
+
+/* Checkbox and Radio Styling */
+input[type="checkbox"],
+input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+/* Select Dropdown Enhancement */
+select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23334155' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px !important;
+}

@@ -1,5 +1,5 @@
 """
-Tenant-Aware Authentication Backend for Ayende CRMForce
+Tenant-Aware Authentication Backend for Ayende CX
 Ensures users can only authenticate within their assigned tenant context
 """
 

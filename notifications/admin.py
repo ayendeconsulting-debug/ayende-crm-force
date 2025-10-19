@@ -1,5 +1,5 @@
 """
-Notification Admin for Ayende CRMForce
+Notification Admin for Ayende CX
 Django admin interface for managing notifications
 """
 

@@ -8,7 +8,8 @@ urlpatterns = [
     path('', include('dashboard.urls')),
     path('notifications/', include('notifications.urls')),
     path('rewards/', include('rewards.urls')),  # ADD THIS
-   path('profile/', include('profile.urls')),  # Not 'dashboard.profile.urls' # ADD THIS
+    path('profile/', include('profile.urls')),  # Not 'dashboard.profile.urls' # ADD THIS
+    path('reports/', include('reports.urls')),  # ADD THIS LINE
 ]
 # Serve media files in development
 if settings.DEBUG:
