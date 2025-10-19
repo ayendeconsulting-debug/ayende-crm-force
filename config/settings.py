@@ -1,18 +1,16 @@
 """
 Django settings for Ayende CX project.
-Railway Production Configuration
+Railway Production Configuration - Redirect Loop Fixed
 """
 
 import os
 from pathlib import Path
 
-# Build paths inside the project
+# Build paths
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: keep the secret key used in production secret!
+# Security
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-CHANGE-THIS-IN-PRODUCTION-12345')
-
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
 # Allowed hosts
@@ -20,7 +18,7 @@ ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '.railway.app,localhost,127.0.0.
 
 # Application definition
 INSTALLED_APPS = [
-    'unfold',  # Unfold admin theme
+    'unfold',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -28,8 +26,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    
-    # Project apps
     'tenants',
     'customers',
     'dashboard',
@@ -41,7 +37,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # WhiteNoise for static files
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -71,13 +67,10 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# Database configuration for Railway
-# https://docs.djangoproject.com/en/5.0/ref/settings/#databases
-
+# Database
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 if DATABASE_URL:
-    # Railway PostgreSQL
     import dj_database_url
     DATABASES = {
         'default': dj_database_url.config(
@@ -87,7 +80,6 @@ if DATABASE_URL:
         )
     }
 else:
-    # Fallback to SQLite for local development
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -109,17 +101,15 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# Static files (CSS, JavaScript, Images)
+# Static files
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = []
 
-# Check if static directory exists before adding it
 static_dir = BASE_DIR / 'static'
 if static_dir.exists():
     STATICFILES_DIRS.append(static_dir)
 
-# WhiteNoise configuration for serving static files
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Media files
@@ -144,7 +134,6 @@ EMAIL_BACKEND = os.environ.get(
     'django.core.mail.backends.console.EmailBackend'
 )
 
-# Production email settings (if configured)
 if not DEBUG and os.environ.get('EMAIL_HOST'):
     EMAIL_HOST = os.environ.get('EMAIL_HOST')
     EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
@@ -154,25 +143,38 @@ if not DEBUG and os.environ.get('EMAIL_HOST'):
     DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@ayendecx.com')
 
 # Security settings for production
-if not DEBUG:
+# CRITICAL FIX: Only enable HTTPS redirect if explicitly requested
+ENABLE_HTTPS_REDIRECT = os.environ.get('ENABLE_HTTPS_REDIRECT', 'False') == 'True'
+
+if not DEBUG and ENABLE_HTTPS_REDIRECT:
+    # Only enable these if ENABLE_HTTPS_REDIRECT is True
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
-    SECURE_BROWSER_XSS_FILTER = True
-    SECURE_CONTENT_TYPE_NOSNIFF = True
-    
-    # CSRF trusted origins
-    CSRF_TRUSTED_ORIGINS = [
-        'https://*.railway.app',
-    ]
-    
-    # Add custom domain if provided
-    custom_domain = os.environ.get('CUSTOM_DOMAIN')
-    if custom_domain:
-        CSRF_TRUSTED_ORIGINS.append(f'https://{custom_domain}')
-        CSRF_TRUSTED_ORIGINS.append(f'https://*.{custom_domain}')
+else:
+    # Railway handles HTTPS at the proxy level
+    SECURE_SSL_REDIRECT = False
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
 
-# REST Framework settings
+# These are safe to enable always
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+
+# CSRF trusted origins
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.railway.app',
+]
+
+custom_domain = os.environ.get('CUSTOM_DOMAIN')
+if custom_domain:
+    CSRF_TRUSTED_ORIGINS.append(f'https://{custom_domain}')
+    CSRF_TRUSTED_ORIGINS.append(f'https://*.{custom_domain}')
+
+# Use X-Forwarded-Proto header from Railway's proxy
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# REST Framework
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.SessionAuthentication',
@@ -182,7 +184,7 @@ REST_FRAMEWORK = {
     ],
 }
 
-# Unfold admin theme configuration
+# Unfold admin theme
 UNFOLD = {
     "SITE_TITLE": "Ayende CX Admin",
     "SITE_HEADER": "Ayende CX",
@@ -210,7 +212,7 @@ UNFOLD = {
     },
 }
 
-# Logging configuration
+# Logging
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
