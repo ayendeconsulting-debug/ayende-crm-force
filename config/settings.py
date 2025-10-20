@@ -1,6 +1,6 @@
 """
 Django settings for Ayende CX project.
-Railway Production Configuration - WITH MODERN ADMIN (WORKING NAVIGATION)
+WITH CUSTOM DOMAIN SUPPORT
 """
 
 import os
@@ -13,8 +13,18 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-CHANGE-THIS-IN-PRODUCTION-12345')
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-# Allowed hosts
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '.railway.app,localhost,127.0.0.1').split(',')
+# Custom domain configuration
+CUSTOM_DOMAIN = os.environ.get('CUSTOM_DOMAIN', '')  # e.g., 'ayendecx.com'
+
+# Build allowed hosts
+allowed_hosts = ['.railway.app', 'localhost', '127.0.0.1']
+if CUSTOM_DOMAIN:
+    allowed_hosts.extend([
+        CUSTOM_DOMAIN,
+        f'.{CUSTOM_DOMAIN}',  # Wildcard for subdomains
+    ])
+
+ALLOWED_HOSTS = allowed_hosts
 
 # Application definition
 INSTALLED_APPS = [
@@ -157,15 +167,16 @@ else:
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 
-# CSRF trusted origins
+# CSRF trusted origins - Include custom domain
 CSRF_TRUSTED_ORIGINS = [
     'https://*.railway.app',
 ]
 
-custom_domain = os.environ.get('CUSTOM_DOMAIN')
-if custom_domain:
-    CSRF_TRUSTED_ORIGINS.append(f'https://{custom_domain}')
-    CSRF_TRUSTED_ORIGINS.append(f'https://*.{custom_domain}')
+if CUSTOM_DOMAIN:
+    CSRF_TRUSTED_ORIGINS.extend([
+        f'https://{CUSTOM_DOMAIN}',
+        f'https://*.{CUSTOM_DOMAIN}',
+    ])
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
@@ -179,25 +190,17 @@ REST_FRAMEWORK = {
     ],
 }
 
-# ============================================================================
-# MODERN ADMIN DASHBOARD CONFIGURATION (SIMPLIFIED)
-# ============================================================================
-
+# Modern Admin Dashboard
 UNFOLD = {
-    # Site Information
     "SITE_TITLE": "Ayende CX",
     "SITE_HEADER": "Ayende CX Admin",
     "SITE_URL": "/",
     "SITE_ICON": None,
     "SITE_LOGO": None,
     "SITE_SYMBOL": "analytics",
-    
-    # UI Configuration
     "SHOW_HISTORY": True,
     "SHOW_VIEW_ON_SITE": True,
     "ENVIRONMENT": "production" if not DEBUG else "development",
-    
-    # Modern Blue Theme
     "COLORS": {
         "primary": {
             "50": "240 249 255",
@@ -213,8 +216,6 @@ UNFOLD = {
             "950": "8 47 73",
         },
     },
-    
-    # Simplified Sidebar - Let Unfold auto-discover the models
     "SIDEBAR": {
         "show_search": True,
         "show_all_applications": True,
