@@ -20,9 +20,36 @@ from .forms import (
 def landing_page(request):
     """
     Public landing page view - accessible to everyone
-    This is the homepage for the CRM system
+    Shows tenant-specific branding if accessed via tenant subdomain
     """
-    return render(request, 'landing.html')
+    # Get current tenant from middleware
+    tenant = getattr(request, 'tenant', None)
+    
+    # If no tenant, show generic landing page (main site)
+    if not tenant:
+        return render(request, 'landing.html', {
+            'is_main_site': True,
+            'site_name': 'Ayende CX',
+            'tagline': 'CRM Software Solutions',
+        })
+    
+    # Tenant-specific landing page with branding
+    context = {
+        'tenant': tenant,
+        'is_main_site': False,
+        'business_name': tenant.name,
+        'business_description': tenant.description or f"Welcome to {tenant.name}",
+        'primary_color': tenant.primary_color,
+        'secondary_color': tenant.secondary_color,
+        'currency_symbol': tenant.currency_symbol,
+        'logo_url': tenant.logo.url if tenant.logo else None,
+        
+        # Navigation settings
+        'show_register': tenant.settings.allow_customer_registration if hasattr(tenant, 'settings') else True,
+        'show_login': True,
+    }
+    
+    return render(request, 'tenant_landing.html', context)
     
 # Check if Transaction model exists, if not, skip transaction views
 try:
@@ -248,204 +275,71 @@ def business_dashboard(request, tenant, tenant_customer):
         # Get aggregated stats
         stats = completed_transactions.aggregate(
             total_revenue=Sum('total'),
-            transaction_count=Count('id')
+            total_count=Count('id'),
+            avg_value=Avg('total')
         )
         
         total_revenue = stats['total_revenue'] or 0
-        total_transactions = stats['transaction_count'] or 0
+        total_transactions = stats['total_count'] or 0
+        avg_transaction_value = stats['avg_value'] or 0
         
-        # Calculate average transaction value
-        if total_transactions > 0:
-            avg_transaction_value = total_revenue / total_transactions
+        # Get recent transactions with customer info - CRITICAL FIX
+        recent_trans_qs = completed_transactions.select_related('customer').order_by('-transaction_date')[:10]
         
-        # Get recent transactions with customer relationship
-        recent_transactions = completed_transactions.select_related(
-            'customer'
-        ).order_by('-transaction_date')[:10]
-        
-        # CRITICAL FIX: Attach TenantCustomer to each transaction
-        # This is what fixes the NoReverseMatch error
-        for transaction in recent_transactions:
+        # Attach tenant_customer to each transaction
+        for transaction in recent_trans_qs:
             try:
-                # Find the TenantCustomer relationship for this transaction's customer
                 transaction.tenant_customer = TenantCustomer.objects.get(
-                    customer=transaction.customer,
-                    tenant=tenant
+                    tenant=tenant,
+                    customer=transaction.customer
                 )
             except TenantCustomer.DoesNotExist:
-                # If no relationship exists, set to None
-                # Template will handle this gracefully
                 transaction.tenant_customer = None
+        
+        recent_transactions = list(recent_trans_qs)
     
-    # Top customers by loyalty points
-    top_customers = all_customers.order_by('-loyalty_points')[:5]
+    # Top customers by spending
+    top_customers = all_customers.order_by('-lifetime_value')[:5]
+    
+    # Pagination for customer list
+    customers_page = request.GET.get('page', 1)
+    paginator = Paginator(all_customers, 20)  # 20 customers per page
+    customers = paginator.get_page(customers_page)
     
     context = {
         'tenant': tenant,
         'tenant_customer': tenant_customer,
         'is_business_view': True,
+        
+        # Customer stats
         'total_customers': total_customers,
         'new_customers': new_customers,
+        'top_customers': top_customers,
+        'customers': customers,
+        
+        # Transaction stats
         'total_revenue': total_revenue,
         'total_transactions': total_transactions,
         'avg_transaction_value': avg_transaction_value,
         'recent_transactions': recent_transactions,
-        'top_customers': top_customers,
     }
+    
     return render(request, 'dashboard/business_home.html', context)
 
 
 @login_required(login_url='dashboard:login')
-def customer_profile(request):
-    """
-    Customer profile view and edit.
-    """
-    tenant = getattr(request, 'tenant', None)
-    
-    if request.method == 'POST':
-        form = CustomerProfileForm(request.POST, instance=request.user)
-        if form.is_valid():
-            form.save()
-            messages.success(request, 'Your profile has been updated successfully.')
-            return redirect('dashboard:profile')
-    else:
-        form = CustomerProfileForm(instance=request.user)
-    
-    # Get customer-tenant relationship
-    try:
-        tenant_customer = TenantCustomer.objects.get(
-            customer=request.user,
-            tenant=tenant
-        )
-    except TenantCustomer.DoesNotExist:
-        tenant_customer = None
-    
-    context = {
-        'form': form,
-        'tenant': tenant,
-        'tenant_customer': tenant_customer
-    }
-    return render(request, 'dashboard/profile.html', context)
-
-
-# Transaction views - only available if Transaction model exists
-if TRANSACTIONS_ENABLED:
-    @login_required(login_url='dashboard:login')
-    def transaction_history(request):
-        """
-        Display customer's transaction history.
-        """
-        tenant = getattr(request, 'tenant', None)
-        
-        if not tenant:
-            messages.error(request, 'Unable to load transactions.')
-            return redirect('dashboard:home')
-        
-        # Get customer-tenant relationship
-        try:
-            tenant_customer = TenantCustomer.objects.get(
-                customer=request.user,
-                tenant=tenant
-            )
-        except TenantCustomer.DoesNotExist:
-            messages.error(request, 'You do not have access to this data.')
-            return redirect('dashboard:login')
-        
-        # Get all transactions for this customer in this tenant
-        transactions = Transaction.objects.filter(
-            tenant=tenant,
-            customer=request.user
-        ).order_by('-transaction_date')
-        
-        # Filter by status if requested
-        status_filter = request.GET.get('status')
-        if status_filter:
-            transactions = transactions.filter(status=status_filter)
-        
-        # Filter by date range if requested
-        date_from = request.GET.get('date_from')
-        date_to = request.GET.get('date_to')
-        if date_from:
-            transactions = transactions.filter(transaction_date__gte=date_from)
-        if date_to:
-            transactions = transactions.filter(transaction_date__lte=date_to)
-        
-        # Pagination
-        paginator = Paginator(transactions, 10)  # 10 transactions per page
-        page_number = request.GET.get('page')
-        page_obj = paginator.get_page(page_number)
-        
-        # Calculate statistics
-        total_spent = sum(t.total for t in transactions if t.status == 'completed')
-        total_transactions = transactions.filter(status='completed').count()
-        total_points_earned = sum(t.points_earned for t in transactions if t.status == 'completed')
-        
-        context = {
-            'tenant': tenant,
-            'tenant_customer': tenant_customer,
-            'transactions': page_obj,
-            'total_spent': total_spent,
-            'total_transactions': total_transactions,
-            'total_points_earned': total_points_earned,
-            'status_filter': status_filter,
-        }
-        
-        return render(request, 'dashboard/transactions.html', context)
-
-
-    @login_required(login_url='dashboard:login')
-    def transaction_detail(request, transaction_id):
-        """
-        Display detailed view of a single transaction.
-        """
-        tenant = getattr(request, 'tenant', None)
-        
-        if not tenant:
-            messages.error(request, 'Unable to load transaction.')
-            return redirect('dashboard:home')
-        
-        # Get transaction
-        transaction = get_object_or_404(
-            Transaction,
-            transaction_id=transaction_id,
-            tenant=tenant,
-            customer=request.user
-        )
-        
-        context = {
-            'tenant': tenant,
-            'transaction': transaction,
-        }
-        
-        return render(request, 'dashboard/transaction_detail.html', context)
-
-else:
-    # Placeholder views if transactions not enabled
-    @login_required(login_url='dashboard:login')
-    def transaction_history(request):
-        messages.warning(request, 'Transaction feature is not yet configured.')
-        return redirect('dashboard:home')
-    
-    @login_required(login_url='dashboard:login')
-    def transaction_detail(request, transaction_id):
-        messages.warning(request, 'Transaction feature is not yet configured.')
-        return redirect('dashboard:home')
-
-
-# Business Owner Views
-@login_required(login_url='dashboard:login')
 def manage_customers(request):
     """
-    Customer management page for business owners.
-    List, search, filter customers.
+    Business owner view to manage all customers.
+    Provides search, filter, and pagination.
     """
     tenant = getattr(request, 'tenant', None)
     
     if not tenant:
-        messages.error(request, 'Unable to load customer management.')
+        messages.error(request, 'Unable to load customer list.')
         return redirect('dashboard:home')
     
-    # Get customer-tenant relationship and verify permissions
+    # Verify permissions
     try:
         tenant_customer = TenantCustomer.objects.get(
             customer=request.user,
@@ -460,14 +354,14 @@ def manage_customers(request):
         messages.error(request, 'Access denied.')
         return redirect('dashboard:login')
     
-    # Get all customers for this tenant
+    # Get all customers
     customers = TenantCustomer.objects.filter(
         tenant=tenant,
         role='customer'
     ).select_related('customer').order_by('-joined_at')
     
     # Search functionality
-    search_query = request.GET.get('search', '')
+    search_query = request.GET.get('search', '').strip()
     if search_query:
         customers = customers.filter(
             Q(customer__first_name__icontains=search_query) |
@@ -476,26 +370,32 @@ def manage_customers(request):
             Q(customer__phone__icontains=search_query)
         )
     
-    # Filter by status
+    # Filter by VIP status
+    vip_filter = request.GET.get('vip', '')
+    if vip_filter == 'yes':
+        customers = customers.filter(is_vip=True)
+    elif vip_filter == 'no':
+        customers = customers.filter(is_vip=False)
+    
+    # Filter by active status
     status_filter = request.GET.get('status', '')
     if status_filter == 'active':
         customers = customers.filter(is_active=True)
     elif status_filter == 'inactive':
         customers = customers.filter(is_active=False)
-    elif status_filter == 'vip':
-        customers = customers.filter(is_vip=True)
     
     # Pagination
-    paginator = Paginator(customers, 20)  # 20 customers per page
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    page = request.GET.get('page', 1)
+    paginator = Paginator(customers, 25)
+    customers_page = paginator.get_page(page)
     
     context = {
         'tenant': tenant,
         'tenant_customer': tenant_customer,
         'is_business_view': True,
-        'customers': page_obj,
+        'customers': customers_page,
         'search_query': search_query,
+        'vip_filter': vip_filter,
         'status_filter': status_filter,
         'total_customers': customers.count(),
     }
@@ -504,10 +404,9 @@ def manage_customers(request):
 
 
 @login_required(login_url='dashboard:login')
-def customer_detail_view(request, customer_id):
+def customer_detail(request, customer_id):
     """
-    View detailed information about a specific customer.
-    Business owners only.
+    Business owner view to see detailed customer information.
     """
     tenant = getattr(request, 'tenant', None)
     
