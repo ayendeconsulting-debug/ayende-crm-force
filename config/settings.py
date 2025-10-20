@@ -1,6 +1,6 @@
 """
 Django settings for Ayende CX project.
-Railway Production Configuration - WITH MODERN ADMIN (FIXED)
+Railway Production Configuration - WITH MODERN ADMIN (WORKING NAVIGATION)
 """
 
 import os
@@ -180,7 +180,7 @@ REST_FRAMEWORK = {
 }
 
 # ============================================================================
-# MODERN ADMIN DASHBOARD CONFIGURATION (FIXED)
+# MODERN ADMIN DASHBOARD CONFIGURATION (SIMPLIFIED)
 # ============================================================================
 
 UNFOLD = {
@@ -188,16 +188,16 @@ UNFOLD = {
     "SITE_TITLE": "Ayende CX",
     "SITE_HEADER": "Ayende CX Admin",
     "SITE_URL": "/",
-    "SITE_ICON": None,  # No logo for now
-    "SITE_LOGO": None,  # No logo for now
-    "SITE_SYMBOL": "analytics",  # Material icon
+    "SITE_ICON": None,
+    "SITE_LOGO": None,
+    "SITE_SYMBOL": "analytics",
     
     # UI Configuration
     "SHOW_HISTORY": True,
     "SHOW_VIEW_ON_SITE": True,
     "ENVIRONMENT": "production" if not DEBUG else "development",
     
-    # Modern Blue Theme - Matching Landing Page
+    # Modern Blue Theme
     "COLORS": {
         "primary": {
             "50": "240 249 255",
@@ -214,122 +214,11 @@ UNFOLD = {
         },
     },
     
-    # Enhanced Sidebar Navigation
+    # Simplified Sidebar - Let Unfold auto-discover the models
     "SIDEBAR": {
         "show_search": True,
         "show_all_applications": True,
-        "navigation": [
-            {
-                "title": "Dashboard",
-                "separator": False,
-                "items": [
-                    {
-                        "title": "Overview",
-                        "icon": "dashboard",
-                        "link": "/admin/",
-                    },
-                ],
-            },
-            {
-                "title": "Business Management",
-                "separator": True,
-                "collapsible": True,
-                "items": [
-                    {
-                        "title": "Tenants",
-                        "icon": "business",
-                        "link": "/admin/tenants/tenant/",
-                    },
-                    {
-                        "title": "Customers",
-                        "icon": "people",
-                        "link": "/admin/customers/customer/",
-                    },
-                    {
-                        "title": "Tenant Customers",
-                        "icon": "person_add",
-                        "link": "/admin/customers/tenantcustomer/",
-                    },
-                ],
-            },
-            {
-                "title": "Transactions",
-                "separator": True,
-                "collapsible": True,
-                "items": [
-                    {
-                        "title": "All Transactions",
-                        "icon": "receipt_long",
-                        "link": "/admin/customers/transaction/",
-                    },
-                    {
-                        "title": "Rewards",
-                        "icon": "card_giftcard",
-                        "link": "/admin/rewards/reward/",
-                    },
-                ],
-            },
-            {
-                "title": "Communications",
-                "separator": True,
-                "collapsible": True,
-                "items": [
-                    {
-                        "title": "Notifications",
-                        "icon": "notifications",
-                        "link": "/admin/notifications/notification/",
-                    },
-                ],
-            },
-            {
-                "title": "System",
-                "separator": True,
-                "collapsible": True,
-                "items": [
-                    {
-                        "title": "Users",
-                        "icon": "person",
-                        "link": "/admin/auth/user/",
-                    },
-                    {
-                        "title": "Groups",
-                        "icon": "group",
-                        "link": "/admin/auth/group/",
-                    },
-                ],
-            },
-        ],
     },
-    
-    # Quick Filter Tabs
-    "TABS": [
-        {
-            "models": ["tenants.tenant"],
-            "items": [
-                {
-                    "title": "Active",
-                    "link": "/admin/tenants/tenant/?is_active__exact=1",
-                },
-                {
-                    "title": "Inactive",
-                    "link": "/admin/tenants/tenant/?is_active__exact=0",
-                },
-            ],
-        },
-        {
-            "models": ["customers.transaction"],
-            "items": [
-                {
-                    "title": "Completed",
-                    "link": "/admin/customers/transaction/?status__exact=completed",
-                },
-                {
-                    "title": "Pending",
-                    "link": "/admin/customers/transaction/?status__exact=pending",
-                },
-            ],
-        },
-    ],
 }
 
 # Logging
