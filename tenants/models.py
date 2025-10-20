@@ -6,6 +6,7 @@ from django.db import models
 from django.utils import timezone
 from django.core.validators import RegexValidator
 
+
 # DON'T import Customer directly - use string reference to avoid circular imports
 
 

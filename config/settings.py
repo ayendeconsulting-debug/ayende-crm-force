@@ -1,6 +1,6 @@
 """
 Django settings for Ayende CX project.
-Railway Production Configuration - Redirect Loop Fixed
+Railway Production Configuration - WITH MODERN ADMIN (FIXED)
 """
 
 import os
@@ -143,21 +143,17 @@ if not DEBUG and os.environ.get('EMAIL_HOST'):
     DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@ayendecx.com')
 
 # Security settings for production
-# CRITICAL FIX: Only enable HTTPS redirect if explicitly requested
 ENABLE_HTTPS_REDIRECT = os.environ.get('ENABLE_HTTPS_REDIRECT', 'False') == 'True'
 
 if not DEBUG and ENABLE_HTTPS_REDIRECT:
-    # Only enable these if ENABLE_HTTPS_REDIRECT is True
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
 else:
-    # Railway handles HTTPS at the proxy level
     SECURE_SSL_REDIRECT = False
     SESSION_COOKIE_SECURE = False
     CSRF_COOKIE_SECURE = False
 
-# These are safe to enable always
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 
@@ -171,7 +167,6 @@ if custom_domain:
     CSRF_TRUSTED_ORIGINS.append(f'https://{custom_domain}')
     CSRF_TRUSTED_ORIGINS.append(f'https://*.{custom_domain}')
 
-# Use X-Forwarded-Proto header from Railway's proxy
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # REST Framework
@@ -184,32 +179,157 @@ REST_FRAMEWORK = {
     ],
 }
 
-# Unfold admin theme
+# ============================================================================
+# MODERN ADMIN DASHBOARD CONFIGURATION (FIXED)
+# ============================================================================
+
 UNFOLD = {
-    "SITE_TITLE": "Ayende CX Admin",
-    "SITE_HEADER": "Ayende CX",
+    # Site Information
+    "SITE_TITLE": "Ayende CX",
+    "SITE_HEADER": "Ayende CX Admin",
     "SITE_URL": "/",
-    "SITE_ICON": None,
-    "SITE_LOGO": None,
-    "SITE_SYMBOL": "speed",
+    "SITE_ICON": None,  # No logo for now
+    "SITE_LOGO": None,  # No logo for now
+    "SITE_SYMBOL": "analytics",  # Material icon
+    
+    # UI Configuration
     "SHOW_HISTORY": True,
     "SHOW_VIEW_ON_SITE": True,
     "ENVIRONMENT": "production" if not DEBUG else "development",
+    
+    # Modern Blue Theme - Matching Landing Page
     "COLORS": {
         "primary": {
-            "50": "250 245 255",
-            "100": "243 232 255",
-            "200": "233 213 255",
-            "300": "216 180 254",
-            "400": "192 132 252",
-            "500": "168 85 247",
-            "600": "147 51 234",
-            "700": "126 34 206",
-            "800": "107 33 168",
-            "900": "88 28 135",
-            "950": "59 7 100",
+            "50": "240 249 255",
+            "100": "224 242 254",
+            "200": "186 230 253",
+            "300": "125 211 252",
+            "400": "56 189 248",
+            "500": "14 165 233",
+            "600": "2 132 199",
+            "700": "3 105 161",
+            "800": "7 89 133",
+            "900": "12 74 110",
+            "950": "8 47 73",
         },
     },
+    
+    # Enhanced Sidebar Navigation
+    "SIDEBAR": {
+        "show_search": True,
+        "show_all_applications": True,
+        "navigation": [
+            {
+                "title": "Dashboard",
+                "separator": False,
+                "items": [
+                    {
+                        "title": "Overview",
+                        "icon": "dashboard",
+                        "link": "/admin/",
+                    },
+                ],
+            },
+            {
+                "title": "Business Management",
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": "Tenants",
+                        "icon": "business",
+                        "link": "/admin/tenants/tenant/",
+                    },
+                    {
+                        "title": "Customers",
+                        "icon": "people",
+                        "link": "/admin/customers/customer/",
+                    },
+                    {
+                        "title": "Tenant Customers",
+                        "icon": "person_add",
+                        "link": "/admin/customers/tenantcustomer/",
+                    },
+                ],
+            },
+            {
+                "title": "Transactions",
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": "All Transactions",
+                        "icon": "receipt_long",
+                        "link": "/admin/customers/transaction/",
+                    },
+                    {
+                        "title": "Rewards",
+                        "icon": "card_giftcard",
+                        "link": "/admin/rewards/reward/",
+                    },
+                ],
+            },
+            {
+                "title": "Communications",
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": "Notifications",
+                        "icon": "notifications",
+                        "link": "/admin/notifications/notification/",
+                    },
+                ],
+            },
+            {
+                "title": "System",
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": "Users",
+                        "icon": "person",
+                        "link": "/admin/auth/user/",
+                    },
+                    {
+                        "title": "Groups",
+                        "icon": "group",
+                        "link": "/admin/auth/group/",
+                    },
+                ],
+            },
+        ],
+    },
+    
+    # Quick Filter Tabs
+    "TABS": [
+        {
+            "models": ["tenants.tenant"],
+            "items": [
+                {
+                    "title": "Active",
+                    "link": "/admin/tenants/tenant/?is_active__exact=1",
+                },
+                {
+                    "title": "Inactive",
+                    "link": "/admin/tenants/tenant/?is_active__exact=0",
+                },
+            ],
+        },
+        {
+            "models": ["customers.transaction"],
+            "items": [
+                {
+                    "title": "Completed",
+                    "link": "/admin/customers/transaction/?status__exact=completed",
+                },
+                {
+                    "title": "Pending",
+                    "link": "/admin/customers/transaction/?status__exact=pending",
+                },
+            ],
+        },
+    ],
 }
 
 # Logging
