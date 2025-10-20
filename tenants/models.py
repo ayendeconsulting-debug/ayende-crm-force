@@ -1,5 +1,5 @@
 """
-Tenants Models - Fixed with subscription_status field
+Tenants Models - Fixed with subscription_status and subdomain fields
 """
 
 from django.db import models
@@ -32,6 +32,19 @@ class Tenant(models.Model):
             )
         ],
         help_text='URL-friendly name for subdomain (e.g., "simifood" for simifood.localhost:8000)'
+    )
+    
+    subdomain = models.CharField(
+        max_length=63,
+        unique=True,
+        db_index=True,
+        validators=[
+            RegexValidator(
+                regex=r'^[a-z0-9-]+$',
+                message='Subdomain can only contain lowercase letters, numbers, and hyphens'
+            )
+        ],
+        help_text='Subdomain for tenant (e.g., "simifood" for simifood.ayendecx.com)'
     )
     
     description = models.TextField(
@@ -124,7 +137,7 @@ class Tenant(models.Model):
         help_text='Whether this business is active'
     )
     
-    # Subscription Status - ADDED THIS FIELD
+    # Subscription Status
     SUBSCRIPTION_STATUS_CHOICES = [
         ('trial', 'Trial'),
         ('active', 'Active'),
@@ -154,7 +167,7 @@ class Tenant(models.Model):
     
     def get_absolute_url(self):
         """Return the tenant's URL"""
-        return f"http://{self.slug}.localhost:8000/"
+        return f"http://{self.subdomain}.localhost:8000/"
 
 
 class TenantSettings(models.Model):

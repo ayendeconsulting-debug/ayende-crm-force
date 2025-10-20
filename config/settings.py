@@ -24,7 +24,13 @@ if CUSTOM_DOMAIN:
         f'.{CUSTOM_DOMAIN}',  # Wildcard for subdomains
     ])
 
-ALLOWED_HOSTS = allowed_hosts
+ALLOWED_HOSTS = [
+    '.railway.app', 
+    'localhost', 
+    '127.0.0.1',
+    '.localhost',  # ← Add this for subdomain support
+    '*.localhost',  # ← Alternative wildcard
+]
 
 # Application definition
 INSTALLED_APPS = [

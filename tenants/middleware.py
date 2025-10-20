@@ -5,19 +5,19 @@ from .models import Tenant
 class TenantMiddleware(MiddlewareMixin):
     """
     Middleware to set the current tenant based on subdomain.
-    Bypasses tenant detection for admin, static files, media, and landing page.
+    Bypasses tenant detection for admin, static files, and media.
+    Landing page (/) SHOULD detect tenant to show tenant-specific branding.
     """
     
     def process_request(self, request):
         # Get the host from the request
         host = request.get_host().split(':')[0].lower()
         
-        # IMPORTANT: Bypass tenant detection for these paths
+        # IMPORTANT: Bypass tenant detection for these paths ONLY
         exempt_paths = [
             '/admin/',
             '/static/',
             '/media/',
-            '/',  # Landing page - bypass tenant check
         ]
         
         # Check if the current path should bypass tenant detection
@@ -30,18 +30,25 @@ class TenantMiddleware(MiddlewareMixin):
         subdomain = None
         parts = host.split('.')
         
-        # Check if we have a subdomain (more than 2 parts or specific Railway pattern)
-        if len(parts) > 2:
-            # For railway.app: subdomain.railway.app
-            # For custom domains: subdomain.example.com
-            subdomain = parts[0]
-        elif 'railway.app' in host:
-            # For Railway URLs like: ayende-cx-production.up.railway.app
-            # Treat the full host as subdomain
-            subdomain = parts[0]
+        # Determine subdomain based on host pattern
+        if len(parts) >= 2:
+            # Check for special localhost case
+            if parts[-1] == 'localhost':
+                # For localhost: subdomain.localhost
+                if len(parts) == 2 and parts[0] not in ['localhost', 'www']:
+                    subdomain = parts[0]
+            elif 'railway.app' in host:
+                # For Railway: subdomain.railway.app or service.up.railway.app
+                if len(parts) >= 3:
+                    subdomain = parts[0]
+            elif len(parts) >= 3:
+                # For custom domains: subdomain.example.com
+                # Skip if it's www or the base domain
+                if parts[0] not in ['www', 'ayendecx']:
+                    subdomain = parts[0]
         
-        # If no subdomain or localhost, set tenant to None
-        if not subdomain or subdomain in ['localhost', '127.0.0.1', 'www']:
+        # If no subdomain, set tenant to None
+        if not subdomain:
             request.tenant = None
             return None
         
@@ -51,7 +58,7 @@ class TenantMiddleware(MiddlewareMixin):
             request.tenant = tenant
         except Tenant.DoesNotExist:
             request.tenant = None
-            # Show "Business Not Found" page only for non-exempt paths
+            # Show "Business Not Found" page
             return render(request, 'errors/business_not_found.html', {
                 'subdomain': subdomain,
             }, status=404)

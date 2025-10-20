@@ -18,7 +18,6 @@ urlpatterns = [
     
     # Dashboard
     path('', views.dashboard_home, name='home'),
-    path('profile/', views.customer_profile, name='profile'),
     
     # Password Reset URLs
     path('password-reset/', 
@@ -49,14 +48,10 @@ urlpatterns = [
          ), 
          name='password_reset_complete'),
     
-    # Transactions (if enabled)
-    path('transactions/', views.transaction_history, name='transaction_history'),
-    path('transactions/<uuid:transaction_id>/', views.transaction_detail, name='transaction_detail'),
-    
     # Business Owner Views
     path('customers/', views.manage_customers, name='manage_customers'),
     path('customers/add/', views.add_customer, name='add_customer'),
-    path('customers/<int:customer_id>/', views.customer_detail_view, name='customer_detail'),
+    path('customers/<int:customer_id>/', views.customer_detail, name='customer_detail'),
     path('customers/<int:customer_id>/edit/', views.edit_customer, name='edit_customer'),
     path('customers/<int:customer_id>/delete/', views.delete_customer, name='delete_customer'),
     path('customers/<int:customer_id>/notes/', views.edit_customer_notes, name='edit_customer_notes'),
