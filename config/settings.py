@@ -17,20 +17,19 @@ DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 CUSTOM_DOMAIN = os.environ.get('CUSTOM_DOMAIN', '')  # e.g., 'ayendecx.com'
 
 # Build allowed hosts
-allowed_hosts = ['.railway.app', 'localhost', '127.0.0.1']
+allowed_hosts = ['.railway.app', 'localhost', '127.0.0.1', '.localhost']
+
 if CUSTOM_DOMAIN:
     allowed_hosts.extend([
         CUSTOM_DOMAIN,
         f'.{CUSTOM_DOMAIN}',  # Wildcard for subdomains
     ])
 
-ALLOWED_HOSTS = [
-    '.railway.app', 
-    'localhost', 
-    '127.0.0.1',
-    '.localhost',  # ← Add this for subdomain support
-    '*.localhost',  # ← Alternative wildcard
-]
+ALLOWED_HOSTS = allowed_hosts
+
+# Debug print (remove after testing)
+print(f"CUSTOM_DOMAIN: {CUSTOM_DOMAIN}")
+print(f"ALLOWED_HOSTS: {ALLOWED_HOSTS}")
 
 # Application definition
 INSTALLED_APPS = [
