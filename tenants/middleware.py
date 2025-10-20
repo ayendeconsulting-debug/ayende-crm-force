@@ -1,81 +1,59 @@
-"""
-Tenant Middleware - Fixed to bypass admin URLs
-"""
-from django.http import HttpResponse
-from django.shortcuts import redirect
-from django.urls import resolve
+from django.shortcuts import render
+from django.utils.deprecation import MiddlewareMixin
 from .models import Tenant
 
-
-class TenantMiddleware:
+class TenantMiddleware(MiddlewareMixin):
     """
-    Middleware to detect and set the current tenant based on subdomain or query parameter.
-    Bypasses admin, static, and media URLs.
+    Middleware to set the current tenant based on subdomain.
+    Bypasses tenant detection for admin, static files, media, and landing page.
     """
     
-    def __init__(self, get_response):
-        self.get_response = get_response
-
-    def __call__(self, request):
-        # Get the full host
-        host = request.get_host().split(':')[0]
+    def process_request(self, request):
+        # Get the host from the request
+        host = request.get_host().split(':')[0].lower()
         
-        # List of URL paths to bypass tenant detection
-        bypass_paths = [
+        # IMPORTANT: Bypass tenant detection for these paths
+        exempt_paths = [
             '/admin/',
             '/static/',
             '/media/',
-            '/__debug__/',
+            '/',  # Landing page - bypass tenant check
         ]
         
-        # Check if current path should bypass tenant detection
-        should_bypass = any(request.path.startswith(path) for path in bypass_paths)
+        # Check if the current path should bypass tenant detection
+        for path in exempt_paths:
+            if request.path.startswith(path):
+                request.tenant = None
+                return None
         
-        if should_bypass:
-            # For admin and other bypass paths, set a default tenant or None
-            request.tenant = None
-            return self.get_response(request)
-        
-        # Try to get tenant from subdomain first
+        # Extract subdomain (if exists)
+        subdomain = None
         parts = host.split('.')
-        tenant_slug = None
         
-        # Check if we have a subdomain (more than 2 parts, excluding www)
+        # Check if we have a subdomain (more than 2 parts or specific Railway pattern)
         if len(parts) > 2:
-            potential_slug = parts[0]
-            if potential_slug != 'www':
-                tenant_slug = potential_slug
+            # For railway.app: subdomain.railway.app
+            # For custom domains: subdomain.example.com
+            subdomain = parts[0]
+        elif 'railway.app' in host:
+            # For Railway URLs like: ayende-cx-production.up.railway.app
+            # Treat the full host as subdomain
+            subdomain = parts[0]
         
-        # If no subdomain, try query parameter
-        if not tenant_slug:
-            tenant_slug = request.GET.get('tenant')
-        
-        # If still no tenant slug, set None and continue
-        if not tenant_slug:
+        # If no subdomain or localhost, set tenant to None
+        if not subdomain or subdomain in ['localhost', '127.0.0.1', 'www']:
             request.tenant = None
-            return self.get_response(request)
+            return None
         
-        # Try to get the tenant
+        # Try to get tenant by subdomain
         try:
-            tenant = Tenant.objects.get(slug=tenant_slug, is_active=True)
+            tenant = Tenant.objects.get(subdomain=subdomain, is_active=True)
             request.tenant = tenant
         except Tenant.DoesNotExist:
-            # Tenant not found - return error page
-            return HttpResponse(
-                f"""
-                <html>
-                <head><title>Business Not Found</title></head>
-                <body>
-                    <h1>Business Not Found</h1>
-                    <p>No business found at subdomain: <strong>{tenant_slug}</strong></p>
-                    <p>Please check the URL and try again.</p>
-                    <hr>
-                    <p><a href="/admin/">Access Admin Panel</a></p>
-                </body>
-                </html>
-                """,
-                status=404
-            )
+            request.tenant = None
+            # Show "Business Not Found" page only for non-exempt paths
+            return render(request, 'errors/business_not_found.html', {
+                'subdomain': subdomain,
+            }, status=404)
         
-        response = self.get_response(request)
-        return response
+        return None
