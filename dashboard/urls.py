@@ -40,7 +40,7 @@ urlpatterns = [
     # Business Owner Views
     path('customers/', views.manage_customers, name='manage_customers'),
     path('customers/add/', views.add_customer, name='add_customer'),
-    path('customers/<int:customer_id>/', views.customer_detail, name='customer_detail'),
+    path('customers/<uuid:customer_id>/', views.customer_detail, name='customer_detail'),
     path('customers/<int:customer_id>/edit/', views.edit_customer, name='edit_customer'),
     path('customers/<int:customer_id>/delete/', views.delete_customer, name='delete_customer'),
     path('customers/<int:customer_id>/notes/', views.edit_customer_notes, name='edit_customer_notes'),
