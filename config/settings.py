@@ -31,9 +31,6 @@ if CUSTOM_DOMAIN:
 
 ALLOWED_HOSTS = allowed_hosts
 
-# Debug print (remove after testing)
-print(f"CUSTOM_DOMAIN: {CUSTOM_DOMAIN}")
-print(f"ALLOWED_HOSTS: {ALLOWED_HOSTS}")
 
 # Application definition
 INSTALLED_APPS = [
@@ -190,6 +187,11 @@ if CUSTOM_DOMAIN:
         f'https://{CUSTOM_DOMAIN}',
         f'https://*.{CUSTOM_DOMAIN}',
     ])
+
+# Cookie domain configuration for multi-tenant subdomains
+if CUSTOM_DOMAIN and not DEBUG:
+    SESSION_COOKIE_DOMAIN = f'.{CUSTOM_DOMAIN}'
+    CSRF_COOKIE_DOMAIN = f'.{CUSTOM_DOMAIN}'
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 

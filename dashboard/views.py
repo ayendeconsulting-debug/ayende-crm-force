@@ -288,8 +288,7 @@ def business_dashboard(request, tenant, tenant_customer):
     
     if TRANSACTIONS_ENABLED:
         completed_transactions = Transaction.objects.filter(
-            tenant=tenant,
-            status='completed'
+            tenant=tenant
         )
         
         # Get aggregated stats
@@ -319,7 +318,7 @@ def business_dashboard(request, tenant, tenant_customer):
         recent_transactions = list(recent_trans_qs)
     
     # Top customers by spending
-    top_customers = all_customers.order_by('-lifetime_value')[:5]
+    top_customers = all_customers.order_by('-total_spent')[:5]
     
     # Pagination for customer list
     customers_page = request.GET.get('page', 1)
@@ -727,12 +726,8 @@ def transaction_list(request):
     ).order_by('-transaction_date')
     
     # Apply filters
-    status_filter = request.GET.get('status', '')
     date_from = request.GET.get('date_from', '')
     date_to = request.GET.get('date_to', '')
-    
-    if status_filter:
-        transactions = transactions.filter(status=status_filter)
     
     if date_from:
         try:

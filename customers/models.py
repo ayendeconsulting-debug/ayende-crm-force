@@ -135,6 +135,9 @@ class Customer(AbstractBaseUser, PermissionsMixin):
         return f"{self.first_name[0]}{self.last_name[0]}".upper() if self.first_name and self.last_name else "?"
 
 
+# COMPLETE TENANTCUSTOMER MODEL - COPY THIS ENTIRE SECTION
+# Replace your entire TenantCustomer class (starting around line 166) with this:
+
 class TenantCustomer(models.Model):
     """
     Through model linking Customers to Tenants.
@@ -142,11 +145,11 @@ class TenantCustomer(models.Model):
     """
     
     ROLE_CHOICES = [
-        ('owner', 'Owner'),          # Business owner
-        ('admin', 'Administrator'),   # Full admin access
-        ('manager', 'Manager'),       # Can manage customers and content
-        ('staff', 'Staff'),          # Limited access
-        ('customer', 'Customer'),     # Regular customer
+        ('owner', 'Owner'),
+        ('admin', 'Administrator'),
+        ('manager', 'Manager'),
+        ('staff', 'Staff'),
+        ('customer', 'Customer'),
     ]
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -172,26 +175,18 @@ class TenantCustomer(models.Model):
     
     # Customer-specific data for this tenant
     loyalty_points = models.IntegerField(default=0)
-    total_purchases = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        default=0.00
-    )
-    loyalty_points = models.IntegerField(default=0)
     total_purchases = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-    total_spent = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)  # ADD THIS LINE
+    total_spent = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     last_purchase_date = models.DateField(null=True, blank=True)
-
     purchase_count = models.IntegerField(default=0)
     
-    # Preferences
+    # Preferences - NOTIFICATION FIELDS
     email_notifications = models.BooleanField(default=True)
     sms_notifications = models.BooleanField(default=False)
     push_notifications = models.BooleanField(default=True)
     
     # Customer notes (visible to business staff only)
     notes = models.TextField(blank=True, help_text="Internal notes about this customer")
-    
     
     # Tags for segmentation
     tags = models.JSONField(
@@ -249,11 +244,11 @@ class TenantCustomer(models.Model):
     
     def record_purchase(self, amount):
         """Record a purchase"""
-        from django.utils import timezone
         self.total_purchases += amount
         self.purchase_count += 1
         self.last_purchase_at = timezone.now()
         self.save(update_fields=['total_purchases', 'purchase_count', 'last_purchase_at', 'updated_at'])
+        
 class Transaction(models.Model):
     """
     Track customer transactions/purchases per tenant.
