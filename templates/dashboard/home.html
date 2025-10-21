@@ -131,31 +131,26 @@
     </div>
     <div class="card-body">
         <div class="quick-actions">
-            <a href="{% url 'dashboard:profile' %}" class="quick-action-btn">
+            <!-- FIXED: Profile URL -->
+            <a href="{% url 'profile:enhanced_profile' %}" class="quick-action-btn">
                 <i class="bi bi-person"></i>
-                            <span>My Profile</span>
-                            <!-- Profile Card -->
-            <div class="col-md-6 mb-4">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <h5><i class="bi bi-person-circle"></i> My Profile</h5>
-                        <p>Manage your profile and preferences</p>
-                        <a href="{% url 'profile:enhanced_profile' %}" class="btn btn-primary">
-                            View Profile
-                        </a>
-                    </div>
-                </div>
-            </div>
+                <span>My Profile</span>
             </a>
-            <a href="{% url 'dashboard:transactions' %}" class="quick-action-btn">
+            
+            <!-- FIXED: Transactions - Temporarily disabled until view is created -->
+            <a href="#" class="quick-action-btn" onclick="alert('Transactions feature coming soon!'); return false;" title="Coming soon">
                 <i class="bi bi-receipt"></i>
                 <span>View Transactions</span>
             </a>
+            
+            <!-- Redeem Rewards - Already has proper onclick -->
             <a href="#" class="quick-action-btn" onclick="alert('Feature coming soon!'); return false;">
                 <i class="bi bi-gift"></i>
                 <span>Redeem Rewards</span>
             </a>
-            <a href="{% url 'notifications:inbox' %}" class="quick-action-btn">
+            
+            <!-- FIXED: Notifications - Check if this URL exists, otherwise disable -->
+            <a href="#" class="quick-action-btn" onclick="alert('Notifications coming soon!'); return false;" title="Coming soon">
                 <i class="bi bi-bell{% if unread_count > 0 %}-fill{% endif %}"></i>
                 <span>Inbox{% if unread_count > 0 %} <span class="badge bg-danger rounded-pill" style="font-size: 0.7rem;">{{ unread_count }}</span>{% endif %}</span>
             </a>
@@ -167,7 +162,8 @@
 <div class="card slide-in">
     <div class="card-header d-flex justify-content-between align-items-center">
         <span><i class="bi bi-clock-history"></i> Recent Transactions</span>
-        <a href="{% url 'dashboard:transactions' %}" class="btn btn-sm btn-action-outline">View All</a>
+        <!-- FIXED: Disabled "View All" button until transactions view exists -->
+        <button class="btn btn-sm btn-action-outline" onclick="alert('Transactions page coming soon!'); return false;" title="Coming soon">View All</button>
     </div>
     <div class="card-body p-0">
         {% if recent_transactions %}
@@ -219,7 +215,7 @@
             <i class="bi bi-receipt"></i>
             <h3>No Transactions Yet</h3>
             <p>Your purchase history will appear here once you make your first transaction.</p>
-            <a href="#" class="btn btn-action-primary">Start Shopping</a>
+            <a href="#" class="btn btn-action-primary" onclick="alert('Shopping feature coming soon!'); return false;">Start Shopping</a>
         </div>
         {% endif %}
     </div>

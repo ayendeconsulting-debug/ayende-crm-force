@@ -16,37 +16,26 @@ urlpatterns = [
     path('login/', views.customer_login_view, name='login'),
     path('logout/', views.customer_logout_view, name='logout'),
     
-    # Dashboard
-    path('', views.dashboard_home, name='home'),
+    # Dashboard - FIXED: Now at /dashboard/ instead of root
+    path('dashboard/', views.dashboard_home, name='home'),
     
-    # Password Reset URLs
+   # Password Reset Flow (ADD THESE)
     path('password-reset/', 
-         auth_views.PasswordResetView.as_view(
-             template_name='dashboard/password_reset.html',
-             email_template_name='dashboard/password_reset_email.txt',
-             subject_template_name='dashboard/password_reset_subject.txt',
-             success_url='/password-reset/done/'
-         ), 
+         views.TenantPasswordResetView.as_view(), 
          name='password_reset'),
-    
     path('password-reset/done/', 
-         auth_views.PasswordResetDoneView.as_view(
-             template_name='dashboard/password_reset_done.html'
-         ), 
+         views.TenantPasswordResetDoneView.as_view(), 
          name='password_reset_done'),
-    
-    path('reset/<uidb64>/<token>/', 
-         auth_views.PasswordResetConfirmView.as_view(
-             template_name='dashboard/password_reset_confirm.html',
-             success_url='/reset/done/'
-         ), 
+    path('password-reset/confirm/<uidb64>/<token>/', 
+         views.TenantPasswordResetConfirmView.as_view(), 
          name='password_reset_confirm'),
-    
-    path('reset/done/', 
-         auth_views.PasswordResetCompleteView.as_view(
-             template_name='dashboard/password_reset_complete.html'
-         ), 
+    path('password-reset/complete/', 
+         views.TenantPasswordResetCompleteView.as_view(), 
          name='password_reset_complete'),
+    
+    # Transactions (ADD THESE)
+    path('transactions/', views.transaction_list, name='transaction_list'),
+    path('transactions/<str:transaction_id>/', views.transaction_detail, name='transaction_detail'),
     
     # Business Owner Views
     path('customers/', views.manage_customers, name='manage_customers'),

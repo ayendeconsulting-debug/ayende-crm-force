@@ -1,20 +1,29 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import authenticate, login, logout
-from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import login, logout, authenticate
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib import messages
 from django.core.paginator import Paginator
-from django.db.models import Sum, Count, Q, Avg
-from django.utils import timezone
+from django.db.models import Sum, Q, Count, Avg
 from django.http import JsonResponse
-from datetime import timedelta
-from customers.models import Customer, TenantCustomer
-from .forms import (
-    CustomerRegistrationForm, 
-    CustomerLoginForm, 
-    CustomerProfileForm,
+from customers.models import Transaction, Customer, TenantCustomer
+from tenants.models import Tenant
+from datetime import datetime, timedelta
+from django.contrib.auth.views import (
+    PasswordResetView,
+    PasswordResetDoneView,
+    PasswordResetConfirmView,
+    PasswordResetCompleteView,
+)
+from django.urls import reverse_lazy
+from django.contrib.auth.forms import PasswordResetForm
+
+# Import forms used in views
+from dashboard.forms import (
+    CustomerRegistrationForm,
+    CustomerLoginForm,
     BusinessCustomerAddForm,
     BusinessCustomerEditForm,
-    CustomerNotesForm
+    CustomerNotesForm,
 )
 
 def landing_page(request):
@@ -683,3 +692,174 @@ def edit_customer_notes(request, customer_id):
         'success': True,
         'notes': customer_rel.notes
     })
+
+
+# ============================================================================
+# TRANSACTION VIEWS
+# ============================================================================
+
+@login_required(login_url='dashboard:login')
+def transaction_list(request):
+    """
+    Display list of all transactions for the logged-in customer
+    with filtering and pagination
+    """
+    tenant = getattr(request, 'tenant', None)
+    
+    if not tenant:
+        messages.error(request, 'Unable to load transactions.')
+        return redirect('dashboard:home')
+    
+    # Get the tenant-specific customer record
+    try:
+        tenant_customer = TenantCustomer.objects.get(
+            customer=request.user,
+            tenant=tenant
+        )
+    except TenantCustomer.DoesNotExist:
+        messages.error(request, "Customer record not found for this business.")
+        return redirect('dashboard:home')
+    
+    # Get all transactions for this customer
+    transactions = Transaction.objects.filter(
+        tenant=tenant,
+        customer=request.user
+    ).order_by('-transaction_date')
+    
+    # Apply filters
+    status_filter = request.GET.get('status', '')
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+    
+    if status_filter:
+        transactions = transactions.filter(status=status_filter)
+    
+    if date_from:
+        try:
+            date_from_obj = datetime.strptime(date_from, '%Y-%m-%d')
+            transactions = transactions.filter(transaction_date__gte=date_from_obj)
+        except ValueError:
+            pass
+    
+    if date_to:
+        try:
+            date_to_obj = datetime.strptime(date_to, '%Y-%m-%d')
+            transactions = transactions.filter(transaction_date__lte=date_to_obj)
+        except ValueError:
+            pass
+    
+    # Calculate summary statistics
+    total_spent = transactions.aggregate(total=Sum('total'))['total'] or 0
+    total_transactions = transactions.count()
+    total_points_earned = transactions.aggregate(points=Sum('points_earned'))['points'] or 0
+    
+    # Paginate results
+    paginator = Paginator(transactions, 20)
+    page_number = request.GET.get('page')
+    transactions_page = paginator.get_page(page_number)
+    
+    context = {
+        'tenant': tenant,
+        'tenant_customer': tenant_customer,
+        'transactions': transactions_page,
+        'total_spent': total_spent,
+        'total_transactions': total_transactions,
+        'total_points_earned': total_points_earned,
+        'status_filter': status_filter,
+    }
+    
+    return render(request, 'dashboard/transactions.html', context)
+
+
+@login_required(login_url='dashboard:login')
+def transaction_detail(request, transaction_id):
+    """
+    Display detailed information about a specific transaction
+    """
+    tenant = getattr(request, 'tenant', None)
+    
+    if not tenant:
+        messages.error(request, 'Unable to load transaction.')
+        return redirect('dashboard:home')
+    
+    # Get the transaction - ensure it belongs to this customer and tenant
+    transaction = get_object_or_404(
+        Transaction,
+        transaction_id=transaction_id,
+        tenant=tenant,
+        customer=request.user
+    )
+    
+    # Get the tenant-specific customer record
+    try:
+        tenant_customer = TenantCustomer.objects.get(
+            customer=request.user,
+            tenant=tenant
+        )
+    except TenantCustomer.DoesNotExist:
+        tenant_customer = None
+    
+    context = {
+        'tenant': tenant,
+        'tenant_customer': tenant_customer,
+        'transaction': transaction,
+    }
+    
+    return render(request, 'dashboard/transaction_detail.html', context)
+
+
+# ============================================================================
+# PASSWORD RESET VIEWS
+# ============================================================================
+
+class TenantPasswordResetView(PasswordResetView):
+    """
+    Custom password reset view that includes tenant context
+    """
+    template_name = 'dashboard/password_reset.html'
+    email_template_name = 'dashboard/password_reset_email.txt'
+    subject_template_name = 'dashboard/password_reset_subject.txt'
+    success_url = reverse_lazy('dashboard:password_reset_done')
+    form_class = PasswordResetForm
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['tenant'] = getattr(self.request, 'tenant', None)
+        return context
+
+
+class TenantPasswordResetDoneView(PasswordResetDoneView):
+    """
+    View shown after password reset email is sent
+    """
+    template_name = 'dashboard/password_reset_done.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['tenant'] = getattr(self.request, 'tenant', None)
+        return context
+
+
+class TenantPasswordResetConfirmView(PasswordResetConfirmView):
+    """
+    View for confirming password reset with token
+    """
+    template_name = 'dashboard/password_reset_confirm.html'
+    success_url = reverse_lazy('dashboard:password_reset_complete')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['tenant'] = getattr(self.request, 'tenant', None)
+        return context
+
+
+class TenantPasswordResetCompleteView(PasswordResetCompleteView):
+    """
+    View shown after password reset is complete
+    """
+    template_name = 'dashboard/password_reset_complete.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['tenant'] = getattr(self.request, 'tenant', None)
+        return context
