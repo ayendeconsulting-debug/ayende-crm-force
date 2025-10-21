@@ -121,15 +121,11 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# IMPORTANT: Only set STATICFILES_DIRS in development
-if DEBUG:
-    STATICFILES_DIRS = [BASE_DIR / 'static']
-# Don't set STATICFILES_DIRS in production
 
-if DEBUG:
-    STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
-else:
-    STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
+# Static files directories - needed in BOTH dev and production
+STATICFILES_DIRS = [BASE_DIR / 'static']
+
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
     
 # Media files
 MEDIA_URL = '/media/'
