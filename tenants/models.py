@@ -1,11 +1,12 @@
 """
-Tenants Models - Fixed with subscription_status and subdomain fields
-Added tenant_uuid with pattern a-cx-{Random-5}
+Tenants Models - With trial period tracking
+Added: trial_ends_at field for simple trial management
 """
 
 from django.db import models
 from django.utils import timezone
 from django.core.validators import RegexValidator
+from datetime import timedelta
 import random
 import string
 
@@ -29,7 +30,7 @@ class Tenant(models.Model):
     Each business is a separate tenant with its own subdomain
     """
     
-    # Unique Identifier (NEW)
+    # Unique Identifier
     tenant_uuid = models.CharField(
         max_length=20,
         unique=True,
@@ -77,7 +78,7 @@ class Tenant(models.Model):
     
     # FIXED: Use string reference instead of direct import
     owner = models.ForeignKey(
-        'customers.Customer',  # String reference - no import needed!
+        'customers.Customer',
         on_delete=models.CASCADE,
         related_name='owned_tenants',
         help_text='Business owner'
@@ -176,6 +177,13 @@ class Tenant(models.Model):
         help_text='Current subscription status'
     )
     
+    # Trial Period Management (NEW)
+    trial_ends_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='When the trial period ends (auto-set to 14 days from creation for new tenants)'
+    )
+    
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -190,20 +198,46 @@ class Tenant(models.Model):
     
     def save(self, *args, **kwargs):
         """
-        Override save to ensure tenant_uuid is generated if not present
+        Override save to:
+        1. Ensure tenant_uuid is generated if not present
+        2. Auto-set trial_ends_at for new trial tenants (14 days default)
         """
+        # Generate UUID if not present
         if not self.tenant_uuid:
-            # Generate UUID and ensure it's unique
             while True:
                 new_uuid = generate_tenant_uuid()
                 if not Tenant.objects.filter(tenant_uuid=new_uuid).exists():
                     self.tenant_uuid = new_uuid
                     break
+        
+        # Auto-set trial end date for new tenants on trial
+        is_new = self.pk is None
+        if is_new and self.subscription_status == 'trial' and not self.trial_ends_at:
+            # Set trial to end 14 days from now (configurable)
+            self.trial_ends_at = timezone.now() + timedelta(days=14)
+        
         super().save(*args, **kwargs)
     
     def get_absolute_url(self):
         """Return the tenant's URL"""
         return f"http://{self.subdomain}.localhost:8000/"
+    
+    @property
+    def is_trial_expired(self):
+        """Check if trial period has expired"""
+        if self.subscription_status != 'trial' or not self.trial_ends_at:
+            return False
+        return timezone.now() > self.trial_ends_at
+    
+    @property
+    def trial_days_remaining(self):
+        """Get number of days remaining in trial"""
+        if self.subscription_status != 'trial' or not self.trial_ends_at:
+            return None
+        
+        remaining = self.trial_ends_at - timezone.now()
+        days = remaining.days
+        return max(0, days)  # Don't return negative numbers
 
 
 class TenantSettings(models.Model):
