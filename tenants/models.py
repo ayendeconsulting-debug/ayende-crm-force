@@ -1,13 +1,26 @@
 """
 Tenants Models - Fixed with subscription_status and subdomain fields
+Added tenant_uuid with pattern a-cx-{Random-5}
 """
 
 from django.db import models
 from django.utils import timezone
 from django.core.validators import RegexValidator
+import random
+import string
 
 
 # DON'T import Customer directly - use string reference to avoid circular imports
+
+
+def generate_tenant_uuid():
+    """
+    Generate unique tenant UUID with pattern: a-cx-{5 random alphanumeric}
+    Example: a-cx-3k9f2, a-cx-x7m4q
+    """
+    characters = string.ascii_lowercase + string.digits
+    random_part = ''.join(random.choices(characters, k=5))
+    return f'a-cx-{random_part}'
 
 
 class Tenant(models.Model):
@@ -15,6 +28,16 @@ class Tenant(models.Model):
     Multi-tenant business model
     Each business is a separate tenant with its own subdomain
     """
+    
+    # Unique Identifier (NEW)
+    tenant_uuid = models.CharField(
+        max_length=20,
+        unique=True,
+        editable=False,
+        default=generate_tenant_uuid,
+        db_index=True,
+        help_text='Unique tenant identifier (e.g., a-cx-3k9f2)'
+    )
     
     # Basic Information
     name = models.CharField(
@@ -163,7 +186,20 @@ class Tenant(models.Model):
         ordering = ['-created_at']
     
     def __str__(self):
-        return self.name
+        return f"{self.name} ({self.tenant_uuid})"
+    
+    def save(self, *args, **kwargs):
+        """
+        Override save to ensure tenant_uuid is generated if not present
+        """
+        if not self.tenant_uuid:
+            # Generate UUID and ensure it's unique
+            while True:
+                new_uuid = generate_tenant_uuid()
+                if not Tenant.objects.filter(tenant_uuid=new_uuid).exists():
+                    self.tenant_uuid = new_uuid
+                    break
+        super().save(*args, **kwargs)
     
     def get_absolute_url(self):
         """Return the tenant's URL"""
