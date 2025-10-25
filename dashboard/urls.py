@@ -15,6 +15,8 @@ urlpatterns = [
     path('register/', views.customer_register, name='register'),
     path('login/', views.customer_login_view, name='login'),
     path('logout/', views.customer_logout_view, name='logout'),
+    path('verify-email/<str:token>/', views.verify_email, name='verify_email'),
+    path('resend-verification/', views.resend_verification_email, name='resend_verification'),
     
     # Dashboard - FIXED: Now at /dashboard/ instead of root
     path('dashboard/', views.dashboard_home, name='home'),

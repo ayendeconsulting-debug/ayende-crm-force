@@ -8,6 +8,11 @@ from django.http import JsonResponse
 from customers.models import Transaction, Customer, TenantCustomer
 from tenants.models import Tenant
 from datetime import datetime, timedelta
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+from django.utils.safestring import mark_safe
+from django.conf import settings
 from django.contrib.auth.views import (
     PasswordResetView,
     PasswordResetDoneView,
@@ -81,8 +86,8 @@ except ImportError:
 
 def customer_register(request):
     """
-    Customer self-registration view.
-    Automatically links customer to the current tenant.
+    Customer self-registration view with email verification.
+    Customer must verify email before they can login.
     """
     # Redirect if already logged in
     if request.user.is_authenticated:
@@ -95,22 +100,32 @@ def customer_register(request):
         messages.error(request, 'Unable to identify business. Please check the URL.')
         return redirect('/')
     
-    # Check if tenant allows customer registration
-    if not tenant.settings.allow_customer_registration:
-        messages.error(request, 'Customer registration is currently disabled for this business.')
-        return redirect('dashboard:login')
+    # Check if tenant allows customer registration (skip if settings don't exist)
+    try:
+        if hasattr(tenant, 'settings') and not tenant.settings.allow_customer_registration:
+            messages.error(request, 'Customer registration is currently disabled for this business.')
+            return redirect('dashboard:login')
+    except AttributeError:
+        # Settings don't exist, allow registration
+        pass
     
     if request.method == 'POST':
         form = CustomerRegistrationForm(request.POST, tenant=tenant)
         if form.is_valid():
             customer = form.save()
-            # Automatically log in after registration
-            login(request, customer, backend='tenants.backends.TenantAwareAuthBackend')
+            
+            # Send verification email (DO NOT auto-login)
+            send_verification_email(customer, tenant, request)
+            
             messages.success(
                 request,
-                f'Welcome {customer.first_name}! Your account has been created successfully.'
+                f'Welcome {customer.first_name}! Please check your email to verify your account before logging in.'
             )
-            return redirect('dashboard:home')
+            messages.info(
+                request,
+                f'A verification email has been sent to {customer.email}. Please check your inbox.'
+            )
+            return redirect('dashboard:login')
     else:
         form = CustomerRegistrationForm(tenant=tenant)
     
@@ -120,10 +135,125 @@ def customer_register(request):
     }
     return render(request, 'dashboard/register.html', context)
 
+def send_verification_email(customer, tenant, request):
+    """
+    Send verification email to customer
+    """
+    # Generate verification token
+    token = customer.generate_verification_token()
+    
+    # Build verification URL
+    verification_url = request.build_absolute_uri(
+        f'/verify-email/{token}/'
+    )
+    
+    # Email context
+    context = {
+        'customer': customer,
+        'tenant': tenant,
+        'verification_url': verification_url,
+        'business_name': tenant.name,
+    }
+    
+    # Render email templates
+    html_message = render_to_string('emails/verify_email.html', context)
+    plain_message = strip_tags(html_message)
+    
+    # Send email
+    subject = f'Verify your email - {tenant.name}'
+    from_email = settings.DEFAULT_FROM_EMAIL if hasattr(settings, 'DEFAULT_FROM_EMAIL') else 'noreply@ayendecx.com'
+    
+    send_mail(
+        subject=subject,
+        message=plain_message,
+        from_email=from_email,
+        recipient_list=[customer.email],
+        html_message=html_message,
+        fail_silently=False,
+    )
+
+
+def verify_email(request, token):
+    """
+    Verify email address using token
+    """
+    # Find customer with this token
+    try:
+        customer = Customer.objects.get(email_verification_token=token)
+    except Customer.DoesNotExist:
+        messages.error(request, 'Invalid verification link. Please try again or request a new verification email.')
+        return redirect('dashboard:login')
+    
+    # Check if token is expired
+    if not customer.is_verification_token_valid():
+        messages.error(
+            request,
+            'Verification link has expired. We\'ve sent you a new verification email.'
+        )
+        # Resend verification email
+        tenant = getattr(request, 'tenant', None)
+        if tenant:
+            send_verification_email(customer, tenant, request)
+        return redirect('dashboard:login')
+    
+    # Verify the email
+    customer.verify_email()
+    
+    messages.success(
+        request,
+        'Email verified successfully! You can now login to your account.'
+    )
+    return redirect('dashboard:login')
+
+
+def resend_verification_email(request):
+    """
+    Resend verification email
+    """
+    tenant = getattr(request, 'tenant', None)
+    
+    if not tenant:
+        messages.error(request, 'Unable to identify business.')
+        return redirect('/')
+    
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        
+        try:
+            # Find customer by email and tenant
+            from customers.models import TenantCustomer
+            tenant_customer = TenantCustomer.objects.get(
+                customer__email=email,
+                tenant=tenant
+            )
+            customer = tenant_customer.customer
+            
+            # Check if already verified
+            if customer.email_verified:
+                messages.info(request, 'Your email is already verified. You can login now.')
+                return redirect('dashboard:login')
+            
+            # Send verification email
+            send_verification_email(customer, tenant, request)
+            
+            messages.success(
+                request,
+                f'Verification email sent to {email}. Please check your inbox.'
+            )
+            return redirect('dashboard:login')
+            
+        except TenantCustomer.DoesNotExist:
+            messages.error(request, 'No account found with that email address.')
+    
+    context = {
+        'tenant': tenant,
+    }
+    return render(request, 'dashboard/resend_verification.html', context)
+
 
 def customer_login_view(request):
     """
-    Customer login view with tenant-aware authentication.
+    Customer login view with tenant-aware authentication and email verification check.
     """
     # Redirect if already logged in
     if request.user.is_authenticated:
@@ -151,12 +281,36 @@ def customer_login_view(request):
                         customer=user,
                         tenant=tenant
                     )
+                    
+                    # CHECK EMAIL VERIFICATION (NEW)
+                    if not user.email_verified:
+                        messages.error(
+                            request,
+                            'Please verify your email address before logging in. Check your inbox for the verification link.'
+                        )
+                        # Add resend link to message
+                        messages.warning(
+                            request,
+                            mark_safe(
+                                'Didn\'t receive the email? '
+                                '<a href="/resend-verification/" class="alert-link">Resend verification email</a>'
+                            )
+                        )
+                        return render(request, 'dashboard/login.html', {
+                            'form': form,
+                            'tenant': tenant,
+                            'show_resend_link': True,
+                            'user_email': email,
+                        })
+                    
+                    # Email is verified, proceed with login
                     login(request, user, backend='tenants.backends.TenantAwareAuthBackend')
                     messages.success(request, f'Welcome back, {user.first_name}!')
                     
                     # Redirect to next parameter or dashboard
                     next_url = request.GET.get('next', 'dashboard:home')
                     return redirect(next_url)
+                    
                 except TenantCustomer.DoesNotExist:
                     messages.error(
                         request,

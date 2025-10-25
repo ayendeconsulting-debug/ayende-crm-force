@@ -1,13 +1,15 @@
 """
 Customer Models for Ayende CX
-Custom user model with multi-tenant support
+Custom user model with multi-tenant support and email verification
 """
 
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
 from django.core.validators import RegexValidator
 import uuid
+import secrets
 from django.utils import timezone
+from datetime import timedelta
 
 class CustomerManager(BaseUserManager):
     """
@@ -30,6 +32,7 @@ class CustomerManager(BaseUserManager):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_active', True)
+        extra_fields.setdefault('email_verified', True)  # Auto-verify superusers
         
         if extra_fields.get('is_staff') is not True:
             raise ValueError('Superuser must have is_staff=True')
@@ -91,6 +94,26 @@ class Customer(AbstractBaseUser, PermissionsMixin):
         ]
     )
     
+    # Email Verification
+    email_verified = models.BooleanField(
+        default=False,
+        help_text='Whether the email address has been verified'
+    )
+    
+    email_verification_token = models.CharField(
+        max_length=64,
+        blank=True,
+        null=True,
+        unique=True,
+        help_text='Token for email verification'
+    )
+    
+    email_verification_sent_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='When the verification email was last sent'
+    )
+    
     # Timestamps
     date_joined = models.DateTimeField(auto_now_add=True)
     last_login = models.DateTimeField(null=True, blank=True)
@@ -116,6 +139,7 @@ class Customer(AbstractBaseUser, PermissionsMixin):
         indexes = [
             models.Index(fields=['email']),
             models.Index(fields=['last_name', 'first_name']),
+            models.Index(fields=['email_verification_token']),
         ]
     
     def __str__(self):
@@ -133,10 +157,29 @@ class Customer(AbstractBaseUser, PermissionsMixin):
     def initials(self):
         """Get user initials for avatar"""
         return f"{self.first_name[0]}{self.last_name[0]}".upper() if self.first_name and self.last_name else "?"
+    
+    def generate_verification_token(self):
+        """Generate a unique verification token"""
+        self.email_verification_token = secrets.token_urlsafe(32)
+        self.email_verification_sent_at = timezone.now()
+        self.save(update_fields=['email_verification_token', 'email_verification_sent_at'])
+        return self.email_verification_token
+    
+    def is_verification_token_valid(self):
+        """Check if verification token is still valid (24 hours)"""
+        if not self.email_verification_sent_at:
+            return False
+        
+        expiry_time = self.email_verification_sent_at + timedelta(hours=24)
+        return timezone.now() < expiry_time
+    
+    def verify_email(self):
+        """Mark email as verified"""
+        self.email_verified = True
+        self.email_verification_token = None
+        self.email_verification_sent_at = None
+        self.save(update_fields=['email_verified', 'email_verification_token', 'email_verification_sent_at'])
 
-
-# COMPLETE TENANTCUSTOMER MODEL - COPY THIS ENTIRE SECTION
-# Replace your entire TenantCustomer class (starting around line 166) with this:
 
 class TenantCustomer(models.Model):
     """
@@ -248,7 +291,8 @@ class TenantCustomer(models.Model):
         self.purchase_count += 1
         self.last_purchase_at = timezone.now()
         self.save(update_fields=['total_purchases', 'purchase_count', 'last_purchase_at', 'updated_at'])
-        
+
+
 class Transaction(models.Model):
     """
     Track customer transactions/purchases per tenant.
@@ -386,7 +430,6 @@ class Transaction(models.Model):
     def save(self, *args, **kwargs):
         # Auto-generate transaction ID if not provided
         if not self.transaction_id:
-            import uuid
             self.transaction_id = f"TXN-{uuid.uuid4().hex[:12].upper()}"
         
         # Calculate total if not provided
