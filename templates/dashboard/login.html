@@ -36,7 +36,7 @@
                         {% if messages %}
                             {% for message in messages %}
                                 <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                                    {{ message }}
+                                    {{ message|safe }}
                                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                                 </div>
                             {% endfor %}
@@ -102,7 +102,7 @@
                                         Remember me
                                     </label>
                                 </div>
-                                <a href="#" class="forgot-link">Forgot password?</a>
+                                <a href="{% url 'dashboard:password_reset' %}" class="forgot-link">Forgot password?</a>
                             </div>
 
                             <!-- Submit Button -->
