@@ -144,18 +144,14 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 # Email configuration
-EMAIL_BACKEND = os.environ.get(
-    'EMAIL_BACKEND',
-    'django.core.mail.backends.console.EmailBackend'
-)
-
-if not DEBUG and os.environ.get('EMAIL_HOST'):
-    EMAIL_HOST = os.environ.get('EMAIL_HOST')
-    EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
-    EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
-    EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
-    EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
-    DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@ayendecx.com')
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'ayendeconsulting@gmail.com'
+EMAIL_HOST_PASSWORD = 'benz2025'
+DEFAULT_FROM_EMAIL = 'Ayende CX System <noreply@ayende-cx.com>'
+INTEGRATION_ADMIN_EMAIL = 'admin@ayendecx.com'
 
 # Security settings for production
 ENABLE_HTTPS_REDIRECT = os.environ.get('ENABLE_HTTPS_REDIRECT', 'False') == 'True'
@@ -232,6 +228,9 @@ UNFOLD = {
     },
 }
 
+# Loyalty Settings
+LOYALTY_POINTS_PER_DOLLAR = 0.1  # 1 point per $10 spent
+
 # Logging
 LOGGING = {
     'version': 1,
@@ -260,3 +259,51 @@ LOGGING = {
         },
     },
 }
+# ============================================
+# POS INTEGRATION SETTINGS
+# ============================================
+INTEGRATION_SECRET = '31YMBwf4R4OetvSJ/nIf+5D1ndnMxruRL1QcJsCM9jM='  # IMPORTANT: Change this!
+POS_API_URL = 'http://localhost:3000'  # POS backend URL
+POS_API_TIMEOUT = int(os.getenv('POS_API_TIMEOUT', '30000'))
+ENABLE_CUSTOMER_SYNC_TO_POS = os.getenv('ENABLE_CUSTOMER_SYNC_TO_POS', 'True').lower() == 'true'
+CUSTOMER_SYNC_INTERVAL = int(os.getenv('CUSTOMER_SYNC_INTERVAL', '3600'))
+SYNC_BATCH_SIZE = int(os.getenv('SYNC_BATCH_SIZE', '100'))
+ENABLE_POS_SYNC = True
+ENABLE_CRM_SYNC = True
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+INTEGRATION_ADMIN_EMAIL = 'admin@ayendecx.com'
+
+# ===== PHASE 2C: Webhook Configuration =====
+
+# POS Webhook URL (base URL for POS system)
+POS_WEBHOOK_URL = 'http://localhost:3000'
+
+# Enable/disable webhook sending
+ENABLE_WEBHOOKS = True
+
+# Webhook retry configuration
+WEBHOOK_MAX_RETRIES = 3
+WEBHOOK_TIMEOUT = 10  # seconds
+
+# Webhook security
+# IMPORTANT: This must match INTEGRATION_SECRET in POS .env file
+INTEGRATION_SECRET = os.environ.get('INTEGRATION_SECRET', '31YMBwf4R4OetvSJ/nIf+5D1ndnMxruRL1QcJsCM9jM=')
+
+# ===== End Phase 2C Configuration =====
+# ===== PHASE 2C: Webhook Configuration =====
+
+# POS Webhook URL (base URL for POS system)
+POS_WEBHOOK_URL = 'http://localhost:3000'
+
+# Enable CRM sync and webhooks
+ENABLE_CRM_SYNC = True  # This enables webhooks
+ENABLE_WEBHOOKS = True  # Additional toggle
+
+# Webhook retry configuration
+WEBHOOK_MAX_RETRIES = 3
+WEBHOOK_TIMEOUT = 10  # seconds
+
+# Webhook security - must match POS .env
+INTEGRATION_SECRET = os.environ.get('INTEGRATION_SECRET', 'your-shared-secret-key-change-this')
+
+# ===== End Phase 2C Configuration =====

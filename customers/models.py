@@ -1,6 +1,7 @@
 """
 Customer Models for Ayende CX
 Custom user model with multi-tenant support and email verification
+UPDATED: Integration fields added for POS sync
 """
 
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
@@ -76,6 +77,7 @@ class Customer(AbstractBaseUser, PermissionsMixin):
     date_of_birth = models.DateField(null=True, blank=True)
     address = models.TextField(blank=True)
     city = models.CharField(max_length=100, blank=True)
+    state = models.CharField(max_length=100, blank=True)  # 🔗 INTEGRATION: Added for POS sync
     postal_code = models.CharField(max_length=20, blank=True)
     country = models.CharField(max_length=100, blank=True, default='Canada')
     
@@ -114,6 +116,34 @@ class Customer(AbstractBaseUser, PermissionsMixin):
         help_text='When the verification email was last sent'
     )
     
+      # Loyalty program
+    loyalty_points = models.IntegerField(default=0)
+    loyalty_tier = models.CharField(max_length=20, default='BRONZE', 
+                                     choices=[('BRONZE','Bronze'),('SILVER','Silver'),
+                                             ('GOLD','Gold'),('PLATINUM','Platinum')])
+    total_spent = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    visit_count = models.IntegerField(default=0)
+    last_visit = models.DateTimeField(null=True, blank=True)  # 🔗 INTEGRATION: Last transaction date
+    marketing_opt_in = models.BooleanField(default=False)
+    needs_enrichment = models.BooleanField(default=False)
+    
+    # ============================================
+    # 🔗 INTEGRATION: POS sync fields
+    # ============================================
+    external_id = models.UUIDField(
+        unique=True,
+        null=True,
+        blank=True,
+        help_text='Customer ID from POS system',
+        db_index=True
+    )
+    
+    last_synced_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='Last time data was synced from POS'
+    )
+    
     # Timestamps
     date_joined = models.DateTimeField(auto_now_add=True)
     last_login = models.DateTimeField(null=True, blank=True)
@@ -140,6 +170,7 @@ class Customer(AbstractBaseUser, PermissionsMixin):
             models.Index(fields=['email']),
             models.Index(fields=['last_name', 'first_name']),
             models.Index(fields=['email_verification_token']),
+            models.Index(fields=['external_id']),  # 🔗 INTEGRATION INDEX
         ]
     
     def __str__(self):
@@ -157,6 +188,16 @@ class Customer(AbstractBaseUser, PermissionsMixin):
     def initials(self):
         """Get user initials for avatar"""
         return f"{self.first_name[0]}{self.last_name[0]}".upper() if self.first_name and self.last_name else "?"
+    
+    @property
+    def zip_code(self):
+        """Alias for postal_code for POS sync compatibility"""
+        return self.postal_code
+    
+    @zip_code.setter
+    def zip_code(self, value):
+        """Allow setting zip_code which updates postal_code"""
+        self.postal_code = value
     
     def generate_verification_token(self):
         """Generate a unique verification token"""
@@ -240,7 +281,6 @@ class TenantCustomer(models.Model):
     
     # Status
     is_active = models.BooleanField(default=True)
-    is_vip = models.BooleanField(default=False)
     
     # Timestamps
     joined_at = models.DateTimeField(auto_now_add=True)
@@ -360,11 +400,22 @@ class Transaction(models.Model):
         default=0.00,
         help_text="Tax amount"
     )
+    discount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0.00,
+        help_text="Discount amount"
+    )  # 🔗 INTEGRATION: Added for POS sync
     total = models.DecimalField(
         max_digits=10,
         decimal_places=2,
-        help_text="Total amount (amount + tax)"
+        help_text="Total amount (amount + tax - discount)"
     )
+    currency = models.CharField(
+        max_length=3,
+        default='USD',
+        help_text="Currency code (ISO 4217)"
+    )  # 🔗 INTEGRATION: Added for POS sync
     
     # Payment
     payment_method = models.CharField(
@@ -390,12 +441,49 @@ class Transaction(models.Model):
         blank=True,
         help_text="Unique transaction identifier"
     )
+    transaction_number = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Human-readable transaction number from POS"
+    )  # 🔗 INTEGRATION: Added for POS sync
     receipt_number = models.CharField(max_length=50, blank=True)
     items_description = models.TextField(
         blank=True,
         help_text="Brief description of items purchased"
     )
-    notes = models.TextField(blank=True)
+    items = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Detailed items list from POS"
+    )  # 🔗 INTEGRATION: Added for POS sync
+    notes = models.TextField(blank=True, null=True)
+    
+    # ============================================
+    # 🔗 INTEGRATION: POS sync fields
+    # ============================================
+    external_id = models.UUIDField(
+        unique=True,
+        null=True,
+        blank=True,
+        help_text='Transaction ID from POS system',
+        db_index=True
+    )
+    
+    external_source = models.CharField(
+        max_length=20,
+        default='CRM',
+        choices=[
+            ('CRM', 'CRM'),
+            ('POS', 'POS'),
+        ],
+        help_text='Source system of this transaction'
+    )
+    
+    synced_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='When this transaction was synced from POS'
+    )
     
     # Timestamps
     transaction_date = models.DateTimeField(default=timezone.now)
@@ -411,6 +499,12 @@ class Transaction(models.Model):
         related_name='processed_transactions',
         help_text="Staff member who processed this transaction"
     )
+    created_by = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+        help_text="ID of user who created transaction in POS"
+    )  # 🔗 INTEGRATION: Added for POS sync audit trail
     
     class Meta:
         db_table = 'transactions'
@@ -420,6 +514,8 @@ class Transaction(models.Model):
             models.Index(fields=['tenant', '-transaction_date']),
             models.Index(fields=['transaction_id']),
             models.Index(fields=['status']),
+            models.Index(fields=['external_id']),  # 🔗 INTEGRATION INDEX
+            models.Index(fields=['external_source']),  # 🔗 INTEGRATION INDEX
         ]
         verbose_name = 'Transaction'
         verbose_name_plural = 'Transactions'
@@ -481,3 +577,149 @@ class Transaction(models.Model):
             'refunded': '↩️',
         }
         return f"{status_colors.get(self.status, '')} {self.get_status_display()}"
+
+
+# ============================================
+# 🔗 INTEGRATION: Sync Log Model
+# ============================================
+
+class SyncLog(models.Model):
+    """
+    Track synchronization operations between POS and CRM
+    """
+    
+    DIRECTION_CHOICES = [
+        ('pos_to_crm', 'POS to CRM'),
+        ('crm_to_pos', 'CRM to POS'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('success', 'Success'),
+        ('failed', 'Failed'),
+        ('retry', 'Retry Scheduled'),
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    # Operation details
+    operation = models.CharField(max_length=50, help_text="Operation type (e.g., 'transaction_sync')")
+    direction = models.CharField(max_length=20, choices=DIRECTION_CHOICES, default='pos_to_crm')
+    entity_type = models.CharField(max_length=50, help_text="Entity type (e.g., 'transaction', 'customer')")
+    entity_id = models.CharField(max_length=100, help_text="ID of the synced entity")
+    
+    # Status tracking
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    attempt_count = models.IntegerField(default=1)
+    error_message = models.TextField(blank=True)
+    
+    # Data
+    payload = models.JSONField(help_text="Data that was synced")
+    response = models.JSONField(null=True, blank=True, help_text="Response from the target system")
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    next_retry_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        db_table = 'sync_logs'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status']),
+            models.Index(fields=['entity_type', 'entity_id']),
+            models.Index(fields=['direction']),
+            models.Index(fields=['-created_at']),
+        ]
+        verbose_name = 'Sync Log'
+        verbose_name_plural = 'Sync Logs'
+    
+    def __str__(self):
+        return f"{self.operation} - {self.entity_type} {self.entity_id} - {self.status}"
+
+
+# ============================================
+# 🔗 INTEGRATION: System Mapping Model
+# ============================================
+
+class SystemMapping(models.Model):
+    """
+    Maps IDs between POS and CRM systems
+    Enables bidirectional ID lookups for customers, businesses, and transactions
+    """
+    
+    ENTITY_TYPE_CHOICES = [
+        ('BUSINESS', 'Business'),
+        ('CUSTOMER', 'Customer'),
+        ('TRANSACTION', 'Transaction'),
+    ]
+    
+    SYNC_STATUS_CHOICES = [
+        ('ACTIVE', 'Active'),
+        ('PENDING', 'Pending'),
+        ('FAILED', 'Failed'),
+        ('ARCHIVED', 'Archived'),
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    # Mapping details
+    entity_type = models.CharField(
+        max_length=20,
+        choices=ENTITY_TYPE_CHOICES,
+        help_text="Type of entity being mapped"
+    )
+    crm_id = models.CharField(
+        max_length=255,
+        help_text="UUID in CRM system"
+    )
+    pos_id = models.CharField(
+        max_length=255,
+        help_text="ID in POS system"
+    )
+    
+    # Relationships
+    tenant = models.ForeignKey(
+        'tenants.Tenant',
+        on_delete=models.CASCADE,
+        related_name='system_mappings',
+        help_text="Tenant this mapping belongs to"
+    )
+    
+    # Sync tracking
+    last_synced_at = models.DateTimeField(auto_now=True)
+    sync_status = models.CharField(
+        max_length=20,
+        choices=SYNC_STATUS_CHOICES,
+        default='ACTIVE'
+    )
+    
+    # Additional data
+    metadata = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Additional metadata about the mapping"
+    )
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'system_mappings'
+        ordering = ['-created_at']
+        unique_together = [
+            ('entity_type', 'crm_id'),
+            ('entity_type', 'pos_id'),
+        ]
+        indexes = [
+            models.Index(fields=['entity_type', 'crm_id']),
+            models.Index(fields=['entity_type', 'pos_id']),
+            models.Index(fields=['tenant']),
+            models.Index(fields=['entity_type', 'sync_status']),
+        ]
+        verbose_name = 'System Mapping'
+        verbose_name_plural = 'System Mappings'
+    
+    def __str__(self):
+        return f"{self.entity_type}: {self.crm_id} <-> {self.pos_id}"

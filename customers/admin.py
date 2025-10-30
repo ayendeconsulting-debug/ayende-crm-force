@@ -120,8 +120,7 @@ class TenantCustomerAdmin(ModelAdmin):
         'tenant',
         'role',
         'loyalty_points',
-        'total_purchases',
-        'is_vip',
+        'total_purchases',     
         'is_active',
         'joined_at'
     ]
@@ -129,7 +128,6 @@ class TenantCustomerAdmin(ModelAdmin):
     list_filter = [
         'role',
         'is_active',
-        'is_vip',
         'email_notifications',
         'joined_at',
         'tenant'
@@ -177,7 +175,6 @@ class TenantCustomerAdmin(ModelAdmin):
             'fields': (
                 'notes',
                 'tags',
-                'is_vip',
                 'is_active'
             )
         }),

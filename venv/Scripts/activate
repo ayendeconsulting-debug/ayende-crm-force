@@ -38,7 +38,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-VIRTUAL_ENV="C:\Users\Admin\OneDrive\Documents\Environment\ayende-crm-force\venv"
+VIRTUAL_ENV="C:\Users\Admin\OneDrive\Documents\Environment\ayende-cx\venv"
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"

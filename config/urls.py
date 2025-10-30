@@ -2,7 +2,9 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from dashboard.views import landing_page
+from dashboard.views.main import landing_page
+from dashboard.views import sync_views  # ← ADD THIS IMPORT
+
 
 urlpatterns = [
     # Public landing page (homepage)
@@ -15,6 +17,11 @@ urlpatterns = [
     path('rewards/', include('rewards.urls')),  # ADD THIS
     path('profile/', include('profile.urls')),  # Not 'dashboard.profile.urls' # ADD THIS
     path('reports/', include('reports.urls')),  # ADD THIS LINE
+    # ===== PHASE 2D: POS-to-CRM Sync Endpoints =====
+    path('api/v1/sync/transaction', sync_views.receive_transaction, name='sync_transaction'),
+    path('api/v1/sync/customer', sync_views.receive_customer, name='sync_customer'),
+    path('api/v1/sync/health', sync_views.sync_health, name='sync_health'),
+    # ===== End Phase 2D =====
 ]
 # Serve media files in development
 if settings.DEBUG:
