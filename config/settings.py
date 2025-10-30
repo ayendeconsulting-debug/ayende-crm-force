@@ -29,7 +29,7 @@ if CUSTOM_DOMAIN:
         f'.{CUSTOM_DOMAIN}',  # Wildcard for subdomains
     ])
 
-ALLOWED_HOSTS = allowed_hosts
+ALLOWED_HOSTS=.ayendecx.com,staging.ayendecx.com,ayendecx.com
 
 
 # Application definition
