@@ -5,7 +5,7 @@ from .models import Tenant
 class TenantMiddleware(MiddlewareMixin):
     """
     Middleware to set the current tenant based on subdomain.
-    Bypasses tenant detection for admin, static files, and media.
+    Bypasses tenant detection for admin, static files, media, and sync API.
     Landing page (/) SHOULD detect tenant to show tenant-specific branding.
     """
     
@@ -18,6 +18,7 @@ class TenantMiddleware(MiddlewareMixin):
             '/admin/',
             '/static/',
             '/media/',
+            '/api/v1/sync/',  # POS sync endpoints (Phase 2D)
         ]
         
         # Check if the current path should bypass tenant detection
