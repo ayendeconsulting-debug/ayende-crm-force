@@ -154,7 +154,6 @@ DEFAULT_FROM_EMAIL = 'Ayende CX System <noreply@ayende-cx.com>'
 INTEGRATION_ADMIN_EMAIL = 'admin@ayendecx.com'
 
 # Security settings for production
-# Security settings for production
 ENABLE_HTTPS_REDIRECT = os.environ.get('ENABLE_HTTPS_REDIRECT', 'False') == 'True'
 
 if not DEBUG and ENABLE_HTTPS_REDIRECT:
