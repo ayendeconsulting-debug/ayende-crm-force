@@ -180,14 +180,17 @@ if CUSTOM_DOMAIN:
     ])
 
 # Cookie domain configuration for multi-tenant subdomains
-if CUSTOM_DOMAIN and not DEBUG:
-    SESSION_COOKIE_DOMAIN = f'.{CUSTOM_DOMAIN}'
-    CSRF_COOKIE_DOMAIN = f'.{CUSTOM_DOMAIN}'
+#if CUSTOM_DOMAIN and not DEBUG:
+ #   SESSION_COOKIE_DOMAIN = f'.{CUSTOM_DOMAIN}'
+ #   CSRF_COOKIE_DOMAIN = f'.{CUSTOM_DOMAIN}'
+# CSRF and Session cookie settings for multi-tenant
 # CSRF and Session cookie settings for multi-tenant
 SESSION_COOKIE_SAMESITE = 'Lax'
-CSRF_COOKIE_SAMESITE = 'Lax'  
+CSRF_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_HTTPONLY = False
 CSRF_USE_SESSIONS = False
+CSRF_COOKIE_SECURE = False  # Allow HTTP in development
+SESSION_COOKIE_SECURE = False  # Allow HTTP in development
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
