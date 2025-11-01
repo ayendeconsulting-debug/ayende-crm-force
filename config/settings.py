@@ -14,7 +14,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / '.env')
 
 # Security
-SECRET_KEY = os.environ.get('31YMBwf4R4OetvSJ/nIf+5D1ndnMxruRL1QcJsCM9jM=')
+SECRET_KEY = os.environ.get('SECRET_KEY', '31YMBwf4R4OetvSJ/nIf+5D1ndnMxruRL1QcJsCM9jM=')
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
 # Custom domain configuration
