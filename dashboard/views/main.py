@@ -619,7 +619,7 @@ def manage_customers(request):
         'is_business_view': True,
     }
     
-    return render(request, 'dashboard/manage_customers.html', context)
+    return render(request, 'dashboard/business_customers.html', context)
 
 
 @login_required(login_url='dashboard:login')
