@@ -4,7 +4,7 @@ from django.db import migrations
 
 
 def calculate_vip_status(apps, schema_editor):
-    """"""Calculate VIP status for all existing customers based on tenant thresholds""""""
+    """Calculate VIP status for all existing customers based on tenant thresholds"""
     TenantCustomer = apps.get_model('customers', 'TenantCustomer')
     TenantSettings = apps.get_model('tenants', 'TenantSettings')
     
@@ -20,14 +20,14 @@ def calculate_vip_status(apps, schema_editor):
             role='customer'
         ).update(is_vip=True)
         
-        print(f""✓ Updated VIP status for {tenant.name} - {updated_count} customers now VIP (threshold: ${threshold})"")
+        print(f'[OK] Updated VIP status for {tenant.name} - {updated_count} customers now VIP (threshold: )')
 
 
 def reverse_vip_status(apps, schema_editor):
-    """"""Reset all VIP statuses to False""""""
+    """Reset all VIP statuses to False"""
     TenantCustomer = apps.get_model('customers', 'TenantCustomer')
     TenantCustomer.objects.all().update(is_vip=False)
-    print(""✗ Reset all VIP statuses to False"")
+    print('[ROLLBACK] Reset all VIP statuses to False')
 
 
 class Migration(migrations.Migration):
