@@ -47,12 +47,12 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        # Step 1: Add field without unique constraint (nullable temporarily)
+        # Step 1: Add field without any constraints (nullable temporarily)
+        # REMOVED db_index=True to avoid duplicate index issue
         migrations.AddField(
             model_name='tenant',
             name='tenant_uuid',
             field=models.CharField(
-                db_index=True,
                 editable=False,
                 help_text='Unique tenant identifier (e.g., a-cx-3k9f2)',
                 max_length=20,
@@ -68,16 +68,16 @@ class Migration(migrations.Migration):
         ),
         
         # Step 3: Now make the field non-nullable and unique
+        # REMOVED db_index=True - unique=True creates the index automatically
         migrations.AlterField(
             model_name='tenant',
             name='tenant_uuid',
             field=models.CharField(
-                db_index=True,
                 default=tenants.models.generate_tenant_uuid,
                 editable=False,
                 help_text='Unique tenant identifier (e.g., a-cx-3k9f2)',
                 max_length=20,
-                unique=True,
+                unique=True,  # This automatically creates an index
             ),
         ),
     ]
