@@ -282,6 +282,12 @@ class TenantCustomer(models.Model):
     # Status
     is_active = models.BooleanField(default=True)
     
+    # VIP Status (auto-calculated based on tenant's VIP threshold)
+    is_vip = models.BooleanField(
+        default=False,
+        help_text='VIP customer status - automatically set when total_spent exceeds tenant VIP threshold'
+    )
+    
     # Timestamps
     joined_at = models.DateTimeField(auto_now_add=True)
     last_purchase_at = models.DateTimeField(null=True, blank=True)
@@ -296,6 +302,7 @@ class TenantCustomer(models.Model):
         indexes = [
             models.Index(fields=['tenant', 'role']),
             models.Index(fields=['tenant', 'is_active']),
+            models.Index(fields=['tenant', 'is_vip']),
             models.Index(fields=['loyalty_points']),
         ]
     
@@ -326,11 +333,44 @@ class TenantCustomer(models.Model):
         return False
     
     def record_purchase(self, amount):
-        """Record a purchase"""
+        """Record a purchase and auto-update VIP status"""
         self.total_purchases += amount
+        self.total_spent += amount  # Also update total_spent
         self.purchase_count += 1
         self.last_purchase_at = timezone.now()
-        self.save(update_fields=['total_purchases', 'purchase_count', 'last_purchase_at', 'updated_at'])
+        self.save(update_fields=['total_purchases', 'total_spent', 'purchase_count', 'last_purchase_at', 'updated_at'])
+        
+        # Auto-update VIP status after purchase
+        self.update_vip_status()
+    
+    def update_vip_status(self):
+        """
+        Auto-update VIP status based on tenant's VIP threshold setting.
+        Returns True if status changed, False otherwise.
+        """
+        try:
+            # Get tenant's VIP threshold from settings
+            tenant_settings = self.tenant.settings
+            vip_threshold = tenant_settings.vip_threshold
+            
+            # Determine new VIP status
+            should_be_vip = self.total_spent >= vip_threshold
+            
+            # Update if changed
+            if self.is_vip != should_be_vip:
+                self.is_vip = should_be_vip
+                self.save(update_fields=['is_vip', 'updated_at'])
+                return True
+            
+            return False
+        except Exception as e:
+            # If tenant settings don't exist, use default threshold of 1000
+            should_be_vip = self.total_spent >= 1000
+            if self.is_vip != should_be_vip:
+                self.is_vip = should_be_vip
+                self.save(update_fields=['is_vip', 'updated_at'])
+                return True
+            return False
 
 
 class Transaction(models.Model):

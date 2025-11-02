@@ -1,6 +1,7 @@
 """
-Tenants Models - With trial period tracking
+Tenants Models - With trial period tracking and VIP threshold
 Added: trial_ends_at field for simple trial management
+Added: vip_threshold in TenantSettings for multi-tenant VIP management
 """
 
 from django.db import models
@@ -286,6 +287,14 @@ class TenantSettings(models.Model):
         help_text='Points earned per dollar spent'
     )
     
+    # VIP Customer Settings
+    vip_threshold = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=1000.00,
+        help_text='Spending threshold to automatically qualify as VIP customer'
+    )
+    
     # Notifications
     enable_email_notifications = models.BooleanField(default=True)
     enable_sms_notifications = models.BooleanField(default=False)
@@ -307,5 +316,3 @@ class TenantSettings(models.Model):
     
     def __str__(self):
         return f"{self.tenant.name} - Settings"
-
-       
