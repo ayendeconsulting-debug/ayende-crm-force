@@ -8,6 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import HttpResponse, JsonResponse
 from django.db.models import Sum, Count, Avg, Q
+from django.db.models.functions import TruncDate, TruncMonth, TruncHour
 from django.utils import timezone
 from datetime import datetime, timedelta
 import csv
@@ -219,16 +220,16 @@ def customer_report(request):
     # Top customers
     top_customers = get_top_customers(all_customers, limit=10)
     
-    # Customer acquisition trend
-    acquisition_by_day = new_customers.extra(
-        select={'day': "strftime('%%Y-%%m-%%d', joined_at)"}
+    # Customer acquisition trend - PostgreSQL compatible
+    acquisition_by_day = new_customers.annotate(
+        day=TruncDate('joined_at')
     ).values('day').annotate(
         count=Count('id')
     ).order_by('day')
     
     acquisition_data = {
-        item['day']: item['count']
-        for item in acquisition_by_day
+        item['day'].strftime('%Y-%m-%d'): item['count']
+        for item in acquisition_by_day if item['day']
     }
     
     # Retention rate
@@ -297,37 +298,37 @@ def sales_report(request):
     sales_analytics = get_sales_analytics(transactions)
     
     # Transaction volume by day
-    volume_by_day = transactions.extra(
-        select={'day': "strftime('%%Y-%%m-%%d', transaction_date)"}
+    volume_by_day = transactions.annotate(
+        day=TruncDate('transaction_date')
     ).values('day').annotate(
         count=Count('id'),
         revenue=Sum('total')
     ).order_by('day')
     
     volume_data = {
-        item['day']: item['count']
-        for item in volume_by_day
+        item['day'].strftime('%Y-%m-%d'): item['count']
+        for item in volume_by_day if item['day']
     }
     
     # Average transaction value trend
     avg_value_by_day = {
-        item['day']: float(item['revenue'] / item['count']) if item['count'] > 0 else 0
-        for item in volume_by_day
+        item['day'].strftime('%Y-%m-%d'): float(item['revenue'] / item['count']) if item['count'] > 0 else 0
+        for item in volume_by_day if item['day']
     }
     
     # Peak hours analysis (if time data available)
-    # Use strftime for SQLite compatibility
-    hourly_sales = transactions.extra(
-        select={'hour': "CAST(strftime('%%H', transaction_date) AS INTEGER)"}
+    # PostgreSQL compatible
+    hourly_sales = transactions.annotate(
+        hour=TruncHour('transaction_date')
     ).values('hour').annotate(
         count=Count('id'),
         revenue=Sum('total')
     ).order_by('hour')
     
-    # Day of week analysis
-    # Use strftime for SQLite compatibility (0=Sunday, 1=Monday, etc.)
-    daily_sales = transactions.extra(
-        select={'weekday': "CAST(strftime('%%w', transaction_date) AS INTEGER)"}
+    # Day of week analysis - PostgreSQL compatible
+    from django.db.models.functions import ExtractWeekDay
+    daily_sales = transactions.annotate(
+        weekday=ExtractWeekDay('transaction_date')
     ).values('weekday').annotate(
         count=Count('id'),
         revenue=Sum('total')
@@ -409,21 +410,20 @@ def loyalty_report(request):
         loyalty_points__gt=0
     ).order_by('-loyalty_points')[:10]
     
-    # Points issued over time
-    # Use strftime for SQLite compatibility (works with both SQLite and PostgreSQL)
-    points_by_month = all_transactions.extra(
-        select={'month': "strftime('%%Y-%%m', transaction_date)"}
+    # Points issued over time - PostgreSQL compatible
+    points_by_month = all_transactions.annotate(
+        month=TruncMonth('transaction_date')
     ).values('month').annotate(
         points_issued=Sum('points_earned'),
         points_redeemed=Sum('points_redeemed')
     ).order_by('month')
     
     points_timeline = {
-        item['month']: {
+        item['month'].strftime('%Y-%m'): {
             'issued': item['points_issued'] or 0,
             'redeemed': item['points_redeemed'] or 0
         }
-        for item in points_by_month
+        for item in points_by_month if item['month']
     }
     
     # Check if rewards app is available
