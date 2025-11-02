@@ -337,7 +337,7 @@ def sales_report(request):
     weekday_names = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
     daily_sales_formatted = [
         {
-            'day': weekday_names[int(item['weekday'])],
+            'day': weekday_names[(int(item['weekday']) - 1) % 7],
             'count': item['count'],
             'revenue': item['revenue']
         }
