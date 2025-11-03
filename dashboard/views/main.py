@@ -257,9 +257,12 @@ def customer_register(request):
     Customer self-registration view with email verification.
     Customer must verify email before they can login.
     """
-    # Redirect if already logged in
+   # Redirect if already logged in
     if request.user.is_authenticated:
-        return redirect('dashboard:home')
+        # Role-based redirect for already authenticated users
+        if hasattr(request.user, 'role') and request.user.role in ['ADMIN', 'OWNER', 'STAFF']:
+            return redirect('/reports/')  # Business dashboard
+        return redirect('dashboard:home')  # Customer portal
     
     # Get tenant from middleware
     tenant = getattr(request, 'tenant', None)
@@ -474,9 +477,27 @@ def customer_login_view(request):
                     
                     messages.success(request, f'Welcome back, {user.first_name}!')
                     
-                    # Redirect to dashboard
-                    next_url = request.GET.get('next', 'dashboard:home')
-                    return redirect(next_url)
+                    # ============================================
+                    # ROLE-BASED REDIRECT LOGIC
+                    # ============================================
+                    # Check if there's a 'next' parameter
+                    next_url = request.GET.get('next')
+                    
+                    if next_url:
+                        # If there's a next URL, use it
+                        return redirect(next_url)
+                    else:
+                        # Role-based redirect
+                        if hasattr(user, 'role'):
+                            if user.role in ['ADMIN', 'OWNER', 'STAFF']:
+                                # Business users → Reports dashboard
+                                return redirect('/reports/')
+                            else:
+                                # Customers → Customer portal
+                                return redirect('dashboard:home')
+                        else:
+                            # No role attribute → assume customer
+                            return redirect('dashboard:home')
                     
                 except TenantCustomer.DoesNotExist:
                     messages.error(
