@@ -433,6 +433,15 @@ def customer_login_view(request):
     """
     # Redirect if already logged in
     if request.user.is_authenticated:
+        tenant = getattr(request, 'tenant', None)
+        if tenant:
+            try:
+                tenant_customer = TenantCustomer.objects.get(customer=request.user, tenant=tenant)
+                # Check role from TenantCustomer
+                if tenant_customer.role in ['admin', 'owner', 'staff']:
+                    return redirect('/reports/')
+            except TenantCustomer.DoesNotExist:
+                pass
         return redirect('dashboard:home')
     
     # Get tenant from middleware
@@ -472,7 +481,7 @@ def customer_login_view(request):
                 
                 # Check if user belongs to this tenant
                 try:
-                    TenantCustomer.objects.get(customer=user, tenant=tenant)
+                    tenant_customer = TenantCustomer.objects.get(customer=user, tenant=tenant)
                     login(request, user)
                     
                     messages.success(request, f'Welcome back, {user.first_name}!')
@@ -487,16 +496,12 @@ def customer_login_view(request):
                         # If there's a next URL, use it
                         return redirect(next_url)
                     else:
-                        # Role-based redirect
-                        if hasattr(user, 'role'):
-                            if user.role in ['ADMIN', 'OWNER', 'STAFF']:
-                                # Business users → Reports dashboard
-                                return redirect('/reports/')
-                            else:
-                                # Customers → Customer portal
-                                return redirect('dashboard:home')
+                        # Role-based redirect using TenantCustomer.role
+                        if tenant_customer.role in ['admin', 'owner', 'staff']:
+                            # Business users → Reports dashboard
+                            return redirect('/reports/')
                         else:
-                            # No role attribute → assume customer
+                            # Customers → Customer portal
                             return redirect('dashboard:home')
                     
                 except TenantCustomer.DoesNotExist:
