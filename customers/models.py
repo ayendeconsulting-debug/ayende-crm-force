@@ -406,14 +406,26 @@ class Transaction(models.Model):
         related_name='transactions'
     )
     customer = models.ForeignKey(
-        Customer,
-        on_delete=models.CASCADE,
-        related_name='transactions'
-    )
+    Customer,
+    on_delete=models.CASCADE,
+    related_name='transactions',
+    null=True,
+    blank=True,
+    help_text='Customer who made the transaction. Null for anonymous/walk-in customers.'
+)
     tenant_customer = models.ForeignKey(
         TenantCustomer,
         on_delete=models.CASCADE,
-        related_name='transactions'
+        related_name='transactions',
+        null=True,
+        blank=True,
+        help_text='Tenant-Customer relationship. Null for anonymous transactions.'
+    )
+
+    # ADD THIS NEW FIELD right after tenant_customer
+    is_anonymous = models.BooleanField(
+        default=False,
+        help_text='True if this is an anonymous/walk-in customer transaction'
     )
     
     # Transaction Details
@@ -560,6 +572,23 @@ class Transaction(models.Model):
         verbose_name = 'Transaction'
         verbose_name_plural = 'Transactions'
     
+    @property
+    def is_customer_transaction(self):
+        """Check if this transaction has a linked customer"""
+        return self.customer is not None and not self.is_anonymous
+
+    @property
+    def customer_name(self):
+        """Get customer name or 'Anonymous Customer' for display"""
+        if self.customer:
+            return f"{self.customer.first_name} {self.customer.last_name}"
+        return "Anonymous Customer"
+
+    def __str__(self):
+        """String representation with anonymous support"""
+        customer_info = self.customer_name if self.customer else "Anonymous"
+        return f"Transaction {self.transaction_number} - {customer_info} - ${self.total}"
+
     def __str__(self):
         return f"Transaction {self.transaction_id or self.id} - {self.customer.email} - ${self.total}"
     
