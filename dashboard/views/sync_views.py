@@ -100,15 +100,17 @@ def verify_jwt_token(request):
 def receive_transaction(request):
     """
     Receive transaction data from POS system.
+    Supports both customer-linked and anonymous transactions.
     
     POST /api/v1/sync/transaction
-    
+
     Expected payload:
     {
         "transactionId": "uuid",
         "transactionNumber": "TXN-001",
         "tenantId": "uuid",
-        "customerId": "uuid",
+        "customerId": "uuid",  // OPTIONAL - omit for anonymous transactions
+        "isAnonymous": true,   // OPTIONAL - set to true for anonymous transactions
         "customerEmail": "email@example.com",
         "amount": 100.00,
         "tax": 10.00,
@@ -122,21 +124,21 @@ def receive_transaction(request):
         "status": "COMPLETED",
         "timestamp": "2025-10-27T18:46:35.341Z"
     }
-    
+
     Returns:
         JSON response with success/error status
     """
     try:
         # Verify JWT authentication
         is_valid, payload_or_error, tenant_id = verify_jwt_token(request)
-        
+
         if not is_valid:
             logger.warning(f"Authentication failed: {payload_or_error}")
             return JsonResponse({
                 'success': False,
                 'error': f'Authentication failed: {payload_or_error}'
             }, status=401)
-        
+
         # Parse request body
         try:
             data = json.loads(request.body)
@@ -146,18 +148,18 @@ def receive_transaction(request):
                 'success': False,
                 'error': 'Invalid JSON in request body'
             }, status=400)
-        
-        # Validate required fields
-        required_fields = ['transactionId', 'customerId', 'total', 'timestamp']
+
+        # Validate required fields (customerId is now optional)
+        required_fields = ['transactionId', 'total', 'timestamp']
         missing_fields = [field for field in required_fields if field not in data]
-        
+
         if missing_fields:
             logger.error(f"Missing required fields: {missing_fields}")
             return JsonResponse({
                 'success': False,
                 'error': f'Missing required fields: {", ".join(missing_fields)}'
             }, status=400)
-        
+
         # Get tenant
         try:
             tenant = Tenant.objects.get(tenant_uuid=tenant_id)
@@ -167,117 +169,147 @@ def receive_transaction(request):
                 'success': False,
                 'error': f'Tenant not found: {tenant_id}'
             }, status=404)
-        
-        # Get customer by external_id (POS customer ID)
-        customer_id = data['customerId']
-        try:
-            # FIX: Changed from id to external_id
-            customer = Customer.objects.get(external_id=customer_id, tenants__tenant_uuid=tenant_id)
-            
-            # Get TenantCustomer relationship (required by Transaction model)
-            from customers.models import TenantCustomer
-            tenant_customer = TenantCustomer.objects.get(customer=customer, tenant=tenant)
-            
-        except Customer.DoesNotExist:
-            logger.error(f"Customer not found with external_id: {customer_id}")
-            return JsonResponse({
-                'success': False,
-                'error': f'Customer not found: {customer_id}'
-            }, status=404)
-        except TenantCustomer.DoesNotExist:
-            logger.error(f"TenantCustomer relationship not found for customer: {customer_id}")
-            return JsonResponse({
-                'success': False,
-                'error': f'Customer not linked to tenant'
-            }, status=404)
-        
+
+        # Check if this is an anonymous transaction
+        is_anonymous = data.get('isAnonymous', False)
+        customer = None
+        tenant_customer = None
+
+        # Only try to get customer if not anonymous and customerId is provided
+        if not is_anonymous and 'customerId' in data and data['customerId']:
+            customer_id = data['customerId']
+            try:
+                # Get customer by external_id (POS customer ID)
+                customer = Customer.objects.get(
+                    external_id=customer_id, 
+                    tenants__tenant_uuid=tenant_id
+                )
+
+                # Get TenantCustomer relationship
+                from customers.models import TenantCustomer
+                tenant_customer = TenantCustomer.objects.get(
+                    customer=customer, 
+                    tenant=tenant
+                )
+
+                logger.info(f"Found customer for transaction: {customer_id}")
+
+            except Customer.DoesNotExist:
+                logger.error(f"Customer not found with external_id: {customer_id}")
+                return JsonResponse({
+                    'success': False,
+                    'error': f'Customer not found: {customer_id}'
+                }, status=404)
+            except TenantCustomer.DoesNotExist:
+                logger.error(f"TenantCustomer relationship not found for customer: {customer_id}")
+                return JsonResponse({
+                    'success': False,
+                    'error': f'Customer not linked to tenant'
+                }, status=404)
+        else:
+            logger.info(f"Processing anonymous transaction: {data['transactionId']}")
+
         # Use database transaction to ensure atomicity
         # Use skip_webhooks context to prevent circular webhooks
         with db_transaction.atomic(), skip_webhooks():
             # Create or update transaction
             transaction_id = data['transactionId']
-            
+
             # Prepare items data (ensure it's a list, not a JSON string)
             items_data = data.get('items', [])
             if isinstance(items_data, str):
                 import json as json_module
                 items_data = json_module.loads(items_data) if items_data else []
-            
+
+            # Prepare transaction defaults
+            transaction_defaults = {
+                'tenant': tenant,
+                'customer': customer,  # Will be None for anonymous
+                'tenant_customer': tenant_customer,  # Will be None for anonymous
+                'is_anonymous': is_anonymous,  # NEW FIELD
+                'transaction_number': data.get('transactionNumber', ''),
+                'amount': Decimal(str(data.get('amount', 0))),
+                'tax': Decimal(str(data.get('tax', 0))),
+                'discount': Decimal(str(data.get('discount', 0))),
+                'total': Decimal(str(data['total'])),
+                'currency': data.get('currency', 'USD'),
+                'payment_method': data.get('paymentMethod', 'cash').lower(),
+                'points_earned': data.get('pointsEarned', 0),
+                'points_redeemed': data.get('pointsRedeemed', 0),
+                'items': items_data,
+                'status': data.get('status', 'completed').lower(),
+            }
+
+            # Parse timestamp
+            timestamp_str = data.get('timestamp')
+            if timestamp_str:
+                try:
+                    from django.utils import timezone
+                    from datetime import datetime
+                    
+                    # Handle ISO format timestamp
+                    if timestamp_str.endswith('Z'):
+                        timestamp_str = timestamp_str[:-1] + '+00:00'
+                    
+                    transaction_defaults['transaction_date'] = datetime.fromisoformat(timestamp_str)
+                except Exception as e:
+                    logger.warning(f"Could not parse timestamp: {timestamp_str}, error: {e}")
+                    # Use current time if parsing fails
+                    from django.utils import timezone
+                    transaction_defaults['transaction_date'] = timezone.now()
+
+            # Create or update transaction
             transaction_obj, created = Transaction.objects.update_or_create(
-                external_id=transaction_id,  # Use external_id instead of id
-                defaults={
-                    'tenant': tenant,
-                    'customer': customer,
-                    'tenant_customer': tenant_customer,
-                    'transaction_number': data.get('transactionNumber', ''),
-                    'amount': Decimal(str(data.get('amount', 0))),
-                    'tax': Decimal(str(data.get('tax', 0))),
-                    'discount': Decimal(str(data.get('discount', 0))),
-                    'total': Decimal(str(data['total'])),
-                    'currency': data.get('currency', 'USD'),
-                    'payment_method': data.get('paymentMethod', 'cash').lower(),
-                    'points_earned': data.get('pointsEarned', 0),
-                    'points_redeemed': data.get('pointsRedeemed', 0),
-                    'items': items_data,
-                    'status': data.get('status', 'completed').lower(),
-                    'notes': data.get('notes', ''),
-                    'created_by': data.get('createdBy'),
-                    'transaction_date': datetime.fromisoformat(data['timestamp'].replace('Z', '+00:00')),
-                    'external_source': 'POS',
-                    'synced_at': datetime.now(),
-                }
+                external_id=transaction_id,
+                defaults=transaction_defaults
             )
-            
-            # Update customer statistics (on Customer model directly)
-            points_earned = data.get('pointsEarned', 0)
-            points_redeemed = data.get('pointsRedeemed', 0)
-            transaction_total = Decimal(str(data['total']))
-            
-            # Update loyalty points
-            net_points = points_earned - points_redeemed
-            customer.loyalty_points = (customer.loyalty_points or 0) + net_points
-            
-            # Update total spent
-            customer.total_spent = (customer.total_spent or Decimal('0')) + transaction_total
-            
-            # Update visit count (only increment on new transactions)
-            if created:
-                customer.visit_count = (customer.visit_count or 0) + 1
-            
-            # Update last visit
-            customer.last_visit = datetime.fromisoformat(data['timestamp'].replace('Z', '+00:00'))
-            
-            # Update loyalty tier based on points
-            if customer.loyalty_points >= 1000:
-                customer.loyalty_tier = 'GOLD'
-            elif customer.loyalty_points >= 500:
-                customer.loyalty_tier = 'SILVER'
-            else:
-                customer.loyalty_tier = 'BRONZE'
-            
-            customer.save()
+
+            action = "created" if created else "updated"
+            customer_info = f"customer {customer.external_id}" if customer else "anonymous customer"
             
             logger.info(
-                f"Transaction {'created' if created else 'updated'}: {transaction_id} "
-                f"for customer {customer_id}, total: {transaction_total}"
+                f"Transaction {action}: {transaction_id} for {customer_info}, "
+                f"total: {data['total']}, anonymous: {is_anonymous}"
             )
-            
+
+            # Update customer loyalty points ONLY if not anonymous
+            if not is_anonymous and customer:
+                try:
+                    points_earned = data.get('pointsEarned', 0)
+                    points_redeemed = data.get('pointsRedeemed', 0)
+                    
+                    if points_earned > 0:
+                        customer.loyalty_points += points_earned
+                    if points_redeemed > 0:
+                        customer.loyalty_points -= points_redeemed
+                    
+                    # Update total spent
+                    customer.total_spent = (customer.total_spent or 0) + Decimal(str(data['total']))
+                    
+                    # Increment visit count
+                    customer.visit_count = (customer.visit_count or 0) + 1
+                    
+                    customer.save()
+                    
+                    logger.info(
+                        f"Updated customer loyalty: {customer.external_id}, "
+                        f"points: {customer.loyalty_points}, total_spent: {customer.total_spent}"
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to update customer loyalty: {str(e)}")
+                    # Don't fail the transaction if loyalty update fails
+
             return JsonResponse({
                 'success': True,
-                'message': f'Transaction {"created" if created else "updated"} successfully',
+                'action': action,
                 'transaction_id': str(transaction_obj.id),
-                'customer': {
-                    'id': str(customer.id),
-                    'external_id': customer.external_id,
-                    'loyalty_points': customer.loyalty_points,
-                    'loyalty_tier': customer.loyalty_tier,
-                    'total_spent': float(customer.total_spent),
-                    'visit_count': customer.visit_count,
-                }
+                'external_id': transaction_id,
+                'is_anonymous': is_anonymous,
+                'message': f'Transaction {action} successfully'
             }, status=201 if created else 200)
-        
+
     except Exception as e:
-        logger.error(f"Error processing transaction: {str(e)}", exc_info=True)
+        logger.error(f"Error receiving transaction: {str(e)}", exc_info=True)
         return JsonResponse({
             'success': False,
             'error': f'Internal server error: {str(e)}'
