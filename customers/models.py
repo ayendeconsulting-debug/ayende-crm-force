@@ -588,9 +588,6 @@ class Transaction(models.Model):
         """String representation with anonymous support"""
         customer_info = self.customer_name if self.customer else "Anonymous"
         return f"Transaction {self.transaction_number} - {customer_info} - ${self.total}"
-
-    def __str__(self):
-        return f"Transaction {self.transaction_id or self.id} - {self.customer.email} - ${self.total}"
     
     def save(self, *args, **kwargs):
         # Auto-generate transaction ID if not provided
@@ -612,8 +609,8 @@ class Transaction(models.Model):
         if self.status == 'completed':
             self.update_customer_stats()
     
-        def update_customer_stats(self):
-          """Update TenantCustomer statistics after transaction"""
+    def update_customer_stats(self):
+        """Update TenantCustomer statistics after transaction"""
         # Skip if anonymous transaction or no customer
         if self.is_anonymous or not self.tenant_customer:
             return
@@ -622,10 +619,18 @@ class Transaction(models.Model):
             # Update loyalty points
             self.tenant_customer.loyalty_points += self.points_earned
             self.tenant_customer.loyalty_points -= self.points_redeemed
+            
             # Update total spent
             if not hasattr(self.tenant_customer, 'total_spent'):
                 # If field doesn't exist yet, track in total_purchases
                 self.tenant_customer.total_purchases += self.total
+            else:
+                self.tenant_customer.total_spent += self.total
+            
+            # Update last purchase date
+            self.tenant_customer.last_purchase_date = self.transaction_date.date()
+            
+            self.tenant_customer.save()
     
     @property
     def is_refundable(self):
