@@ -172,6 +172,13 @@ def receive_transaction(request):
 
         # Check if this is an anonymous transaction
         is_anonymous = data.get('isAnonymous', False)
+        
+        # WORKAROUND: If no customerId provided, treat as anonymous
+        # This handles cases where POS doesn't send isAnonymous flag correctly
+        if not data.get('customerId') or data.get('customerId') is None:
+            is_anonymous = True
+            logger.info(f"Detected anonymous transaction (no customerId): {data['transactionId']}")
+        
         customer = None
         tenant_customer = None
 
@@ -227,6 +234,7 @@ def receive_transaction(request):
                 'customer': customer,  # Will be None for anonymous
                 'tenant_customer': tenant_customer,  # Will be None for anonymous
                 'is_anonymous': is_anonymous,  # NEW FIELD
+                'external_source': 'POS',  # Mark as POS-originated transaction
                 'transaction_number': data.get('transactionNumber', ''),
                 'amount': Decimal(str(data.get('amount', 0))),
                 'tax': Decimal(str(data.get('tax', 0))),
