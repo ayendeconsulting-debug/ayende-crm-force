@@ -30,6 +30,61 @@ from .utils import (
 )
 
 
+def calculate_anonymous_metrics(transactions):
+    """
+    Calculate metrics for anonymous (walk-in) transactions.
+    
+    Args:
+        transactions: QuerySet of Transaction objects
+        
+    Returns:
+        dict with anonymous transaction metrics
+    """
+    from decimal import Decimal
+    
+    # Filter anonymous transactions
+    anonymous_txs = transactions.filter(is_anonymous=True)
+    customer_txs = transactions.filter(is_anonymous=False)
+    
+    total_count = transactions.count()
+    anonymous_count = anonymous_txs.count()
+    customer_count = customer_txs.count()
+    
+    # Calculate revenue
+    anonymous_revenue = anonymous_txs.aggregate(
+        total=Sum('total')
+    )['total'] or Decimal('0')
+    
+    customer_revenue = customer_txs.aggregate(
+        total=Sum('total')
+    )['total'] or Decimal('0')
+    
+    total_revenue = anonymous_revenue + customer_revenue
+    
+    # Calculate percentages
+    anonymous_pct = (anonymous_count / total_count * 100) if total_count > 0 else 0
+    anonymous_revenue_pct = (float(anonymous_revenue) / float(total_revenue) * 100) if total_revenue > 0 else 0
+    
+    # Calculate average transaction values
+    avg_anonymous = (anonymous_revenue / anonymous_count) if anonymous_count > 0 else Decimal('0')
+    avg_customer = (customer_revenue / customer_count) if customer_count > 0 else Decimal('0')
+    
+    return {
+        'anonymous_count': anonymous_count,
+        'customer_count': customer_count,
+        'total_count': total_count,
+        'anonymous_percentage': round(anonymous_pct, 1),
+        'customer_percentage': round(100 - anonymous_pct, 1),
+        'anonymous_revenue': anonymous_revenue,
+        'customer_revenue': customer_revenue,
+        'total_revenue': total_revenue,
+        'anonymous_revenue_percentage': round(anonymous_revenue_pct, 1),
+        'customer_revenue_percentage': round(100 - anonymous_revenue_pct, 1),
+        'avg_anonymous_value': avg_anonymous,
+        'avg_customer_value': avg_customer,
+    }
+
+
 def check_staff_permission(request):
     """
     Helper function to check if user has staff permissions.
@@ -92,6 +147,9 @@ def reports_dashboard(request):
     loyalty_metrics = calculate_loyalty_metrics(all_customers, all_transactions)
     sales_analytics = get_sales_analytics(period_transactions)
     
+    # Calculate anonymous transaction metrics
+    anonymous_metrics = calculate_anonymous_metrics(period_transactions)
+    
     # Get comparison data
     comparison = get_comparison_data(all_transactions, start_date, end_date)
     
@@ -112,6 +170,7 @@ def reports_dashboard(request):
         'customer_metrics': customer_metrics,
         'loyalty_metrics': loyalty_metrics,
         'sales_analytics': sales_analytics,
+        'anonymous_metrics': anonymous_metrics,
         'comparison': comparison,
         'retention_rate': retention_rate,
         'revenue_by_day': json.dumps(revenue_by_day),
