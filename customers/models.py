@@ -613,7 +613,7 @@ class Transaction(models.Model):
             self.update_customer_stats()
     
         def update_customer_stats(self):
-        """Update TenantCustomer statistics after transaction"""
+          """Update TenantCustomer statistics after transaction"""
         # Skip if anonymous transaction or no customer
         if self.is_anonymous or not self.tenant_customer:
             return
