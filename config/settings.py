@@ -271,8 +271,15 @@ CUSTOMER_SYNC_INTERVAL = int(os.getenv('CUSTOMER_SYNC_INTERVAL', '3600'))
 SYNC_BATCH_SIZE = int(os.getenv('SYNC_BATCH_SIZE', '100'))
 ENABLE_POS_SYNC = True
 ENABLE_CRM_SYNC = True
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-INTEGRATION_ADMIN_EMAIL = 'admin@ayendecx.com'
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.sendgrid.net'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'apikey'  # Literally the word "apikey"
+EMAIL_HOST_PASSWORD = os.getenv('SENDGRID_API_KEY')
+DEFAULT_FROM_EMAIL = 'noreply@ayendecx.com'
+
+#**Railway Variables:**
 
 # ===== PHASE 2C: Webhook Configuration =====
 
