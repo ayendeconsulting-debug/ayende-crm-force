@@ -263,7 +263,7 @@ LOGGING = {
 # POS INTEGRATION SETTINGS
 # ============================================
 INTEGRATION_SECRET = '31YMBwf4R4OetvSJ/nIf+5D1ndnMxruRL1QcJsCM9jM='  # IMPORTANT: Change this!
-POS_API_URL = 'http://localhost:3000'  # POS backend URL
+POS_API_URL = os.getenv('POS_API_URL', 'https://pos-staging.ayendecx.com')  # POS backend URL
 POS_API_TIMEOUT = int(os.getenv('POS_API_TIMEOUT', '30000'))
 ENABLE_CUSTOMER_SYNC_TO_POS = os.getenv('ENABLE_CUSTOMER_SYNC_TO_POS', 'True').lower() == 'true'
 CUSTOMER_SYNC_INTERVAL = int(os.getenv('CUSTOMER_SYNC_INTERVAL', '3600'))
@@ -276,7 +276,7 @@ INTEGRATION_ADMIN_EMAIL = 'admin@ayendecx.com'
 # ===== PHASE 2C: Webhook Configuration =====
 
 # POS Webhook URL (base URL for POS system)
-POS_WEBHOOK_URL = 'http://localhost:3000'
+POS_WEBHOOK_URL = os.getenv('POS_WEBHOOK_URL', 'https://pos-staging.ayendecx.com')
 
 # Enable/disable webhook sending
 ENABLE_WEBHOOKS = True
