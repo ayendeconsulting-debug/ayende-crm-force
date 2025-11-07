@@ -171,6 +171,7 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 # CSRF trusted origins - Include custom domain
 CSRF_TRUSTED_ORIGINS = [
     'https://*.railway.app',
+    'https://*.ayendecx.com',
 ]
 
 if CUSTOM_DOMAIN:
