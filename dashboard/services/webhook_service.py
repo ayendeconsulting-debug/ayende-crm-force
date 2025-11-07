@@ -1,144 +1,270 @@
-# customers/signals.py
+# dashboard/services/webhook_service.py
 """
-Django signals for customer model changes.
-Triggers webhooks to POS system when customers are created, updated, or deleted.
+Webhook service for sending customer data to POS system.
+Handles webhook signing, retry logic, and error handling.
 
 FIXED:
-- Changed instance.tenant to instance.tenants.first() for ManyToMany relationship
-- Added check for webhook skip context to prevent circular webhooks during POS sync
+- Line 211: Changed MappingService.get_external_id() to MappingService.get_business_id()
+- Removed incorrect import: from .models import Customer
 """
 
-from django.db.models.signals import post_save, post_delete
-from django.dispatch import receiver
+import requests
+import json
+import hmac
+import hashlib
+import time
 from django.conf import settings
-from .models import Customer
+from typing import Dict, Optional
 import logging
 
 logger = logging.getLogger(__name__)
 
 
-def should_skip_webhooks():
-    """
-    Check if webhooks should be skipped in the current context.
-    Imports the function from sync_views to check the context variable.
+class WebhookService:
+    """Service for sending webhooks to POS system"""
     
-    Returns:
-        bool: True if webhooks should be skipped
-    """
-    try:
-        from dashboard.views.sync_views import should_skip_webhooks as check_skip
-        return check_skip()
-    except ImportError:
-        # If sync_views not available, don't skip
+    @staticmethod
+    def _get_webhook_url(tenant, operation: str) -> Optional[str]:
+        """
+        Get the webhook URL for a specific operation.
+        
+        Args:
+            tenant: The tenant object
+            operation: 'created', 'updated', or 'deleted'
+            
+        Returns:
+            Full webhook URL or None if not configured
+        """
+        base_url = getattr(settings, 'POS_WEBHOOK_URL', None)
+        if not base_url:
+            logger.warning("POS_WEBHOOK_URL not configured in settings")
+            return None
+        
+        # Map operations to endpoints
+        endpoint_map = {
+            'created': '/api/v1/webhooks/customer',
+            'updated': '/api/v1/webhooks/customer',
+            'deleted': '/api/v1/webhooks/customer'
+        }
+        
+        endpoint = endpoint_map.get(operation)
+        if not endpoint:
+            logger.error(f"Unknown operation: {operation}")
+            return None
+        
+        return f"{base_url}{endpoint}"
+    
+    @staticmethod
+    def _generate_signature(payload: str, secret: str) -> str:
+        """
+        Generate HMAC signature for webhook payload.
+        
+        Args:
+            payload: JSON string of the payload
+            secret: Secret key for signing
+            
+        Returns:
+            Hex digest of HMAC signature
+        """
+        return hmac.new(
+            secret.encode('utf-8'),
+            payload.encode('utf-8'),
+            hashlib.sha256
+        ).hexdigest()
+    
+    @staticmethod
+    def _prepare_customer_payload(customer, operation: str) -> Dict:
+        """
+        Prepare customer data for webhook payload.
+        
+        Args:
+            customer: Customer model instance
+            operation: 'created', 'updated', or 'deleted'
+            
+        Returns:
+            Dictionary with customer data
+        """
+        # Get tenant for tenant_id
+        tenant = customer.tenants.first()
+        tenant_uuid = str(tenant.tenant_uuid) if tenant else None
+        
+        # For delete operations, send minimal data
+        if operation == 'deleted':
+            return {
+                'operation': operation,
+                'customerId': str(customer.id),
+                'tenantId': tenant_uuid,
+                'timestamp': int(time.time())
+            }
+        
+        # For create/update, send full customer data
+        return {
+            'operation': operation,
+            'customerId': str(customer.id),
+            'externalId': str(customer.id),  # POS customer ID (same as CRM ID for now)
+            'email': customer.email or '',
+            'firstName': customer.first_name,
+            'lastName': customer.last_name,
+            'phone': customer.phone or '',
+            'dateOfBirth': customer.date_of_birth.isoformat() if customer.date_of_birth else None,
+            'address': customer.address or '',
+            'city': customer.city or '',
+            'state': customer.state or '',
+            'postalCode': customer.postal_code or '',
+            'loyaltyPoints': customer.loyalty_points or 0,
+            'loyaltyTier': customer.loyalty_tier or 'BRONZE',
+            'totalSpent': float(customer.total_spent or 0),
+            'visitCount': customer.visit_count or 0,
+            'marketingOptIn': customer.marketing_opt_in or False,
+            'tenantId': tenant_uuid,
+            'timestamp': int(time.time())
+        }
+    
+    @staticmethod
+    def _send_webhook(url: str, payload: Dict, secret: str, max_retries: int = 3) -> bool:
+        """
+        Send webhook with retry logic.
+        
+        Args:
+            url: Webhook URL
+            payload: Payload dictionary
+            secret: Secret for signing
+            max_retries: Maximum number of retry attempts
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        payload_json = json.dumps(payload, separators=(',', ':'))
+        
+        # Generate JWT token for authentication
+        import jwt
+        token_payload = {
+            'iss': 'ayende-crm',
+            'scope': 'webhook',
+            'iat': int(time.time()),
+            'exp': int(time.time()) + 3600  # 1 hour expiry
+        }
+        token = jwt.encode(token_payload, secret, algorithm='HS256')
+        
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {token}',
+            'X-Tenant-ID': payload.get('tenantId', ''),
+            'User-Agent': 'Ayende-CRM-Webhook/1.0'
+        }
+        
+        for attempt in range(max_retries):
+            try:
+                logger.info(f"Sending webhook to {url} (attempt {attempt + 1}/{max_retries})")
+                
+                response = requests.post(
+                    url,
+                    data=payload_json,
+                    headers=headers,
+                    timeout=10  # 10 second timeout
+                )
+                
+                if response.status_code in [200, 201, 204]:
+                    logger.info(f"Webhook sent successfully: {response.status_code}")
+                    return True
+                else:
+                    logger.warning(
+                        f"Webhook failed with status {response.status_code}: {response.text}"
+                    )
+                    
+            except requests.exceptions.Timeout:
+                logger.warning(f"Webhook timeout (attempt {attempt + 1}/{max_retries})")
+                
+            except requests.exceptions.ConnectionError:
+                logger.warning(f"Webhook connection error (attempt {attempt + 1}/{max_retries})")
+                
+            except Exception as e:
+                logger.error(f"Webhook error: {str(e)}", exc_info=True)
+            
+            # Wait before retry (exponential backoff)
+            if attempt < max_retries - 1:
+                wait_time = 2 ** attempt  # 1s, 2s, 4s
+                logger.info(f"Waiting {wait_time}s before retry...")
+                time.sleep(wait_time)
+        
+        logger.error(f"Webhook failed after {max_retries} attempts")
         return False
-
-
-@receiver(post_save, sender=Customer)
-def customer_saved(sender, instance, created, **kwargs):
-    """
-    Signal handler for customer create/update events.
-    Triggers webhook to POS system.
     
-    This webhook is sent when:
-    - Customer is created in CRM (not synced from POS)
-    - Customer profile is updated in CRM (marketing, contact info changes)
+    @classmethod
+    def send_customer_webhook(cls, customer, operation: str, tenant) -> bool:
+        """
+        Send customer webhook to POS system.
+        
+        Args:
+            customer: Customer model instance
+            operation: 'created', 'updated', or 'deleted'
+            tenant: Tenant object
+            
+        Returns:
+            True if webhook sent successfully, False otherwise
+        """
+        try:
+            # Get webhook URL
+            webhook_url = cls._get_webhook_url(tenant, operation)
+            if not webhook_url:
+                return False
+            
+            # Get secret key
+            secret = getattr(settings, 'INTEGRATION_SECRET', None)
+            if not secret:
+                logger.error("INTEGRATION_SECRET not configured")
+                return False
+            
+            logger.info(
+                f"Sending {operation} webhook for customer {customer.id} "
+                f"({customer.first_name} {customer.last_name})"
+            )
+            
+            # Prepare payload
+            payload = cls._prepare_customer_payload(customer, operation)
+            
+            # Send webhook
+            return cls._send_webhook(webhook_url, payload, secret)
+            
+        except Exception as e:
+            logger.error(
+                f"Failed to send customer webhook: {str(e)}",
+                exc_info=True
+            )
+            return False
     
-    This webhook is NOT sent when:
-    - Customer is being synced FROM POS (prevents circular webhooks)
-    - We're in a skip_webhooks context
-    
-    Args:
-        sender: The model class (Customer)
-        instance: The actual customer instance being saved
-        created: Boolean - True if this is a new customer
-        **kwargs: Additional signal parameters
-    """
-    # Check if we're in a webhook skip context (during POS sync)
-    if should_skip_webhooks():
-        logger.debug(f"Skipping webhook during POS sync operation: {instance.id}")
-        return
-    
-    # Only send webhooks if integration is enabled
-    if not getattr(settings, 'ENABLE_CRM_SYNC', False):
-        logger.debug(f"CRM sync disabled, skipping webhook for customer {instance.id}")
-        return
-    
-    # Avoid triggering webhooks during bulk operations or migrations
-    if kwargs.get('raw', False):
-        logger.debug(f"Raw save detected, skipping webhook for customer {instance.id}")
-        return
-    
-    try:
-        # Import here to avoid circular imports
-        from dashboard.services.webhook_service import WebhookService
+    @classmethod
+    def test_webhook_connection(cls, tenant) -> Dict:
+        """
+        Test webhook connection to POS system.
         
-        # Get the first tenant from ManyToMany relationship
-        # FIXED: Changed from instance.tenant to instance.tenants.first()
-        tenant = instance.tenants.first()
-        
-        if not tenant:
-            logger.warning(f"Customer {instance.id} has no tenants, skipping webhook")
-            return
-        
-        # Determine operation type
-        operation = 'created' if created else 'updated'
-        
-        logger.info(f"Customer {operation}: {instance.id} ({instance.first_name} {instance.last_name})")
-        
-        # Send webhook asynchronously
-        WebhookService.send_customer_webhook(
-            customer=instance,
-            operation=operation,
-            tenant=tenant
-        )
-        
-    except Exception as e:
-        # Don't fail the save operation if webhook fails
-        logger.error(f"Failed to send webhook for customer {instance.id}: {str(e)}", exc_info=True)
-
-
-@receiver(post_delete, sender=Customer)
-def customer_deleted(sender, instance, **kwargs):
-    """
-    Signal handler for customer delete events.
-    Triggers webhook to POS system.
-    
-    Args:
-        sender: The model class (Customer)
-        instance: The customer instance being deleted
-        **kwargs: Additional signal parameters
-    """
-    # Check if we're in a webhook skip context
-    if should_skip_webhooks():
-        logger.debug(f"Skipping delete webhook during sync operation: {instance.id}")
-        return
-    
-    # Only send webhooks if integration is enabled
-    if not getattr(settings, 'ENABLE_CRM_SYNC', False):
-        logger.debug(f"CRM sync disabled, skipping delete webhook for customer {instance.id}")
-        return
-    
-    try:
-        # Import here to avoid circular imports
-        from dashboard.services.webhook_service import WebhookService
-        
-        # Get the first tenant from ManyToMany relationship
-        # FIXED: Changed from instance.tenant to instance.tenants.first()
-        tenant = instance.tenants.first()
-        
-        if not tenant:
-            logger.warning(f"Customer {instance.id} has no tenants, skipping delete webhook")
-            return
-        
-        logger.info(f"Customer deleted: {instance.id} ({instance.first_name} {instance.last_name})")
-        
-        # Send webhook asynchronously
-        WebhookService.send_customer_webhook(
-            customer=instance,
-            operation='deleted',
-            tenant=tenant
-        )
-        
-    except Exception as e:
-        # Don't fail the delete operation if webhook fails
-        logger.error(f"Failed to send delete webhook for customer {instance.id}: {str(e)}", exc_info=True)
+        Args:
+            tenant: Tenant object
+            
+        Returns:
+            Dictionary with test results
+        """
+        try:
+            base_url = getattr(settings, 'POS_WEBHOOK_URL', None)
+            if not base_url:
+                return {
+                    'success': False,
+                    'error': 'POS_WEBHOOK_URL not configured'
+                }
+            
+            # Try to ping the health check endpoint
+            health_url = f"{base_url}/api/v1/webhooks/health"
+            
+            response = requests.get(health_url, timeout=5)
+            
+            return {
+                'success': response.status_code == 200,
+                'status_code': response.status_code,
+                'url': base_url
+            }
+            
+        except Exception as e:
+            return {
+                'success': False,
+                'error': str(e)
+            }
