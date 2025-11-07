@@ -293,7 +293,7 @@ INTEGRATION_SECRET = os.environ.get('INTEGRATION_SECRET', '31YMBwf4R4OetvSJ/nIf+
 # ===== PHASE 2C: Webhook Configuration =====
 
 # POS Webhook URL (base URL for POS system)
-POS_WEBHOOK_URL = 'http://localhost:3000'
+POS_WEBHOOK_URL = os.getenv('POS_WEBHOOK_URL', 'https://pos-staging.ayendecx.com')
 
 # Enable CRM sync and webhooks
 ENABLE_CRM_SYNC = True  # This enables webhooks
