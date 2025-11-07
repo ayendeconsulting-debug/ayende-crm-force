@@ -101,7 +101,7 @@ class WebhookService:
         return {
             'operation': operation,
             'customerId': str(customer.id),
-            'externalId': str(customer.id),  # POS customer ID (same as CRM ID for now)
+            'externalId': str(customer.external_id) if customer.external_id else str(customer.id),  # Use POS ID if available
             'email': customer.email or '',
             'firstName': customer.first_name,
             'lastName': customer.last_name,
