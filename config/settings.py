@@ -143,15 +143,16 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 
-# Email configuration
-#EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-#EMAIL_HOST = 'smtp.gmail.com'
-#EMAIL_PORT = 587
-#EMAIL_USE_TLS = True
-#EMAIL_HOST_USER = 'ayendeconsulting@gmail.com'
-#EMAIL_HOST_PASSWORD = 'benz2025'
-#DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@ayendecx.com')
-#INTEGRATION_ADMIN_EMAIL = 'admin@ayendecx.com'
+# ===== EMAIL CONFIGURATION - SENDGRID =====
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.sendgrid.net'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'apikey'  # This is literally the word "apikey"
+EMAIL_HOST_PASSWORD = os.getenv('SENDGRID_API_KEY')
+DEFAULT_FROM_EMAIL = 'noreply@ayendecx.com'  # Match your verified sender exactly
+SERVER_EMAIL = 'noreply@ayendecx.com'
+EMAIL_TIMEOUT = 30
 
 # Security settings for production
 ENABLE_HTTPS_REDIRECT = os.environ.get('ENABLE_HTTPS_REDIRECT', 'False') == 'True'
