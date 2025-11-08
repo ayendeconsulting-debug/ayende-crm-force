@@ -18,23 +18,23 @@
         <div class="card">
             <div class="card-body text-center">
                 <div class="avatar-circle-large mx-auto mb-3">
-                    {{ customer_rel.customer.initials }}
+                    {{ customer_rel.customer.first_name|first }}{{ customer_rel.customer.last_name|first }}
                 </div>
                 <h4>{{ customer_rel.customer.get_full_name }}</h4>
                 <p class="text-muted mb-3">{{ customer_rel.customer.email }}</p>
-                
+
                 {% if customer_rel.is_vip %}
                     <span class="badge bg-warning mb-3">VIP Customer</span>
                 {% endif %}
-                
+
                 {% if customer_rel.is_active %}
                     <span class="badge bg-success mb-3">Active</span>
                 {% else %}
                     <span class="badge bg-secondary mb-3">Inactive</span>
                 {% endif %}
-                
+
                 <hr>
-                
+
                 <div class="text-start">
                     <p class="mb-2">
                         <i class="bi bi-envelope text-muted"></i>
@@ -61,19 +61,23 @@
                         </p>
                     {% endif %}
                 </div>
-                
+
                 <hr>
-                
+
                 <div class="d-grid gap-2">
-                    <button class="btn btn-primary">
+                    <!-- FIXED: Added href to Edit Customer button -->
+                    <a href="{% url 'dashboard:edit_customer' customer_rel.id %}" class="btn btn-primary">
                         <i class="bi bi-pencil"></i> Edit Customer
-                    </button>
-                    <button class="btn btn-outline-success">
+                    </a>
+                    <!-- FIXED: Added href to Send Message button -->
+                    <a href="{% url 'notifications:compose' %}?customer_id={{ customer_rel.id }}" class="btn btn-outline-success">
                         <i class="bi bi-envelope"></i> Send Message
-                    </button>
-                    <button class="btn btn-outline-danger">
+                    </a>
+                    <!-- FIXED: Added href to Delete Customer button -->
+                    <a href="{% url 'dashboard:delete_customer' customer_rel.id %}" class="btn btn-outline-danger" 
+                       onclick="return confirm('Are you sure you want to delete this customer?')">
                         <i class="bi bi-trash"></i> Delete Customer
-                    </button>
+                    </a>
                 </div>
             </div>
         </div>
@@ -121,7 +125,7 @@
             <div class="col-md-4 mb-3">
                 <div class="card bg-success text-white">
                     <div class="card-body">
-                        <h3>${{ customer_rel.total_spent|default:customer_rel.total_purchases|floatformat:2 }}</h3>
+                        <h3>${{ total_spent|floatformat:2 }}</h3>
                         <p class="mb-0">Total Spent</p>
                     </div>
                 </div>
@@ -129,7 +133,7 @@
             <div class="col-md-4 mb-3">
                 <div class="card bg-info text-white">
                     <div class="card-body">
-                        <h3>{{ customer_rel.purchase_count }}</h3>
+                        <h3>{{ total_transactions }}</h3>
                         <p class="mb-0">Total Purchases</p>
                     </div>
                 </div>
@@ -140,44 +144,32 @@
         <div class="card mb-4">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Recent Transactions</h5>
-                <a href="#" class="btn btn-sm btn-outline-primary">View All</a>
+                <a href="{% url 'dashboard:transaction_list' %}?customer={{ customer_rel.id }}" class="btn btn-sm btn-outline-primary">View All</a>
             </div>
             <div class="card-body">
-                {% if customer_transactions %}
+                {% if transactions %}
                     <div class="table-responsive">
                         <table class="table table-hover">
                             <thead>
                                 <tr>
                                     <th>Date</th>
                                     <th>Transaction ID</th>
-                                    <th>Items</th>
                                     <th>Amount</th>
-                                    <th>Points</th>
                                     <th>Status</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for transaction in customer_transactions %}
+                                {% for transaction in transactions %}
                                     <tr>
                                         <td>{{ transaction.transaction_date|date:"M d, Y" }}</td>
                                         <td>
-                                            <small class="font-monospace">{{ transaction.transaction_id }}</small>
+                                            <small class="font-monospace">{{ transaction.id|truncatechars:13 }}</small>
                                         </td>
-                                        <td>{{ transaction.items_description|truncatewords:5 }}</td>
                                         <td>${{ transaction.total|floatformat:2 }}</td>
                                         <td>
-                                            <span class="badge bg-warning">+{{ transaction.points_earned }}</span>
-                                        </td>
-                                        <td>
-                                            {% if transaction.status == 'completed' %}
-                                                <span class="badge bg-success">Completed</span>
-                                            {% elif transaction.status == 'pending' %}
-                                                <span class="badge bg-warning">Pending</span>
-                                            {% elif transaction.status == 'cancelled' %}
-                                                <span class="badge bg-danger">Cancelled</span>
-                                            {% elif transaction.status == 'refunded' %}
-                                                <span class="badge bg-info">Refunded</span>
-                                            {% endif %}
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-check-circle"></i> {{ transaction.get_status_display }}
+                                            </span>
                                         </td>
                                     </tr>
                                 {% endfor %}
@@ -196,14 +188,36 @@
                 <h5 class="mb-0">Internal Notes</h5>
             </div>
             <div class="card-body">
-                {% if customer_rel.notes %}
-                    <p>{{ customer_rel.notes }}</p>
-                {% else %}
-                    <p class="text-muted">No notes added yet.</p>
-                {% endif %}
-                <button class="btn btn-sm btn-outline-primary mt-2">
+                <div id="notesDisplay">
+                    {% if customer_rel.notes %}
+                        <p>{{ customer_rel.notes }}</p>
+                    {% else %}
+                        <p class="text-muted">No notes added yet.</p>
+                    {% endif %}
+                </div>
+                <!-- FIXED: Added onclick functionality to Edit Notes button -->
+                <button class="btn btn-sm btn-outline-primary mt-2" onclick="editNotes()">
                     <i class="bi bi-pencil"></i> Edit Notes
                 </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Notes Edit Modal -->
+<div class="modal fade" id="notesModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Customer Notes</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <textarea id="notesTextarea" class="form-control" rows="5">{{ customer_rel.notes }}</textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveNotes()">Save Notes</button>
             </div>
         </div>
     </div>
@@ -223,4 +237,40 @@
         font-size: 2.5rem;
     }
 </style>
+
+<script>
+// Edit Notes functionality
+function editNotes() {
+    const modal = new bootstrap.Modal(document.getElementById('notesModal'));
+    modal.show();
+}
+
+function saveNotes() {
+    const notes = document.getElementById('notesTextarea').value;
+    
+    fetch(`{% url 'dashboard:edit_customer_notes' customer_rel.id %}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: 'notes=' + encodeURIComponent(notes)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('notesDisplay').innerHTML = 
+                notes ? `<p>${notes}</p>` : '<p class="text-muted">No notes added yet.</p>';
+            bootstrap.Modal.getInstance(document.getElementById('notesModal')).hide();
+            alert('Notes saved successfully!');
+        } else {
+            alert('Error saving notes: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error saving notes');
+    });
+}
+</script>
 {% endblock %}
