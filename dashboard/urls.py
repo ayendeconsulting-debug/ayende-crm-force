@@ -49,9 +49,9 @@ urlpatterns = [
     path('customers/', views.main.manage_customers, name='manage_customers'),
     path('customers/add/', views.main.add_customer, name='add_customer'),
     path('customers/<uuid:customer_id>/', views.main.customer_detail, name='customer_detail'),
-    path('customers/<<uuid:customer_id>/edit/', views.main.edit_customer, name='edit_customer'),
-    path('customers/<<uuid:customer_id>/delete/', views.main.delete_customer, name='delete_customer'),
-    path('customers/<<uuid:customer_id>/notes/', views.main.edit_customer_notes, name='edit_customer_notes'),
+    path('customers/<uuid:customer_id>/edit/', views.main.edit_customer, name='edit_customer'),
+    path('customers/<uuid:customer_id>/delete/', views.main.delete_customer, name='delete_customer'),
+    path('customers/<uuid:customer_id>/notes/', views.main.edit_customer_notes, name='edit_customer_notes'),
     path('api/v1/customers/check-phone', check_customer_by_phone, name='check-customer-phone'),
     path('customers/export/', views.main.export_customers, name='export_customers'),
     
