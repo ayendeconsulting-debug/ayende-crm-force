@@ -501,3 +501,104 @@ def sync_health(request):
             'error': str(e),
             'timestamp': datetime.now().isoformat(),
         }, status=500)
+
+@api_view(['GET'])
+@authentication_classes([IntegrationJWTAuthentication])
+def get_updated_customers(request):
+    """
+    Get customers updated since a specific time.
+    Used by POS for scheduled sync (CRM → POS).
+    
+    GET /api/sync/customers?updated_since=2025-11-08T12:00:00Z
+    
+    Query params:
+    - updated_since: ISO timestamp (optional) - only return customers updated after this time
+    
+    Returns:
+        JSON response with list of customers
+    """
+    try:
+        # Verify JWT authentication (already done by decorator)
+        # Get tenant from JWT payload
+        tenant_id = request.auth_payload.get('tenantId')
+        
+        if not tenant_id:
+            return Response({
+                'success': False,
+                'error': 'Missing tenantId in token'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Get tenant
+        try:
+            tenant = Tenant.objects.get(tenant_uuid=tenant_id)
+        except Tenant.DoesNotExist:
+            logger.error(f"Tenant not found: {tenant_id}")
+            return Response({
+                'success': False,
+                'error': f'Tenant not found: {tenant_id}'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Get updated_since parameter
+        updated_since = request.GET.get('updated_since')
+        
+        # Import TenantCustomer
+        from customers.models import TenantCustomer
+        
+        # Build query
+        query = TenantCustomer.objects.filter(tenant=tenant, is_active=True)
+        
+        if updated_since:
+            try:
+                # Parse ISO format timestamp
+                since_time = datetime.fromisoformat(updated_since.replace('Z', '+00:00'))
+                query = query.filter(updated_at__gte=since_time)
+                logger.info(f"Fetching customers updated since: {since_time}")
+            except ValueError as e:
+                logger.error(f"Invalid updated_since format: {updated_since}")
+                return Response({
+                    'success': False,
+                    'error': 'Invalid updated_since format. Use ISO 8601 format (e.g., 2025-11-08T12:00:00Z)'
+                }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Get customers (limit to 100 per request)
+        tenant_customers = query.select_related('customer').order_by('updated_at')[:100]
+        
+        logger.info(f"Found {tenant_customers.count()} customers for sync")
+        
+        # Serialize customers
+        customers = []
+        for tc in tenant_customers:
+            customers.append({
+                'id': str(tc.customer.id),  # CRM customer ID
+                'external_id': str(tc.external_id) if tc.external_id else None,  # POS customer ID
+                'first_name': tc.customer.first_name,
+                'last_name': tc.customer.last_name,
+                'email': tc.customer.email,
+                'phone': tc.customer.phone,
+                'address': getattr(tc.customer, 'address', ''),
+                'city': getattr(tc.customer, 'city', ''),
+                'state': getattr(tc.customer, 'state', ''),
+                'postal_code': getattr(tc.customer, 'postal_code', ''),
+                'loyalty_points': tc.loyalty_points if hasattr(tc, 'loyalty_points') else 0,
+                'loyalty_tier': getattr(tc, 'loyalty_tier', 'BRONZE'),
+                'total_spent': float(tc.total_spent) if hasattr(tc, 'total_spent') else 0.0,
+                'visit_count': tc.purchase_count if hasattr(tc, 'purchase_count') else 0,
+                'marketing_opt_in': getattr(tc.customer, 'marketing_opt_in', False),
+                'is_active': tc.is_active,
+                'updated_at': tc.updated_at.isoformat() if hasattr(tc, 'updated_at') else None,
+            })
+        
+        return Response({
+            'success': True,
+            'count': len(customers),
+            'customers': customers,
+            'has_more': len(customers) >= 100,  # Indicates if there are more results
+            'timestamp': datetime.now().isoformat()
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        logger.error(f"Error fetching customers for sync: {str(e)}", exc_info=True)
+        return Response({
+            'success': False,
+            'error': f'Internal server error: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

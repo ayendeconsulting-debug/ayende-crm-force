@@ -13,6 +13,7 @@ from .views.main import check_customer_by_phone
 
 # Import integration views from dashboard.views package (the views/ directory)
 from dashboard.views import integration as integration_views
+from dashboard.views import sync_views
 
 app_name = 'dashboard'
 
@@ -53,6 +54,7 @@ urlpatterns = [
     path('customers/<uuid:customer_id>/delete/', views.main.delete_customer, name='delete_customer'),
     path('customers/<uuid:customer_id>/notes/', views.main.edit_customer_notes, name='edit_customer_notes'),
     path('api/v1/customers/check-phone', check_customer_by_phone, name='check-customer-phone'),
+    path('api/sync/customers', sync_views.get_updated_customers, name='sync_customers'),
     path('customers/export/', views.main.export_customers, name='export_customers'),
     
     # ============================================
