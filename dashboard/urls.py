@@ -53,6 +53,7 @@ urlpatterns = [
     path('customers/<int:customer_id>/delete/', views.main.delete_customer, name='delete_customer'),
     path('customers/<int:customer_id>/notes/', views.main.edit_customer_notes, name='edit_customer_notes'),
     path('api/v1/customers/check-phone', check_customer_by_phone, name='check-customer-phone'),
+    path('customers/export/', views.main.export_customers, name='export_customers'),
     
     # ============================================
     # INTEGRATION: Sync endpoints from POS

@@ -930,6 +930,92 @@ def edit_customer_notes(request, customer_id):
     })
 
 
+@login_required(login_url='dashboard:login')
+def export_customers(request):
+    """
+    Export customers to CSV file
+    """
+    import csv
+    from django.http import HttpResponse
+    from django.utils import timezone
+    
+    tenant = getattr(request, 'tenant', None)
+    
+    if not tenant:
+        messages.error(request, 'Unable to export customers.')
+        return redirect('dashboard:manage_customers')
+    
+    # Verify user has permission
+    try:
+        tenant_customer = TenantCustomer.objects.get(
+            customer=request.user,
+            tenant=tenant
+        )
+        
+        if not tenant_customer.is_staff_member:
+            messages.error(request, 'You do not have permission to export customers.')
+            return redirect('dashboard:manage_customers')
+            
+    except TenantCustomer.DoesNotExist:
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard:manage_customers')
+    
+    # Get customers with same filters as manage_customers view
+    customers_qs = TenantCustomer.objects.filter(
+        tenant=tenant
+    ).select_related('customer').order_by('-customer__date_joined')
+    
+    # Apply filters
+    search_query = request.GET.get('search', '').strip()
+    status_filter = request.GET.get('status', '').strip()
+    
+    if search_query:
+        customers_qs = customers_qs.filter(
+            Q(customer__first_name__icontains=search_query) |
+            Q(customer__last_name__icontains=search_query) |
+            Q(customer__email__icontains=search_query) |
+            Q(customer__phone__icontains=search_query)
+        )
+    
+    if status_filter == 'active':
+        customers_qs = customers_qs.filter(is_active=True)
+    elif status_filter == 'inactive':
+        customers_qs = customers_qs.filter(is_active=False)
+    elif status_filter == 'vip':
+        customers_qs = customers_qs.filter(is_vip=True)
+    
+    # Create CSV response
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="{tenant.subdomain}_customers_{timezone.now().strftime("%Y%m%d")}.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow([
+        'Name',
+        'Email',
+        'Phone',
+        'Joined Date',
+        'Loyalty Points',
+        'Total Spent',
+        'Status',
+        'VIP',
+        'Notes'
+    ])
+    
+    for tc in customers_qs:
+        writer.writerow([
+            tc.customer.get_full_name(),
+            tc.customer.email,
+            tc.customer.phone or '',
+            tc.joined_at.strftime('%Y-%m-%d'),
+            tc.loyalty_points,
+            tc.total_spent if hasattr(tc, 'total_spent') else tc.total_purchases,
+            'Active' if tc.is_active else 'Inactive',
+            'Yes' if tc.is_vip else 'No',
+            tc.notes or ''
+        ])
+    
+    return response
+
 # ============================================================================
 # TRANSACTION VIEWS
 # ============================================================================
