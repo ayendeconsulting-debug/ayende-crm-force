@@ -694,7 +694,7 @@ def add_customer(request):
         'is_business_view': True,
     }
     
-    return render(request, 'dashboard/add_customer.html', context)
+    return render(request, 'dashboard/business_customer_add.html', context)
 
 
 @login_required(login_url='dashboard:login')
@@ -757,7 +757,7 @@ def customer_detail(request, customer_id):
         'is_business_view': True,
     }
     
-    return render(request, 'dashboard/customer_detail.html', context)
+    return render(request, 'dashboard/business_customer_detail.html', context)
 
 
 @login_required(login_url='dashboard:login')
@@ -808,8 +808,8 @@ def edit_customer(request, customer_id):
             return redirect('dashboard:customer_detail', customer_id=customer_id)
     else:
         form = BusinessCustomerEditForm(
-            instance=customer_rel.customer,
-            tenant_customer=customer_rel
+            request.POST, 
+            instance=customer_rel.customer
         )
     
     context = {
@@ -820,7 +820,7 @@ def edit_customer(request, customer_id):
         'is_business_view': True,
     }
     
-    return render(request, 'dashboard/edit_customer.html', context)
+    return render(request, 'dashboard/business_customer_edit.html', context)
 
 
 @login_required(login_url='dashboard:login')
