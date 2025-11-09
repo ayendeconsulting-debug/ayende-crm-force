@@ -393,20 +393,6 @@ def customer_login_view(request):
             # Fallback: generate username if template didn't send it
             username = f"{email}.{tenant.subdomain}"
         
-       # DEBUG: Log authentication attempt
-        print(f"DEBUG - Login attempt:")
-        print(f"  Email: {email}")
-        print(f"  Username: {username}")
-        print(f"  Tenant: {tenant.subdomain if tenant else 'None'}")
-        print(f"  Password length: {len(password) if password else 0}")
-        
-        # Authenticate using username (email.subdomain format)
-        user = authenticate(request, username=username, password=password, tenant=tenant)
-        
-        print(f"  Auth result: {user is not None}")
-        if user:
-            print(f"  Authenticated as: {user.email}")
-       
         # Authenticate using username (email.subdomain format)
         user = authenticate(request, username=username, password=password, tenant=tenant)
         
@@ -493,7 +479,7 @@ def dashboard_home(request):
     recent_transactions = Transaction.objects.filter(
         tenant=tenant,
         tenant_customer=tenant_customer
-    ).order_by('-timestamp')[:10]
+    ).order_by('-transaction_date')[:10]
     
     # Calculate stats
     total_transactions = Transaction.objects.filter(
@@ -614,7 +600,7 @@ def customer_detail(request, customer_id):
     transactions = Transaction.objects.filter(
         tenant=tenant,
         tenant_customer=tenant_customer
-    ).order_by('-timestamp')[:20]
+    ).order_by('-transaction_date')[:20]
     
     # Calculate stats
     transaction_stats = Transaction.objects.filter(
@@ -832,7 +818,7 @@ def transaction_list(request):
     transactions = Transaction.objects.filter(
         tenant=tenant,
         tenant_customer=request.user
-    ).order_by('-timestamp')
+    ).order_by('-transaction_date')
     
     # Date filtering
     date_from = request.GET.get('date_from')
