@@ -56,6 +56,7 @@ urlpatterns = [
     path('api/v1/customers/check-phone', check_customer_by_phone, name='check-customer-phone'),
     path('api/sync/customers', sync_views.get_updated_customers, name='sync_customers'),
     path('customers/export/', views.main.export_customers, name='export_customers'),
+    path('api/debug/tenants', views.main.get_tenant_info, name='debug_tenants'),
     
     # ============================================
     # INTEGRATION: Sync endpoints from POS
@@ -75,4 +76,5 @@ urlpatterns = [
     path('api/sync/customer-batch/', 
          integration_views.CustomerBatchSyncView.as_view(), 
          name='sync_customer_batch'),
+    
 ]

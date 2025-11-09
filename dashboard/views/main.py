@@ -924,3 +924,67 @@ class TenantPasswordResetCompleteView(PasswordResetCompleteView):
         context = super().get_context_data(**kwargs)
         context['tenant'] = get_tenant_from_request(self.request)
         return context
+    
+@require_http_methods(["GET"])
+def get_tenant_info(request):
+    """
+    Temporary endpoint to get tenant UUIDs for POS sync.
+    
+    Usage:
+        GET /api/debug/tenants?secret=INTEGRATION_SECRET
+        
+    Returns:
+        {
+            "tenants": [
+                {
+                    "id": "uuid-here",
+                    "subdomain": "bashevents",
+                    "name": "BASH EVENTS"
+                },
+                ...
+            ],
+            "count": 3,
+            "sql_updates": [
+                "UPDATE Business SET externalTenantId = 'uuid' WHERE businessName = 'name';",
+                ...
+            ]
+        }
+    """
+    # Security check
+    secret = request.GET.get('secret', '')
+    if secret != settings.INTEGRATION_SECRET:
+        logger.warning(f"Unauthorized tenant info access attempt from {request.META.get('REMOTE_ADDR')}")
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    try:
+        tenants = Tenant.objects.all().order_by('subdomain')
+        
+        tenant_list = []
+        sql_updates = []
+        
+        for tenant in tenants:
+            tenant_data = {
+                'id': str(tenant.id),  # Convert UUID to string
+                'subdomain': tenant.subdomain,
+                'name': tenant.name
+            }
+            tenant_list.append(tenant_data)
+            
+            # Generate SQL update statement
+            sql = f"UPDATE Business SET externalTenantId = '{tenant.id}' WHERE businessName = '{tenant.name}';"
+            sql_updates.append(sql)
+        
+        response_data = {
+            'tenants': tenant_list,
+            'count': len(tenant_list),
+            'sql_updates': sql_updates,
+            'database_type': 'production' if 'railway' in settings.DATABASES['default']['HOST'].lower() else 'local',
+            'host': settings.DATABASES['default']['HOST']
+        }
+        
+        logger.info(f"Tenant info retrieved successfully: {len(tenant_list)} tenants")
+        return JsonResponse(response_data, json_dumps_params={'indent': 2})
+        
+    except Exception as e:
+        logger.error(f"Error retrieving tenant info: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)
