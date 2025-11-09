@@ -6,6 +6,7 @@ from django.core.paginator import Paginator
 from django.db.models import Sum, Q, Count, Avg
 from django.http import JsonResponse
 from customers.models import Transaction, Customer, TenantCustomer
+from customers.authentication import get_tenant_from_request  # PHASE 4: Added import
 from tenants.models import Tenant
 from datetime import datetime, timedelta
 from django.core.mail import send_mail
@@ -38,183 +39,64 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from dashboard.authentication import IntegrationJWTAuthentication
-# dashboard/views.py (or customers/views.py)
-# Add this view function to handle phone number lookups
 
+# Additional imports
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
-from customers.models import Customer
-import json
-# dashboard/views.py (or customers/views.py)
-# Add this view function to handle phone number lookups
-
-from django.http import JsonResponse
-from django.views.decorators.http import require_http_methods
-from customers.models import Customer
 import json
 
+
+# ============================================
+# API ENDPOINT: Check Customer by Phone
+# ============================================
 @require_http_methods(["GET"])
 def check_customer_by_phone(request):
     """
-    Check if a customer exists by phone number.
-    Used by POS system to check for duplicates before creating customers.
+    API endpoint to check if customer exists by phone number
+    Updated for Phase 2/4: Uses TenantCustomer with tenant scoping
+    """
+    tenant = get_tenant_from_request(request)
     
-    Query params:
-        phone: Phone number to search for
-        
-    Returns:
-        JSON with customer data if found, or {"exists": false} if not found
-    """
-    try:
-        phone = request.GET.get('phone')
-        
-        if not phone:
-            return JsonResponse({
-                'exists': False,
-                'error': 'Phone number is required'
-            }, status=400)
-        
-        # Normalize phone number (remove non-digits)
-        normalized_phone = ''.join(filter(str.isdigit, phone))
-        
-        if not normalized_phone:
-            return JsonResponse({
-                'exists': False,
-                'error': 'Invalid phone number'
-            }, status=400)
-        
-        # Search for customer by phone
-        # Use contains to match various phone formats
-        customer = Customer.objects.filter(
-            phone__contains=normalized_phone
-        ).first()
-        
-        if customer:
-            # Customer found - return data
-            return JsonResponse({
-                'exists': True,
-                'customer': {
-                    'id': str(customer.id),
-                    'first_name': customer.first_name,
-                    'last_name': customer.last_name,
-                    'email': customer.email or '',
-                    'phone': customer.phone or '',
-                    'date_of_birth': customer.date_of_birth.isoformat() if customer.date_of_birth else None,
-                    'address': customer.address or '',
-                    'city': customer.city or '',
-                    'state': customer.state or '',
-                    'zip_code': customer.zip_code or '',
-                    'loyalty_points': customer.loyalty_points or 0,
-                    'loyalty_tier': customer.loyalty_tier or 'BRONZE',
-                    'total_spent': float(customer.total_spent or 0),
-                    'visit_count': customer.visit_count or 0,
-                    'marketing_opt_in': customer.marketing_opt_in or False,
-                    'is_active': customer.is_active,
-                    'created_at': customer.created_at.isoformat() if customer.created_at else None,
-                    'updated_at': customer.updated_at.isoformat() if customer.updated_at else None,
-                }
-            })
-        else:
-            # Customer not found
-            return JsonResponse({
-                'exists': False
-            })
-            
-    except Exception as e:
-        return JsonResponse({
-            'exists': False,
-            'error': str(e)
-        }, status=500)
-
-@require_http_methods(["GET"])
-def check_customer_by_phone(request):
-    """
-    Check if a customer exists by phone number.
-    Used by POS system to check for duplicates before creating customers.
+    if not tenant:
+        return JsonResponse({'error': 'Tenant not found'}, status=400)
     
-    Query params:
-        phone: Phone number to search for
-        
-    Returns:
-        JSON with customer data if found, or {"exists": false} if not found
-    """
-    try:
-        phone = request.GET.get('phone')
-        
-        if not phone:
-            return JsonResponse({
-                'exists': False,
-                'error': 'Phone number is required'
-            }, status=400)
-        
-        # Normalize phone number (remove non-digits)
-        normalized_phone = ''.join(filter(str.isdigit, phone))
-        
-        if not normalized_phone:
-            return JsonResponse({
-                'exists': False,
-                'error': 'Invalid phone number'
-            }, status=400)
-        
-        # Search for customer by phone
-        # Use contains to match various phone formats
-        customer = Customer.objects.filter(
-            phone__contains=normalized_phone
-        ).first()
-        
-        if customer:
-            # Customer found - return data
-            return JsonResponse({
-                'exists': True,
-                'customer': {
-                    'id': str(customer.id),
-                    'first_name': customer.first_name,
-                    'last_name': customer.last_name,
-                    'email': customer.email or '',
-                    'phone': customer.phone or '',
-                    'date_of_birth': customer.date_of_birth.isoformat() if customer.date_of_birth else None,
-                    'address': customer.address or '',
-                    'city': customer.city or '',
-                    'state': customer.state or '',
-                    'zip_code': customer.zip_code or '',
-                    'loyalty_points': customer.loyalty_points or 0,
-                    'loyalty_tier': customer.loyalty_tier or 'BRONZE',
-                    'total_spent': float(customer.total_spent or 0),
-                    'visit_count': customer.visit_count or 0,
-                    'marketing_opt_in': customer.marketing_opt_in or False,
-                    'is_active': customer.is_active,
-                    'created_at': customer.created_at.isoformat() if customer.created_at else None,
-                    'updated_at': customer.updated_at.isoformat() if customer.updated_at else None,
-                }
-            })
-        else:
-            # Customer not found
-            return JsonResponse({
-                'exists': False
-            })
-            
-    except Exception as e:
+    phone = request.GET.get('phone')
+    
+    if not phone:
+        return JsonResponse({'error': 'Phone number required'}, status=400)
+    
+    # Search for customer by phone in this tenant
+    tenant_customer = TenantCustomer.objects.filter(
+        tenant=tenant,
+        phone=phone
+    ).first()
+    
+    if tenant_customer:
         return JsonResponse({
-            'exists': False,
-            'error': str(e)
-        }, status=500)
+            'exists': True,
+            'customer': {
+                'id': str(tenant_customer.id),
+                'first_name': tenant_customer.first_name,
+                'last_name': tenant_customer.last_name,
+                'email': tenant_customer.email,
+                'phone': tenant_customer.phone,
+                'loyalty_points': tenant_customer.loyalty_points,
+                'total_spent': float(tenant_customer.total_spent or 0),
+                'visit_count': tenant_customer.visit_count or 0,
+            }
+        })
+    
+    return JsonResponse({'exists': False})
 
+
+# ============================================
+# PUBLIC VIEWS
+# ============================================
 def landing_page(request):
     """
     Public landing page view - accessible to everyone
     Shows tenant-specific branding if accessed via tenant subdomain
     """
-    tenant = getattr(request, 'tenant', None)
-    
-    # Debug prints
-    print(f"=== LANDING PAGE DEBUG ===")
-    print(f"Host: {request.get_host()}")
-    print(f"Tenant: {tenant}")
-    if tenant:
-        print(f"Tenant name: {tenant.name}")
-        print(f"Tenant subdomain: {tenant.subdomain}")
-    print(f"========================")
-    
     # Get current tenant from middleware
     tenant = getattr(request, 'tenant', None)
     
@@ -243,8 +125,9 @@ def landing_page(request):
     }
     
     return render(request, 'tenant_landing.html', context)
-    
-# Check if Transaction model exists, if not, skip transaction views
+
+
+# Check if Transaction model exists
 try:
     from customers.models import Transaction
     TRANSACTIONS_ENABLED = True
@@ -252,20 +135,21 @@ except ImportError:
     TRANSACTIONS_ENABLED = False
 
 
+# ============================================
+# AUTHENTICATION VIEWS - PHASE 4 UPDATED
+# ============================================
 def customer_register(request):
     """
     Customer self-registration view with email verification.
     Customer must verify email before they can login.
+    Multi-tenant: Creates TenantCustomer with username format email.subdomain
     """
-   # Redirect if already logged in
+    # Redirect if already logged in
     if request.user.is_authenticated:
-        # Role-based redirect for already authenticated users
-        if hasattr(request.user, 'role') and request.user.role in ['ADMIN', 'OWNER', 'STAFF']:
-            return redirect('/reports/')  # Business dashboard
-        return redirect('dashboard:home')  # Customer portal
+        return redirect('dashboard:home')
     
     # Get tenant from middleware
-    tenant = getattr(request, 'tenant', None)
+    tenant = get_tenant_from_request(request)
     
     if not tenant:
         messages.error(request, 'Unable to identify business. Please check the URL.')
@@ -279,66 +163,118 @@ def customer_register(request):
     except AttributeError:
         # Settings don't exist, allow registration
         pass
-    
+
     if request.method == 'POST':
-        form = CustomerRegistrationForm(request.POST, tenant=tenant)
-        if form.is_valid():
-            customer = form.save()
-            
-            # Send verification email (DO NOT auto-login)
-            send_verification_email(customer, tenant, request)
-            
-            messages.success(
-                request,
-                f'Welcome {customer.first_name}! Please check your email to verify your account before logging in.'
-            )
-            messages.info(
-                request,
-                f'A verification email has been sent to {customer.email}. Please check your inbox.'
-            )
-            return redirect('dashboard:login')
-    else:
-        form = CustomerRegistrationForm(tenant=tenant)
+        # Get form data
+        email = request.POST.get('email')
+        first_name = request.POST.get('first_name')
+        last_name = request.POST.get('last_name')
+        password = request.POST.get('password')
+        password_confirm = request.POST.get('password_confirm')
+        phone = request.POST.get('phone', '')
+        username = request.POST.get('username')  # Generated by template: email.subdomain
+        
+        # Validation
+        errors = []
+        
+        if not all([email, first_name, last_name, password, password_confirm, username]):
+            errors.append('All required fields must be filled.')
+        
+        if password != password_confirm:
+            errors.append('Passwords do not match.')
+        
+        if len(password) < 8:
+            errors.append('Password must be at least 8 characters long.')
+        
+        # Check if username exists for this tenant
+        if TenantCustomer.objects.filter(tenant=tenant, username=username).exists():
+            errors.append('An account with this email already exists for this business.')
+        
+        if errors:
+            for error in errors:
+                messages.error(request, error)
+            return render(request, 'dashboard/register.html', {
+                'tenant': tenant,
+                'form': {'email': {'value': email}, 'first_name': {'value': first_name}, 
+                        'last_name': {'value': last_name}, 'phone': {'value': phone}}
+            })
+        
+        # Get or create global Customer (for linking across tenants)
+        customer, created = Customer.objects.get_or_create(
+            first_name=first_name,
+            last_name=last_name
+        )
+        
+        # Create TenantCustomer with multi-tenant username
+        tenant_customer = TenantCustomer.objects.create(
+            tenant=tenant,
+            customer=customer,
+            username=username,  # Format: email.subdomain
+            email=email,
+            first_name=first_name,
+            last_name=last_name,
+            phone=phone,
+            role='customer',
+            is_active=False,  # Requires email verification
+            email_verified=False
+        )
+        tenant_customer.set_password(password)
+        tenant_customer.save()
+        
+        # Generate verification token and send email
+        tenant_customer.generate_verification_token()
+        tenant_customer.save()
+        send_verification_email(tenant_customer, tenant, request)
+        
+        messages.success(
+            request,
+            f'Welcome {first_name}! Please check your email to verify your account before logging in.'
+        )
+        messages.info(
+            request,
+            f'A verification email has been sent to {email}. Please check your inbox.'
+        )
+        return redirect('dashboard:login')
     
+    # GET request
     context = {
-        'form': form,
-        'tenant': tenant
+        'tenant': tenant,
+        'form': {}
     }
     return render(request, 'dashboard/register.html', context)
 
-def send_verification_email(customer, tenant, request):
+
+def send_verification_email(tenant_customer, tenant, request):
     """
-    Send verification email to customer
+    Send verification email to tenant customer
+    Updated for Phase 2/4: Uses TenantCustomer instead of Customer
     """
-    # Generate verification token
-    token = customer.generate_verification_token()
-    
     # Build verification URL
     verification_url = request.build_absolute_uri(
-        f'/verify-email/{token}/'
+        f'/verify-email/{tenant_customer.email_verification_token}/'
     )
-    
+
     # Email context
     context = {
-        'customer': customer,
+        'customer': tenant_customer,
         'tenant': tenant,
         'verification_url': verification_url,
         'business_name': tenant.name,
     }
-    
+
     # Render email templates
     html_message = render_to_string('emails/verify_email.html', context)
     plain_message = strip_tags(html_message)
-    
+
     # Send email
     subject = f'Verify your email - {tenant.name}'
     from_email = settings.DEFAULT_FROM_EMAIL if hasattr(settings, 'DEFAULT_FROM_EMAIL') else 'noreply@ayendecx.com'
-    
+
     send_mail(
         subject=subject,
         message=plain_message,
         from_email=from_email,
-        recipient_list=[customer.email],
+        recipient_list=[tenant_customer.email],
         html_message=html_message,
         fail_silently=False,
     )
@@ -347,176 +283,152 @@ def send_verification_email(customer, tenant, request):
 def verify_email(request, token):
     """
     Verify email address using token
+    Updated for Phase 2/4: Uses TenantCustomer
     """
-    # Find customer with this token
-    try:
-        customer = Customer.objects.get(email_verification_token=token)
-    except Customer.DoesNotExist:
-        messages.error(request, 'Invalid verification link. Please try again or request a new verification email.')
-        return redirect('dashboard:login')
-    
-    # Check if token is expired
-    if not customer.is_verification_token_valid():
-        messages.error(
-            request,
-            'Verification link has expired. We\'ve sent you a new verification email.'
-        )
-        # Resend verification email
-        tenant = getattr(request, 'tenant', None)
-        if tenant:
-            send_verification_email(customer, tenant, request)
-        return redirect('dashboard:login')
-    
-    # Verify the email
-    customer.verify_email()
-    
-    messages.success(
-        request,
-        'Email verified successfully! You can now login to your account.'
-    )
-    return redirect('dashboard:login')
-
-
-def resend_verification_email(request):
-    """
-    Resend verification email
-    """
-    tenant = getattr(request, 'tenant', None)
+    tenant = get_tenant_from_request(request)
     
     if not tenant:
         messages.error(request, 'Unable to identify business.')
         return redirect('/')
     
+    try:
+        tenant_customer = TenantCustomer.objects.get(
+            tenant=tenant,
+            email_verification_token=token
+        )
+        
+        # Check if token is expired (24 hours)
+        if tenant_customer.email_verification_sent_at:
+            from django.utils import timezone
+            expiry_time = tenant_customer.email_verification_sent_at + timedelta(hours=24)
+            if timezone.now() > expiry_time:
+                messages.error(request, 'Verification link has expired.')
+                return redirect('dashboard:login')
+        
+        # Verify email
+        tenant_customer.email_verified = True
+        tenant_customer.is_active = True
+        tenant_customer.email_verification_token = None
+        tenant_customer.save()
+        
+        messages.success(request, 'Email verified successfully! You can now log in.')
+        return redirect('dashboard:login')
+        
+    except TenantCustomer.DoesNotExist:
+        messages.error(request, 'Invalid verification link.')
+        return redirect('dashboard:login')
+
+
+def resend_verification_email(request):
+    """
+    Resend verification email to customer
+    """
     if request.method == 'POST':
         email = request.POST.get('email')
+        tenant = get_tenant_from_request(request)
+        
+        if not tenant:
+            messages.error(request, 'Unable to identify business.')
+            return redirect('/')
         
         try:
-            # Find customer by email and tenant
-            from customers.models import TenantCustomer
-            tenant_customer = TenantCustomer.objects.get(
-                customer__email=email,
-                tenant=tenant
-            )
-            customer = tenant_customer.customer
+            tenant_customer = TenantCustomer.objects.get(tenant=tenant, email=email)
             
-            # Check if already verified
-            if customer.email_verified:
-                messages.info(request, 'Your email is already verified. You can login now.')
+            if tenant_customer.email_verified:
+                messages.info(request, 'Your email is already verified. You can log in.')
                 return redirect('dashboard:login')
             
-            # Send verification email
-            send_verification_email(customer, tenant, request)
+            # Generate new token and send email
+            tenant_customer.generate_verification_token()
+            tenant_customer.save()
+            send_verification_email(tenant_customer, tenant, request)
             
-            messages.success(
-                request,
-                f'Verification email sent to {email}. Please check your inbox.'
-            )
+            messages.success(request, 'Verification email has been resent. Please check your inbox.')
             return redirect('dashboard:login')
             
         except TenantCustomer.DoesNotExist:
-            # Don't reveal if email exists or not (security)
-            messages.success(
-                request,
-                f'If an account exists with {email}, a verification email has been sent.'
-            )
-            return redirect('dashboard:login')
+            messages.error(request, 'No account found with this email address.')
+            return redirect('dashboard:register')
     
-    context = {
-        'tenant': tenant
-    }
-    return render(request, 'dashboard/resend_verification.html', context)
+    return render(request, 'dashboard/resend_verification.html')
 
 
 def customer_login_view(request):
     """
     Customer login view - handles authentication and tenant verification
+    Updated for Phase 2/4: Uses username (email.subdomain) for authentication
     """
     # Redirect if already logged in
     if request.user.is_authenticated:
-        tenant = getattr(request, 'tenant', None)
-        if tenant:
-            try:
-                tenant_customer = TenantCustomer.objects.get(customer=request.user, tenant=tenant)
-                # Check role from TenantCustomer
-                if tenant_customer.role in ['admin', 'owner', 'staff']:
-                    return redirect('/reports/')
-            except TenantCustomer.DoesNotExist:
-                pass
         return redirect('dashboard:home')
     
     # Get tenant from middleware
-    tenant = getattr(request, 'tenant', None)
+    tenant = get_tenant_from_request(request)
     
     if not tenant:
         messages.error(request, 'Unable to identify business. Please check the URL.')
         return redirect('/')
-    
+
     if request.method == 'POST':
-        form = CustomerLoginForm(request.POST)
-        if form.is_valid():
-            email = form.cleaned_data['email']
-            password = form.cleaned_data['password']
+        email = request.POST.get('email')
+        password = request.POST.get('password')
+        username = request.POST.get('username')  # Generated by template: email.subdomain
+        
+        if not username:
+            # Fallback: generate username if template didn't send it
+            username = f"{email}.{tenant.subdomain}"
+        
+        # Authenticate using username (email.subdomain format)
+        user = authenticate(request, username=username, password=password, tenant=tenant)
+        
+        if user is not None:
+            # Check if email is verified
+            if not user.email_verified:
+                messages.error(
+                    request,
+                    'Please verify your email address before logging in. Check your inbox for the verification link.'
+                )
+                messages.info(
+                    request,
+                    mark_safe(
+                        'Didn\'t receive the email? '
+                        '<a href="/resend-verification/" class="text-blue-500 underline">Click here to resend</a>'
+                    )
+                )
+                return render(request, 'dashboard/login.html', {
+                    'tenant': tenant,
+                    'form': {'email': {'value': email}}
+                })
             
-            # Authenticate user
-            user = authenticate(request, username=email, password=password)
+            # Check if user is active
+            if not user.is_active:
+                messages.error(request, 'Your account is inactive. Please contact support.')
+                return render(request, 'dashboard/login.html', {
+                    'tenant': tenant,
+                    'form': {'email': {'value': email}}
+                })
             
-            if user is not None:
-                # Check if email is verified
-                if not user.email_verified:
-                    messages.error(
-                        request,
-                        'Please verify your email address before logging in. Check your inbox for the verification link.'
-                    )
-                    messages.info(
-                        request,
-                        mark_safe(
-                            'Didn\'t receive the email? '
-                            '<a href="/resend-verification/" class="text-blue-500 underline">Click here to resend</a>'
-                        )
-                    )
-                    return render(request, 'dashboard/login.html', {
-                        'form': form,
-                        'tenant': tenant
-                    })
-                
-                # Check if user belongs to this tenant
-                try:
-                    tenant_customer = TenantCustomer.objects.get(customer=user, tenant=tenant)
-                    login(request, user)
-                    
-                    messages.success(request, f'Welcome back, {user.first_name}!')
-                    
-                    # ============================================
-                    # ROLE-BASED REDIRECT LOGIC
-                    # ============================================
-                    # Check if there's a 'next' parameter
-                    next_url = request.GET.get('next')
-                    
-                    if next_url:
-                        # If there's a next URL, use it
-                        return redirect(next_url)
-                    else:
-                        # Role-based redirect using TenantCustomer.role
-                        if tenant_customer.role in ['admin', 'owner', 'staff']:
-                            # Business users → Reports dashboard
-                            return redirect('/reports/')
-                        else:
-                            # Customers → Customer portal
-                            return redirect('dashboard:home')
-                    
-                except TenantCustomer.DoesNotExist:
-                    messages.error(
-                        request,
-                        'This account does not have access to this business.'
-                    )
+            # Login user
+            login(request, user)
+            messages.success(request, f'Welcome back, {user.get_full_name()}!')
+            
+            # Check for next parameter
+            next_url = request.GET.get('next')
+            if next_url:
+                return redirect(next_url)
+            
+            # Role-based redirect
+            if user.role in ['admin', 'owner', 'staff']:
+                return redirect('/reports/')
             else:
-                messages.error(request, 'Invalid email or password.')
-    else:
-        form = CustomerLoginForm()
+                return redirect('dashboard:home')
+        else:
+            messages.error(request, 'Invalid email or password.')
     
+    # GET request
     context = {
-        'form': form,
-        'tenant': tenant
+        'tenant': tenant,
+        'form': {}
     }
     return render(request, 'dashboard/login.html', context)
 
@@ -530,744 +442,470 @@ def customer_logout_view(request):
     return redirect('dashboard:login')
 
 
-@login_required(login_url='dashboard:login')
+# ============================================
+# CUSTOMER DASHBOARD - PHASE 4: Using TenantCustomer
+# ============================================
+@login_required
 def dashboard_home(request):
     """
-    Main dashboard view showing customer's transaction history,
-    loyalty points, and recent activity
+    Customer dashboard home page
+    Shows customer's transactions, loyalty points, and profile summary
     """
-    tenant = getattr(request, 'tenant', None)
+    tenant = get_tenant_from_request(request)
     
     if not tenant:
-        messages.error(request, 'Unable to load dashboard. Please check your URL.')
+        messages.error(request, 'Unable to identify business.')
         return redirect('/')
     
-    # Get the tenant-specific customer record
-    try:
-        tenant_customer = TenantCustomer.objects.get(
-            customer=request.user,
-            tenant=tenant
-        )
-    except TenantCustomer.DoesNotExist:
-        messages.error(request, "Customer record not found for this business.")
-        logout(request)
-        return redirect('dashboard:login')
+    # Get TenantCustomer for current user
+    tenant_customer = request.user
     
     # Get recent transactions
     recent_transactions = Transaction.objects.filter(
         tenant=tenant,
-        customer=request.user
-    ).order_by('-transaction_date')[:5]
+        tenant_customer=tenant_customer
+    ).order_by('-timestamp')[:10]
     
-    # Calculate statistics
+    # Calculate stats
     total_transactions = Transaction.objects.filter(
         tenant=tenant,
-        customer=request.user
+        tenant_customer=tenant_customer
     ).count()
-    
-    total_spent = Transaction.objects.filter(
-        tenant=tenant,
-        customer=request.user
-    ).aggregate(total=Sum('total'))['total'] or 0
-    
-    total_points_earned = Transaction.objects.filter(
-        tenant=tenant,
-        customer=request.user
-    ).aggregate(points=Sum('points_earned'))['points'] or 0
     
     context = {
         'tenant': tenant,
-        'tenant_customer': tenant_customer,
+        'customer': tenant_customer,
         'recent_transactions': recent_transactions,
         'total_transactions': total_transactions,
-        'total_spent': total_spent,
-        'total_points_earned': total_points_earned,
+        'loyalty_points': tenant_customer.loyalty_points,
+        'total_spent': tenant_customer.total_spent,
     }
     
     return render(request, 'dashboard/home.html', context)
 
 
-# ============================================================================
-# BUSINESS OWNER VIEWS (Customer Management)
-# ============================================================================
-
-@login_required(login_url='dashboard:login')
+# ============================================
+# BUSINESS OWNER VIEWS - PHASE 4: Using TenantCustomer
+# ============================================
+@login_required
 def manage_customers(request):
     """
-    Business owner view to manage customers
+    Business owner view to manage all customers
+    Updated for Phase 4: Uses TenantCustomer with tenant scoping
     """
-    tenant = getattr(request, 'tenant', None)
+    tenant = get_tenant_from_request(request)
     
     if not tenant:
-        messages.error(request, 'Unable to load customers.')
-        return redirect('dashboard:home')
+        messages.error(request, 'Unable to identify business.')
+        return redirect('/')
     
-    # Verify user has permission (is_staff_member in TenantCustomer)
-    try:
-        tenant_customer = TenantCustomer.objects.get(
-            customer=request.user,
-            tenant=tenant
-        )
-        
-        if not tenant_customer.is_staff_member:
-            messages.error(request, 'You do not have permission to manage customers.')
-            return redirect('dashboard:home')
-            
-    except TenantCustomer.DoesNotExist:
-        messages.error(request, 'Access denied.')
+    # Check if user has permission (admin, owner, or staff)
+    if request.user.role not in ['admin', 'owner', 'staff']:
+        messages.error(request, 'You do not have permission to access this page.')
         return redirect('dashboard:home')
     
     # Get all customers for this tenant
-    customers_qs = TenantCustomer.objects.filter(
-        tenant=tenant
-    ).select_related('customer').order_by('-customer__date_joined')
+    customers = TenantCustomer.objects.filter(tenant=tenant).order_by('-joined_at')
     
-    # Apply search filter
-    search = request.GET.get('search', '')
-    if search:
-        customers_qs = customers_qs.filter(
-            Q(customer__first_name__icontains=search) |
-            Q(customer__last_name__icontains=search) |
-            Q(customer__email__icontains=search) |
-            Q(customer__phone__icontains=search)
+    # Search functionality
+    search_query = request.GET.get('q', '')
+    if search_query:
+        customers = customers.filter(
+            Q(first_name__icontains=search_query) |
+            Q(last_name__icontains=search_query) |
+            Q(email__icontains=search_query) |
+            Q(phone__icontains=search_query)
         )
     
-    # Paginate results
-    paginator = Paginator(customers_qs, 20)
+    # Pagination
+    paginator = Paginator(customers, 25)
     page_number = request.GET.get('page')
     customers_page = paginator.get_page(page_number)
     
     context = {
         'tenant': tenant,
-        'tenant_customer': tenant_customer,
         'customers': customers_page,
-        'search': search,
-        'is_business_view': True,
+        'search_query': search_query,
+        'total_customers': customers.count(),
     }
     
-    return render(request, 'dashboard/business_customers.html', context)
+    return render(request, 'dashboard/manage_customers.html', context)
 
 
-@login_required(login_url='dashboard:login')
+@login_required
 def add_customer(request):
     """
-    Business owner view to manually add a customer
+    Business owner view to manually add a new customer
+    Updated for Phase 4: Creates TenantCustomer
     """
-    tenant = getattr(request, 'tenant', None)
+    tenant = get_tenant_from_request(request)
     
     if not tenant:
-        messages.error(request, 'Unable to add customer.')
-        return redirect('dashboard:home')
+        messages.error(request, 'Unable to identify business.')
+        return redirect('/')
     
-    # Verify permissions
-    try:
-        tenant_customer = TenantCustomer.objects.get(
-            customer=request.user,
-            tenant=tenant
-        )
-        
-        if not tenant_customer.is_staff_member:
-            messages.error(request, 'You do not have permission to add customers.')
-            return redirect('dashboard:home')
-            
-    except TenantCustomer.DoesNotExist:
-        messages.error(request, 'Access denied.')
+    # Check permissions
+    if request.user.role not in ['admin', 'owner', 'staff']:
+        messages.error(request, 'You do not have permission to access this page.')
         return redirect('dashboard:home')
     
     if request.method == 'POST':
         form = BusinessCustomerAddForm(request.POST, tenant=tenant)
         if form.is_valid():
-            new_customer = form.save()
-            
-            messages.success(
-                request,
-                f'Customer {new_customer.customer.get_full_name()} has been added successfully.'
-            )
-            return redirect('dashboard:manage_customers')
+            tenant_customer = form.save()
+            messages.success(request, f'Customer {tenant_customer.get_full_name()} added successfully.')
+            return redirect('dashboard:customer_detail', customer_id=tenant_customer.id)
     else:
         form = BusinessCustomerAddForm(tenant=tenant)
     
     context = {
         'tenant': tenant,
-        'tenant_customer': tenant_customer,
         'form': form,
-        'is_business_view': True,
     }
     
-    return render(request, 'dashboard/business_customer_add.html', context)
+    return render(request, 'dashboard/add_customer.html', context)
 
 
-@login_required(login_url='dashboard:login')
+@login_required
 def customer_detail(request, customer_id):
     """
-    View detailed information about a specific customer
+    Business owner view to see customer details
+    Updated for Phase 4: Uses TenantCustomer
     """
-    tenant = getattr(request, 'tenant', None)
+    tenant = get_tenant_from_request(request)
     
     if not tenant:
-        messages.error(request, 'Unable to load customer details.')
-        return redirect('dashboard:home')
+        messages.error(request, 'Unable to identify business.')
+        return redirect('/')
     
-    # Verify permissions
-    try:
-        tenant_customer = TenantCustomer.objects.get(
-            customer=request.user,
-            tenant=tenant
-        )
-        
-        if not tenant_customer.is_staff_member:
-            messages.error(request, 'You do not have permission to view customer details.')
-            return redirect('dashboard:home')
-            
-    except TenantCustomer.DoesNotExist:
-        messages.error(request, 'Access denied.')
-        return redirect('dashboard:home')
-    
-    # Get the customer
-    customer_rel = get_object_or_404(
-        TenantCustomer,
-        id=customer_id,
-        tenant=tenant
-    )
+    # Get tenant customer
+    tenant_customer = get_object_or_404(TenantCustomer, id=customer_id, tenant=tenant)
     
     # Get customer's transactions
     transactions = Transaction.objects.filter(
         tenant=tenant,
-        customer=customer_rel.customer
-    ).order_by('-transaction_date')[:10]
+        tenant_customer=tenant_customer
+    ).order_by('-timestamp')[:20]
     
-    # Calculate statistics
-    total_spent = Transaction.objects.filter(
+    # Calculate stats
+    transaction_stats = Transaction.objects.filter(
         tenant=tenant,
-        customer=customer_rel.customer
-    ).aggregate(total=Sum('total'))['total'] or 0
-    
-    total_transactions = Transaction.objects.filter(
-        tenant=tenant,
-        customer=customer_rel.customer
-    ).count()
+        tenant_customer=tenant_customer
+    ).aggregate(
+        total_spent=Sum('amount'),
+        transaction_count=Count('id'),
+        avg_transaction=Avg('amount')
+    )
     
     context = {
         'tenant': tenant,
-        'tenant_customer': tenant_customer,
-        'customer_rel': customer_rel,
+        'customer': tenant_customer,
         'transactions': transactions,
-        'total_spent': total_spent,
-        'total_transactions': total_transactions,
-        'is_business_view': True,
+        'stats': transaction_stats,
     }
     
-    return render(request, 'dashboard/business_customer_detail.html', context)
+    return render(request, 'dashboard/customer_detail.html', context)
 
 
-@login_required(login_url='dashboard:login')
+@login_required
 def edit_customer(request, customer_id):
     """
     Business owner view to edit customer information
+    Updated for Phase 4: Uses TenantCustomer
     """
-    tenant = getattr(request, 'tenant', None)
+    tenant = get_tenant_from_request(request)
     
     if not tenant:
-        messages.error(request, 'Unable to edit customer.')
+        messages.error(request, 'Unable to identify business.')
+        return redirect('/')
+    
+    # Check permissions
+    if request.user.role not in ['admin', 'owner', 'staff']:
+        messages.error(request, 'You do not have permission to access this page.')
         return redirect('dashboard:home')
     
-    # Verify permissions
-    try:
-        tenant_customer = TenantCustomer.objects.get(
-            customer=request.user,
-            tenant=tenant
-        )
-        
-        if not tenant_customer.is_staff_member:
-            messages.error(request, 'You do not have permission to edit customers.')
-            return redirect('dashboard:home')
-            
-    except TenantCustomer.DoesNotExist:
-        messages.error(request, 'Access denied.')
-        return redirect('dashboard:home')
-    
-    # Get the customer
-    customer_rel = get_object_or_404(
-        TenantCustomer,
-        id=customer_id,
-        tenant=tenant
-    )
+    tenant_customer = get_object_or_404(TenantCustomer, id=customer_id, tenant=tenant)
     
     if request.method == 'POST':
         form = BusinessCustomerEditForm(
-            request.POST, 
-            instance=customer_rel.customer,
-            tenant_customer=customer_rel
+            request.POST,
+            instance=tenant_customer,
+            customer=tenant_customer.customer
         )
         if form.is_valid():
             form.save()
-            messages.success(
-                request,
-                f'Customer {customer_rel.customer.get_full_name()} has been updated successfully.'
-            )
-            return redirect('dashboard:customer_detail', customer_id=customer_id)
+            messages.success(request, f'Customer {tenant_customer.get_full_name()} updated successfully.')
+            return redirect('dashboard:customer_detail', customer_id=tenant_customer.id)
     else:
         form = BusinessCustomerEditForm(
-            request.POST, 
-            instance=customer_rel.customer
+            instance=tenant_customer,
+            customer=tenant_customer.customer
         )
     
     context = {
         'tenant': tenant,
-        'tenant_customer': tenant_customer,
+        'customer': tenant_customer,
         'form': form,
-        'customer_rel': customer_rel,
-        'is_business_view': True,
     }
     
-    return render(request, 'dashboard/business_customer_edit.html', context)
+    return render(request, 'dashboard/edit_customer.html', context)
 
 
-@login_required(login_url='dashboard:login')
+@login_required
 def delete_customer(request, customer_id):
     """
-    Business owner view to remove a customer from their system
+    Business owner view to delete/deactivate a customer
+    Updated for Phase 4: Uses TenantCustomer
     """
-    tenant = getattr(request, 'tenant', None)
+    tenant = get_tenant_from_request(request)
     
     if not tenant:
-        messages.error(request, 'Unable to delete customer.')
+        messages.error(request, 'Unable to identify business.')
+        return redirect('/')
+    
+    # Check permissions
+    if request.user.role not in ['admin', 'owner']:
+        messages.error(request, 'You do not have permission to perform this action.')
         return redirect('dashboard:home')
     
-    # Verify permissions
-    try:
-        tenant_customer = TenantCustomer.objects.get(
-            customer=request.user,
-            tenant=tenant
-        )
-        
-        if not tenant_customer.is_staff_member:
-            messages.error(request, 'You do not have permission to delete customers.')
-            return redirect('dashboard:home')
-            
-    except TenantCustomer.DoesNotExist:
-        messages.error(request, 'Access denied.')
-        return redirect('dashboard:home')
-    
-    # Get the customer
-    customer_rel = get_object_or_404(
-        TenantCustomer,
-        id=customer_id,
-        tenant=tenant
-    )
+    tenant_customer = get_object_or_404(TenantCustomer, id=customer_id, tenant=tenant)
     
     if request.method == 'POST':
-        customer_name = customer_rel.customer.get_full_name()
+        customer_name = tenant_customer.get_full_name()
         
-        # Only delete the TenantCustomer relationship, not the Customer
-        # This preserves the customer if they belong to other tenants
-        customer_rel.delete()
+        # Soft delete: deactivate instead of deleting
+        tenant_customer.is_active = False
+        tenant_customer.save()
         
-        messages.success(
-            request,
-            f'Customer {customer_name} has been removed from your system.'
-        )
+        messages.success(request, f'Customer {customer_name} has been deactivated.')
         return redirect('dashboard:manage_customers')
     
     context = {
         'tenant': tenant,
-        'tenant_customer': tenant_customer,
-        'is_business_view': True,
-        'customer_rel': customer_rel,
+        'customer': tenant_customer,
     }
     
-    return render(request, 'dashboard/business_customer_delete.html', context)
+    return render(request, 'dashboard/delete_customer_confirm.html', context)
 
 
-@login_required(login_url='dashboard:login')
+@login_required
 def edit_customer_notes(request, customer_id):
     """
-    Quick edit view for customer notes (AJAX).
+    Quick edit for customer notes
+    Updated for Phase 4: Uses TenantCustomer
     """
-    tenant = getattr(request, 'tenant', None)
+    tenant = get_tenant_from_request(request)
     
     if not tenant:
-        return JsonResponse({'success': False, 'error': 'Invalid tenant'})
+        return JsonResponse({'error': 'Tenant not found'}, status=400)
     
-    # Verify permissions
-    try:
-        tenant_customer = TenantCustomer.objects.get(
-            customer=request.user,
-            tenant=tenant
-        )
-        
-        if not tenant_customer.is_staff_member:
-            return JsonResponse({'success': False, 'error': 'Permission denied'})
-            
-    except TenantCustomer.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Access denied'})
+    # Check permissions
+    if request.user.role not in ['admin', 'owner', 'staff']:
+        return JsonResponse({'error': 'Permission denied'}, status=403)
     
-    # Get the customer
-    customer_rel = get_object_or_404(
-        TenantCustomer,
-        id=customer_id,
-        tenant=tenant
-    )
+    tenant_customer = get_object_or_404(TenantCustomer, id=customer_id, tenant=tenant)
     
     if request.method == 'POST':
-        form = CustomerNotesForm(request.POST, instance=customer_rel)
+        form = CustomerNotesForm(request.POST, instance=tenant_customer)
         if form.is_valid():
             form.save()
             return JsonResponse({
                 'success': True,
-                'notes': customer_rel.notes
+                'message': 'Notes updated successfully',
+                'notes': tenant_customer.notes
             })
         else:
             return JsonResponse({
                 'success': False,
                 'errors': form.errors
-            })
+            }, status=400)
     
-    # GET request - return current notes
-    return JsonResponse({
-        'success': True,
-        'notes': customer_rel.notes
+    form = CustomerNotesForm(instance=tenant_customer)
+    return render(request, 'dashboard/edit_notes_modal.html', {
+        'form': form,
+        'customer': tenant_customer
     })
 
 
-@login_required(login_url='dashboard:login')
+@login_required
 def export_customers(request):
     """
-    Export customers to CSV file
+    Export customers to CSV
+    Updated for Phase 4: Uses TenantCustomer
     """
     import csv
     from django.http import HttpResponse
-    from django.utils import timezone
     
-    tenant = getattr(request, 'tenant', None)
+    tenant = get_tenant_from_request(request)
     
     if not tenant:
-        messages.error(request, 'Unable to export customers.')
-        return redirect('dashboard:manage_customers')
+        messages.error(request, 'Unable to identify business.')
+        return redirect('/')
     
-    # Verify user has permission
-    try:
-        tenant_customer = TenantCustomer.objects.get(
-            customer=request.user,
-            tenant=tenant
-        )
-        
-        if not tenant_customer.is_staff_member:
-            messages.error(request, 'You do not have permission to export customers.')
-            return redirect('dashboard:manage_customers')
-            
-    except TenantCustomer.DoesNotExist:
-        messages.error(request, 'Access denied.')
-        return redirect('dashboard:manage_customers')
+    # Check permissions
+    if request.user.role not in ['admin', 'owner', 'staff']:
+        messages.error(request, 'You do not have permission to perform this action.')
+        return redirect('dashboard:home')
     
-    # Get customers with same filters as manage_customers view
-    customers_qs = TenantCustomer.objects.filter(
-        tenant=tenant
-    ).select_related('customer').order_by('-customer__date_joined')
-    
-    # Apply filters
-    search_query = request.GET.get('search', '').strip()
-    status_filter = request.GET.get('status', '').strip()
-    
-    if search_query:
-        customers_qs = customers_qs.filter(
-            Q(customer__first_name__icontains=search_query) |
-            Q(customer__last_name__icontains=search_query) |
-            Q(customer__email__icontains=search_query) |
-            Q(customer__phone__icontains=search_query)
-        )
-    
-    if status_filter == 'active':
-        customers_qs = customers_qs.filter(is_active=True)
-    elif status_filter == 'inactive':
-        customers_qs = customers_qs.filter(is_active=False)
-    elif status_filter == 'vip':
-        customers_qs = customers_qs.filter(is_vip=True)
-    
-    # Create CSV response
+    # Create the HttpResponse object with CSV header
     response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = f'attachment; filename="{tenant.subdomain}_customers_{timezone.now().strftime("%Y%m%d")}.csv"'
+    response['Content-Disposition'] = f'attachment; filename="customers_{tenant.subdomain}_{datetime.now().strftime("%Y%m%d")}.csv"'
     
     writer = csv.writer(response)
     writer.writerow([
-        'Name',
-        'Email',
-        'Phone',
-        'Joined Date',
-        'Loyalty Points',
-        'Total Spent',
-        'Status',
-        'VIP',
-        'Notes'
+        'ID', 'Username', 'Email', 'First Name', 'Last Name', 'Phone',
+        'Loyalty Points', 'Total Spent', 'Purchase Count', 'VIP Status',
+        'Active', 'Joined Date', 'Last Purchase'
     ])
     
-    for tc in customers_qs:
+    customers = TenantCustomer.objects.filter(tenant=tenant).order_by('-joined_at')
+    
+    for customer in customers:
         writer.writerow([
-            tc.customer.get_full_name(),
-            tc.customer.email,
-            tc.customer.phone or '',
-            tc.joined_at.strftime('%Y-%m-%d'),
-            tc.loyalty_points,
-            tc.total_spent if hasattr(tc, 'total_spent') else tc.total_purchases,
-            'Active' if tc.is_active else 'Inactive',
-            'Yes' if tc.is_vip else 'No',
-            tc.notes or ''
+            str(customer.id),
+            customer.username,
+            customer.email,
+            customer.first_name,
+            customer.last_name,
+            customer.phone or '',
+            customer.loyalty_points,
+            customer.total_spent or 0,
+            customer.purchase_count or 0,
+            'Yes' if customer.is_vip else 'No',
+            'Yes' if customer.is_active else 'No',
+            customer.joined_at.strftime('%Y-%m-%d') if customer.joined_at else '',
+            customer.last_purchase_at.strftime('%Y-%m-%d') if customer.last_purchase_at else '',
         ])
     
     return response
 
-# ============================================================================
-# TRANSACTION VIEWS
-# ============================================================================
 
-@login_required(login_url='dashboard:login')
+# ============================================
+# TRANSACTION VIEWS - PHASE 4: Using TenantCustomer
+# ============================================
+@login_required
 def transaction_list(request):
     """
-    Display list of all transactions for the logged-in customer
-    with filtering and pagination
+    List all transactions for the authenticated customer
+    Updated for Phase 4: Uses TenantCustomer
     """
-    tenant = getattr(request, 'tenant', None)
+    if not TRANSACTIONS_ENABLED:
+        messages.error(request, 'Transaction tracking is not enabled.')
+        return redirect('dashboard:home')
+    
+    tenant = get_tenant_from_request(request)
     
     if not tenant:
-        messages.error(request, 'Unable to load transactions.')
-        return redirect('dashboard:home')
+        messages.error(request, 'Unable to identify business.')
+        return redirect('/')
     
-    # Get the tenant-specific customer record
-    try:
-        tenant_customer = TenantCustomer.objects.get(
-            customer=request.user,
-            tenant=tenant
-        )
-    except TenantCustomer.DoesNotExist:
-        messages.error(request, "Customer record not found for this business.")
-        return redirect('dashboard:home')
-    
-    # Get all transactions for this customer
+    # Get transactions for this customer in this tenant
     transactions = Transaction.objects.filter(
         tenant=tenant,
-        customer=request.user
-    ).order_by('-transaction_date')
+        tenant_customer=request.user
+    ).order_by('-timestamp')
     
-    # Apply filters
-    date_from = request.GET.get('date_from', '')
-    date_to = request.GET.get('date_to', '')
+    # Date filtering
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
     
     if date_from:
-        try:
-            date_from_obj = datetime.strptime(date_from, '%Y-%m-%d')
-            transactions = transactions.filter(transaction_date__gte=date_from_obj)
-        except ValueError:
-            pass
-    
+        transactions = transactions.filter(timestamp__gte=date_from)
     if date_to:
-        try:
-            date_to_obj = datetime.strptime(date_to, '%Y-%m-%d')
-            transactions = transactions.filter(transaction_date__lte=date_to_obj)
-        except ValueError:
-            pass
+        transactions = transactions.filter(timestamp__lte=date_to)
     
-    # Calculate summary statistics
-    total_spent = transactions.aggregate(total=Sum('total'))['total'] or 0
-    total_transactions = transactions.count()
-    total_points_earned = transactions.aggregate(points=Sum('points_earned'))['points'] or 0
-    
-    # Paginate results
+    # Pagination
     paginator = Paginator(transactions, 20)
     page_number = request.GET.get('page')
     transactions_page = paginator.get_page(page_number)
     
+    # Calculate totals
+    total_spent = transactions.aggregate(total=Sum('amount'))['total'] or 0
+    
     context = {
         'tenant': tenant,
-        'tenant_customer': tenant_customer,
         'transactions': transactions_page,
         'total_spent': total_spent,
-        'total_transactions': total_transactions,
-        'total_points_earned': total_points_earned,
+        'date_from': date_from,
+        'date_to': date_to,
     }
     
-    return render(request, 'dashboard/transactions.html', context)
+    return render(request, 'dashboard/transaction_list.html', context)
 
 
-@login_required(login_url='dashboard:login')
+@login_required
 def transaction_detail(request, transaction_id):
     """
-    Display detailed information about a specific transaction
+    View details of a specific transaction
+    Updated for Phase 4: Uses TenantCustomer
     """
-    tenant = getattr(request, 'tenant', None)
-    
-    if not tenant:
-        messages.error(request, 'Unable to load transaction.')
+    if not TRANSACTIONS_ENABLED:
+        messages.error(request, 'Transaction tracking is not enabled.')
         return redirect('dashboard:home')
     
-    # Get the transaction - ensure it belongs to this customer and tenant
+    tenant = get_tenant_from_request(request)
+    
+    if not tenant:
+        messages.error(request, 'Unable to identify business.')
+        return redirect('/')
+    
+    # Get transaction - ensure it belongs to this tenant and customer
     transaction = get_object_or_404(
         Transaction,
-        transaction_id=transaction_id,
+        id=transaction_id,
         tenant=tenant,
-        customer=request.user
+        tenant_customer=request.user
     )
-    
-    # Get the tenant-specific customer record
-    try:
-        tenant_customer = TenantCustomer.objects.get(
-            customer=request.user,
-            tenant=tenant
-        )
-    except TenantCustomer.DoesNotExist:
-        tenant_customer = None
     
     context = {
         'tenant': tenant,
-        'tenant_customer': tenant_customer,
         'transaction': transaction,
     }
     
     return render(request, 'dashboard/transaction_detail.html', context)
 
 
-# ============================================================================
-# PASSWORD RESET VIEWS
-# ============================================================================
-
+# ============================================
+# PASSWORD RESET VIEWS (Tenant-aware)
+# ============================================
 class TenantPasswordResetView(PasswordResetView):
-    """
-    Custom password reset view that includes tenant context
-    """
+    """Custom password reset view that includes tenant context"""
     template_name = 'dashboard/password_reset.html'
-    email_template_name = 'dashboard/password_reset_email.txt'
-    html_email_template_name = 'dashboard/password_reset_email.html'
-    subject_template_name = 'dashboard/password_reset_subject.txt'
+    email_template_name = 'emails/password_reset_email.html'
     success_url = reverse_lazy('dashboard:password_reset_done')
-    form_class = PasswordResetForm
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['tenant'] = getattr(self.request, 'tenant', None)
+        context['tenant'] = get_tenant_from_request(self.request)
         return context
 
 
 class TenantPasswordResetDoneView(PasswordResetDoneView):
-    """
-    View shown after password reset email is sent
-    """
+    """Custom password reset done view with tenant context"""
     template_name = 'dashboard/password_reset_done.html'
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['tenant'] = getattr(self.request, 'tenant', None)
+        context['tenant'] = get_tenant_from_request(self.request)
         return context
 
 
 class TenantPasswordResetConfirmView(PasswordResetConfirmView):
-    """
-    View for confirming password reset with token
-    """
+    """Custom password reset confirm view with tenant context"""
     template_name = 'dashboard/password_reset_confirm.html'
     success_url = reverse_lazy('dashboard:password_reset_complete')
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['tenant'] = getattr(self.request, 'tenant', None)
+        context['tenant'] = get_tenant_from_request(self.request)
         return context
 
 
 class TenantPasswordResetCompleteView(PasswordResetCompleteView):
-    """
-    View shown after password reset is complete
-    """
+    """Custom password reset complete view with tenant context"""
     template_name = 'dashboard/password_reset_complete.html'
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['tenant'] = getattr(self.request, 'tenant', None)
+        context['tenant'] = get_tenant_from_request(self.request)
         return context
-
-
-# ============================================================================
-# INTEGRATION VIEWS - POS SYNC ENDPOINTS
-# ============================================================================
-
-class SyncHealthView(APIView):
-    """
-    Health check endpoint for integration
-    Returns status of CRM system
-    """
-    authentication_classes = [IntegrationJWTAuthentication]
-    
-    def get(self, request):
-        """Check if CRM is healthy and ready to receive data"""
-        return Response({
-            'status': 'healthy',
-            'message': 'CRM system is ready to receive sync requests',
-            'version': '1.0.0',
-        })
-        
-from django.http import JsonResponse
-from django.views.decorators.http import require_http_methods
-from customers.models import Customer
-
-@require_http_methods(["GET"])
-def check_customer_by_phone(request):
-    """
-    Check if a customer exists by phone number.
-    Used by POS system to check for duplicates before creating customers.
-    """
-    try:
-        phone = request.GET.get('phone')
-        
-        if not phone:
-            return JsonResponse({
-                'exists': False,
-                'error': 'Phone number is required'
-            }, status=400)
-        
-        # Normalize phone number (remove non-digits)
-        normalized_phone = ''.join(filter(str.isdigit, phone))
-        
-        if not normalized_phone:
-            return JsonResponse({
-                'exists': False,
-                'error': 'Invalid phone number'
-            }, status=400)
-        
-        # Search for customer by phone
-        customer = Customer.objects.filter(
-            phone__contains=normalized_phone
-        ).first()
-        
-        if customer:
-            # Customer found - return data
-            return JsonResponse({
-                'exists': True,
-                'customer': {
-                    'id': str(customer.id),
-                    'first_name': customer.first_name,
-                    'last_name': customer.last_name,
-                    'email': customer.email or '',
-                    'phone': customer.phone or '',
-                    'date_of_birth': customer.date_of_birth.isoformat() if customer.date_of_birth else None,
-                    'address': customer.address or '',
-                    'city': customer.city or '',
-                    'state': customer.state or '',
-                    'zip_code': customer.zip_code or '',
-                    'loyalty_points': customer.loyalty_points or 0,
-                    'loyalty_tier': customer.loyalty_tier or 'BRONZE',
-                    'total_spent': float(customer.total_spent or 0),
-                    'visit_count': customer.visit_count or 0,
-                    'marketing_opt_in': customer.marketing_opt_in or False,
-                    'is_active': customer.is_active,
-                    'created_at': customer.created_at.isoformat() if customer.created_at else None,
-                    'updated_at': customer.updated_at.isoformat() if customer.updated_at else None,
-                }
-            })
-        else:
-            # Customer not found
-            return JsonResponse({
-                'exists': False
-            })
-            
-    except Exception as e:
-        return JsonResponse({
-            'exists': False,
-            'error': str(e)
-        }, status=500)
