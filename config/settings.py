@@ -140,9 +140,8 @@ AUTH_USER_MODEL = 'customers.TenantCustomer'
 # Authentication Backends
 # Order matters: Django tries each backend in order until one succeeds
 AUTHENTICATION_BACKENDS = [
-    'customers.authentication.TenantCustomerAuthBackend',        # Primary: username + tenant
-    'customers.authentication.TenantCustomerEmailAuthBackend',   # Fallback: email + tenant
-    'django.contrib.auth.backends.ModelBackend',                 # Django default (for admin)
+    'customers.authentication.TenantCustomerAuthBackend',
+    'customers.authentication.TenantCustomerEmailAuthBackend',
 ]
 
 # ===== EMAIL CONFIGURATION - SENDGRID =====
