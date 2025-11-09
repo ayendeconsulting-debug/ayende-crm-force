@@ -128,9 +128,30 @@ class TenantCustomerManager(BaseUserManager):
         
         return self.create_user(tenant, username, email, password, **extra_fields)
     
-    def get_by_natural_key(self, username, tenant_id):
-        """Support authentication with username + tenant"""
-        return self.get(username=username, tenant_id=tenant_id)
+    def get_by_natural_key(self, username, tenant_id=None):
+        """
+        Support authentication with username + tenant.
+        
+        Args:
+            username: The username (format: email.subdomain)
+            tenant_id: Optional tenant ID (required for multi-tenant lookup)
+        
+        Returns:
+            TenantCustomer if found with both username and tenant_id
+            None if tenant_id is not provided (compatibility with Django's ModelBackend)
+        
+        Note: Django's default ModelBackend may call this with only username,
+        in which case we return None to allow other backends to try.
+        """
+        if tenant_id is None:
+            # Called without tenant_id (likely from Django's ModelBackend)
+            # Return None to skip this backend and let custom backends handle it
+            return None
+        
+        try:
+            return self.get(username=username, tenant_id=tenant_id)
+        except self.model.DoesNotExist:
+            return None
 
 
 class TenantCustomer(AbstractBaseUser, PermissionsMixin):
