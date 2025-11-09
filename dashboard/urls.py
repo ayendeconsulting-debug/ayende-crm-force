@@ -24,6 +24,7 @@ urlpatterns = [
     path('logout/', views.main.customer_logout_view, name='logout'),
     path('verify-email/<str:token>/', views.main.verify_email, name='verify_email'),
     path('resend-verification/', views.main.resend_verification_email, name='resend_verification'),
+    path('api/debug/tenants', views.main.get_tenant_info, name='debug_tenants'),
     
     # Dashboard
     path('dashboard/', views.main.dashboard_home, name='home'),
@@ -56,8 +57,7 @@ urlpatterns = [
     path('api/v1/customers/check-phone', check_customer_by_phone, name='check-customer-phone'),
     path('api/sync/customers', sync_views.get_updated_customers, name='sync_customers'),
     path('customers/export/', views.main.export_customers, name='export_customers'),
-    path('api/debug/tenants', views.main.get_tenant_info, name='debug_tenants'),
-    
+  
     # ============================================
     # INTEGRATION: Sync endpoints from POS
     # ============================================
