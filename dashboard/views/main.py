@@ -44,6 +44,9 @@ from dashboard.authentication import IntegrationJWTAuthentication
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 # ============================================
@@ -230,8 +233,8 @@ def customer_register(request):
             tenant_customer.generate_verification_token()
             tenant_customer.save()
 
-            # Send verification email
-            send_verification_email(request, tenant_customer)
+            # Send verification email with correct parameter order: (tenant_customer, tenant, request)
+            send_verification_email(tenant_customer, tenant, request)
 
             messages.success(
                 request,
@@ -240,8 +243,10 @@ def customer_register(request):
             return redirect('dashboard:customer_login')
 
         except Exception as e:
-            logger.error(f"Registration error for {email}: {str(e)}")
-            messages.error(request, f'An error occurred during registration: {str(e)}')
+            # Log the error with full traceback
+            logger.error(f"Registration error for {email}: {str(e)}", exc_info=True)
+            
+            messages.error(request, 'An error occurred during registration. Please try again.')
             return render(request, 'dashboard/register.html', {
                 'tenant': tenant,
                 'email': email,
