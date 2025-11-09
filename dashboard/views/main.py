@@ -393,6 +393,20 @@ def customer_login_view(request):
             # Fallback: generate username if template didn't send it
             username = f"{email}.{tenant.subdomain}"
         
+       # DEBUG: Log authentication attempt
+        print(f"DEBUG - Login attempt:")
+        print(f"  Email: {email}")
+        print(f"  Username: {username}")
+        print(f"  Tenant: {tenant.subdomain if tenant else 'None'}")
+        print(f"  Password length: {len(password) if password else 0}")
+        
+        # Authenticate using username (email.subdomain format)
+        user = authenticate(request, username=username, password=password, tenant=tenant)
+        
+        print(f"  Auth result: {user is not None}")
+        if user:
+            print(f"  Authenticated as: {user.email}")
+       
         # Authenticate using username (email.subdomain format)
         user = authenticate(request, username=username, password=password, tenant=tenant)
         
