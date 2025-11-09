@@ -240,7 +240,7 @@ def customer_register(request):
                 request,
                 'Registration successful! Please check your email to verify your account.'
             )
-            return redirect('dashboard:customer_login')
+            return redirect('dashboard:login')
 
         except Exception as e:
             # Log the error with full traceback
