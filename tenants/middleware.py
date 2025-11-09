@@ -19,6 +19,7 @@ class TenantMiddleware(MiddlewareMixin):
             '/static/',
             '/media/',
             '/api/v1/sync/',  # POS-to-CRM sync endpoints
+            '/api/debug/',    # Debug/diagnostic endpoints
         ]
         
         # Check if the current path should bypass tenant detection
