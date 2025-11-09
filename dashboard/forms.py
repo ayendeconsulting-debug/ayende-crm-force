@@ -137,8 +137,8 @@ class CustomerProfileForm(forms.ModelForm):
     Customer profile update form.
     """
     class Meta:
-        model = Customer
-        fields = ['first_name', 'last_name', 'phone']
+        model = TenantCustomer
+        fields = ['phone', 'email', 'address', 'city', 'state', 'postal_code', 'date_of_birth', 'profile_picture', 'preferred_language']
         widgets = {
             'first_name': forms.TextInput(attrs={
                 'class': 'form-control',

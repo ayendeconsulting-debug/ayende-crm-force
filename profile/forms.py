@@ -13,18 +13,16 @@ class EnhancedProfileForm(forms.ModelForm):
     """
     
     class Meta:
-        model = Customer
+        model = TenantCustomer  # Changed from Customer
         fields = [
-            'profile_picture',
-            'first_name',
-            'last_name',
-            'phone',
-            'date_of_birth',
-            'address',
-            'city',
-            'postal_code',
-            'country',
-            'preferred_language',
+            'date_of_birth', 
+            'city', 
+            'preferred_language', 
+            'profile_picture', 
+            'postal_code', 
+            'phone', 
+            'country', 
+            'address'
         ]
         
         widgets = {
@@ -137,7 +135,7 @@ class ProfilePictureForm(forms.ModelForm):
     """
     
     class Meta:
-        model = Customer
+        model = TenantCustomer 
         fields = ['profile_picture']
         
         widgets = {

@@ -1,7 +1,8 @@
 """
-Customer Models for Ayende CX
-Custom user model with multi-tenant support and email verification
-UPDATED: Integration fields added for POS sync
+Customer Models for Ayende CX - REFACTORED for Multi-Tenant Architecture
+Supports customers belonging to multiple tenants with separate credentials per tenant
+UPDATED: Separated global identity from tenant-specific authentication
+Username Format: email.subdomain (e.g., abc@example.com.bashevents)
 """
 
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
@@ -12,141 +13,22 @@ import secrets
 from django.utils import timezone
 from datetime import timedelta
 
-class CustomerManager(BaseUserManager):
-    """
-    Custom manager for Customer model
-    """
-    
-    def create_user(self, email, password=None, **extra_fields):
-        """Create and return a regular user"""
-        if not email:
-            raise ValueError('Email address is required')
-        
-        email = self.normalize_email(email)
-        user = self.model(email=email, **extra_fields)
-        user.set_password(password)
-        user.save(using=self._db)
-        return user
-    
-    def create_superuser(self, email, password=None, **extra_fields):
-        """Create and return a superuser"""
-        extra_fields.setdefault('is_staff', True)
-        extra_fields.setdefault('is_superuser', True)
-        extra_fields.setdefault('is_active', True)
-        extra_fields.setdefault('email_verified', True)  # Auto-verify superusers
-        
-        if extra_fields.get('is_staff') is not True:
-            raise ValueError('Superuser must have is_staff=True')
-        if extra_fields.get('is_superuser') is not True:
-            raise ValueError('Superuser must have is_superuser=True')
-        
-        return self.create_user(email, password, **extra_fields)
 
-
-class Customer(AbstractBaseUser, PermissionsMixin):
+class Customer(models.Model):
     """
-    Custom user model for customers.
-    Can belong to multiple tenants (businesses).
+    Global Customer Identity Model - Pure identity without authentication.
+    Represents a unique person across all tenants in the system.
+    A customer can belong to multiple tenants through TenantCustomer.
     """
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
-    # Authentication
-    email = models.EmailField(unique=True, max_length=255)
-    
-    # Personal Information
+    # Core Identity (minimal, tenant-agnostic)
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
-    phone = models.CharField(
-        max_length=20,
-        blank=True,
-        validators=[
-            RegexValidator(
-                regex=r'^\+?1?\d{9,15}$',
-                message="Phone number must be in format: '+999999999'. Up to 15 digits allowed."
-            )
-        ]
-    )
-    
-    # Profile
-    profile_picture = models.ImageField(
-        upload_to='customer_profiles/',
-        blank=True,
-        null=True
-    )
-    date_of_birth = models.DateField(null=True, blank=True)
-    address = models.TextField(blank=True)
-    city = models.CharField(max_length=100, blank=True)
-    state = models.CharField(max_length=100, blank=True)  # 🔗 INTEGRATION: Added for POS sync
-    postal_code = models.CharField(max_length=20, blank=True)
-    country = models.CharField(max_length=100, blank=True, default='Canada')
-    
-    # Permissions
-    is_active = models.BooleanField(default=True)
-    is_staff = models.BooleanField(default=False)
-    is_superuser = models.BooleanField(default=False)
-    
-    # Preferences
-    preferred_language = models.CharField(
-        max_length=10,
-        default='en',
-        choices=[
-            ('en', 'English'),
-            ('fr', 'French'),
-        ]
-    )
-    
-    # Email Verification
-    email_verified = models.BooleanField(
-        default=False,
-        help_text='Whether the email address has been verified'
-    )
-    
-    email_verification_token = models.CharField(
-        max_length=64,
-        blank=True,
-        null=True,
-        unique=True,
-        help_text='Token for email verification'
-    )
-    
-    email_verification_sent_at = models.DateTimeField(
-        null=True,
-        blank=True,
-        help_text='When the verification email was last sent'
-    )
-    
-      # Loyalty program
-    loyalty_points = models.IntegerField(default=0)
-    loyalty_tier = models.CharField(max_length=20, default='BRONZE', 
-                                     choices=[('BRONZE','Bronze'),('SILVER','Silver'),
-                                             ('GOLD','Gold'),('PLATINUM','Platinum')])
-    total_spent = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    visit_count = models.IntegerField(default=0)
-    last_visit = models.DateTimeField(null=True, blank=True)  # 🔗 INTEGRATION: Last transaction date
-    marketing_opt_in = models.BooleanField(default=False)
-    needs_enrichment = models.BooleanField(default=False)
-    
-    # ============================================
-    # 🔗 INTEGRATION: POS sync fields
-    # ============================================
-    external_id = models.UUIDField(
-        unique=True,
-        null=True,
-        blank=True,
-        help_text='Customer ID from POS system',
-        db_index=True
-    )
-    
-    last_synced_at = models.DateTimeField(
-        null=True,
-        blank=True,
-        help_text='Last time data was synced from POS'
-    )
     
     # Timestamps
-    date_joined = models.DateTimeField(auto_now_add=True)
-    last_login = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
     # Many-to-Many relationship with Tenants through TenantCustomer
@@ -156,25 +38,18 @@ class Customer(AbstractBaseUser, PermissionsMixin):
         related_name='customers'
     )
     
-    objects = CustomerManager()
-    
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['first_name', 'last_name']
-    
     class Meta:
         db_table = 'customers'
-        ordering = ['-date_joined']
+        ordering = ['-created_at']
         verbose_name = 'Customer'
         verbose_name_plural = 'Customers'
         indexes = [
-            models.Index(fields=['email']),
             models.Index(fields=['last_name', 'first_name']),
-            models.Index(fields=['email_verification_token']),
-            models.Index(fields=['external_id']),  # 🔗 INTEGRATION INDEX
+            models.Index(fields=['-created_at']),
         ]
     
     def __str__(self):
-        return f"{self.get_full_name()} ({self.email})"
+        return self.get_full_name()
     
     def get_full_name(self):
         """Return the full name"""
@@ -188,6 +63,314 @@ class Customer(AbstractBaseUser, PermissionsMixin):
     def initials(self):
         """Get user initials for avatar"""
         return f"{self.first_name[0]}{self.last_name[0]}".upper() if self.first_name and self.last_name else "?"
+
+
+class TenantCustomerManager(BaseUserManager):
+    """
+    Custom manager for TenantCustomer model
+    Handles authentication at the tenant level
+    """
+    
+    def create_user(self, tenant, username, email, password=None, **extra_fields):
+        """Create and return a tenant-specific customer"""
+        if not username:
+            raise ValueError('Username is required')
+        if not email:
+            raise ValueError('Email address is required')
+        if not tenant:
+            raise ValueError('Tenant is required')
+        
+        # Check if username already exists for this tenant
+        if self.filter(tenant=tenant, username=username).exists():
+            raise ValueError(f'Username {username} already exists for this tenant')
+        
+        # Normalize email
+        email = self.normalize_email(email)
+        
+        # Get or create global Customer
+        customer = None
+        if 'customer' in extra_fields:
+            customer = extra_fields.pop('customer')
+        
+        if not customer:
+            # Create new global customer
+            first_name = extra_fields.pop('first_name', '')
+            last_name = extra_fields.pop('last_name', '')
+            customer = Customer.objects.create(
+                first_name=first_name,
+                last_name=last_name
+            )
+        
+        # Create TenantCustomer
+        tenant_customer = self.model(
+            tenant=tenant,
+            customer=customer,
+            username=username,
+            email=email,
+            **extra_fields
+        )
+        tenant_customer.set_password(password)
+        tenant_customer.save(using=self._db)
+        return tenant_customer
+    
+    def create_superuser(self, tenant, username, email, password=None, **extra_fields):
+        """Create and return a superuser"""
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('is_active', True)
+        extra_fields.setdefault('email_verified', True)
+        extra_fields.setdefault('role', 'owner')
+        
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('Superuser must have is_staff=True')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('Superuser must have is_superuser=True')
+        
+        return self.create_user(tenant, username, email, password, **extra_fields)
+    
+    def get_by_natural_key(self, username, tenant_id):
+        """Support authentication with username + tenant"""
+        return self.get(username=username, tenant_id=tenant_id)
+
+
+class TenantCustomer(AbstractBaseUser, PermissionsMixin):
+    """
+    Tenant-Specific Customer Account.
+    Handles authentication and tenant-specific data.
+    Links a global Customer identity to a specific Tenant.
+    Username Format: email.subdomain (e.g., abc@example.com.bashevents)
+    """
+    
+    ROLE_CHOICES = [
+        ('owner', 'Owner'),
+        ('admin', 'Administrator'),
+        ('manager', 'Manager'),
+        ('staff', 'Staff'),
+        ('customer', 'Customer'),
+    ]
+    
+    LOYALTY_TIER_CHOICES = [
+        ('BRONZE', 'Bronze'),
+        ('SILVER', 'Silver'),
+        ('GOLD', 'Gold'),
+        ('PLATINUM', 'Platinum')
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    # ============================================
+    # RELATIONSHIPS
+    # ============================================
+    customer = models.ForeignKey(
+        Customer,
+        on_delete=models.CASCADE,
+        related_name='tenant_accounts'
+    )
+    tenant = models.ForeignKey(
+        'tenants.Tenant',
+        on_delete=models.CASCADE,
+        related_name='tenant_customers'
+    )
+    
+    # ============================================
+    # AUTHENTICATION (Tenant-Specific)
+    # ============================================
+    username = models.CharField(
+        max_length=200,  # Increased to accommodate email.subdomain format
+        help_text='Username format: email.subdomain (e.g., abc@example.com.bashevents)'
+    )
+    email = models.EmailField(
+        max_length=255,
+        help_text='Email for this customer at this tenant (can duplicate across tenants)'
+    )
+    # password field inherited from AbstractBaseUser
+    
+    # Name fields (copied from global Customer for convenience)
+    first_name = models.CharField(max_length=150, blank=True)
+    last_name = models.CharField(max_length=150, blank=True)
+    
+    # ============================================
+    # PROFILE & CONTACT (Tenant-Specific)
+    # ============================================
+    phone = models.CharField(
+        max_length=20,
+        blank=True,
+        validators=[
+            RegexValidator(
+                regex=r'^\+?1?\d{9,15}$',
+                message="Phone number must be in format: '+999999999'. Up to 15 digits allowed."
+            )
+        ]
+    )
+    
+    profile_picture = models.ImageField(
+        upload_to='customer_profiles/',
+        blank=True,
+        null=True
+    )
+    date_of_birth = models.DateField(null=True, blank=True)
+    
+    # Address (Tenant-Specific)
+    address = models.TextField(blank=True)
+    city = models.CharField(max_length=100, blank=True)
+    state = models.CharField(max_length=100, blank=True)
+    postal_code = models.CharField(max_length=20, blank=True)
+    country = models.CharField(max_length=100, blank=True, default='Canada')
+    
+    # ============================================
+    # ROLE & PERMISSIONS
+    # ============================================
+    role = models.CharField(
+        max_length=20,
+        choices=ROLE_CHOICES,
+        default='customer'
+    )
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
+    
+    # ============================================
+    # LOYALTY PROGRAM (Tenant-Specific)
+    # ============================================
+    loyalty_points = models.IntegerField(default=0)
+    loyalty_tier = models.CharField(
+        max_length=20,
+        choices=LOYALTY_TIER_CHOICES,
+        default='BRONZE'
+    )
+    total_spent = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    total_purchases = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    visit_count = models.IntegerField(default=0)
+    last_visit = models.DateTimeField(null=True, blank=True)
+    last_purchase_date = models.DateField(null=True, blank=True)
+    last_purchase_at = models.DateTimeField(null=True, blank=True)
+    purchase_count = models.IntegerField(default=0)
+    
+    # ============================================
+    # PREFERENCES (Tenant-Specific)
+    # ============================================
+    marketing_opt_in = models.BooleanField(default=False)
+    email_notifications = models.BooleanField(default=True)
+    sms_notifications = models.BooleanField(default=False)
+    push_notifications = models.BooleanField(default=True)
+    
+    preferred_language = models.CharField(
+        max_length=10,
+        default='en',
+        choices=[
+            ('en', 'English'),
+            ('fr', 'French'),
+        ]
+    )
+    
+    # ============================================
+    # EMAIL VERIFICATION
+    # ============================================
+    email_verified = models.BooleanField(
+        default=False,
+        help_text='Whether the email address has been verified'
+    )
+    
+    email_verification_token = models.CharField(
+        max_length=64,
+        blank=True,
+        null=True,
+        help_text='Token for email verification'
+    )
+    
+    email_verification_sent_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='When the verification email was last sent'
+    )
+    
+    # ============================================
+    # BUSINESS DATA
+    # ============================================
+    # VIP Status (auto-calculated based on tenant's VIP threshold)
+    is_vip = models.BooleanField(
+        default=False,
+        help_text='VIP customer status - automatically set when total_spent exceeds tenant VIP threshold'
+    )
+    
+    needs_enrichment = models.BooleanField(default=False)
+    
+    # Customer notes (visible to business staff only)
+    notes = models.TextField(blank=True, help_text="Internal notes about this customer")
+    
+    # Tags for segmentation
+    tags = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Tags for customer segmentation (e.g., ['vip', 'frequent'])"
+    )
+    
+    # ============================================
+    # INTEGRATION: POS sync fields
+    # ============================================
+    external_id = models.UUIDField(
+        null=True,
+        blank=True,
+        help_text='TenantCustomer ID from POS system',
+        db_index=True
+    )
+    
+    last_synced_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='Last time data was synced from/to POS'
+    )
+    
+    # ============================================
+    # TIMESTAMPS
+    # ============================================
+    date_joined = models.DateTimeField(auto_now_add=True)
+    joined_at = models.DateTimeField(auto_now_add=True)  # Alias for compatibility
+    last_login = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    objects = TenantCustomerManager()
+    
+    USERNAME_FIELD = 'username'
+    REQUIRED_FIELDS = ['email']
+    
+    class Meta:
+        db_table = 'tenant_customers'
+        # Username unique per tenant (not globally unique)
+        unique_together = [
+            ['tenant', 'username'],
+        ]
+        ordering = ['-date_joined']
+        verbose_name = 'Tenant Customer'
+        verbose_name_plural = 'Tenant Customers'
+        indexes = [
+            models.Index(fields=['tenant', 'username']),
+            models.Index(fields=['tenant', 'email']),
+            models.Index(fields=['tenant', 'is_active']),
+            models.Index(fields=['tenant', 'is_vip']),
+            models.Index(fields=['tenant', 'role']),
+            models.Index(fields=['loyalty_points']),
+            models.Index(fields=['external_id']),
+            models.Index(fields=['-date_joined']),
+        ]
+    
+    def __str__(self):
+        full_name = self.get_full_name() or self.email
+        return f"{full_name} ({self.username}) at {self.tenant.name}"
+    
+    def get_full_name(self):
+        """Return the full name"""
+        return f"{self.first_name} {self.last_name}".strip()
+    
+    def get_short_name(self):
+        """Return the short name (first name)"""
+        return self.first_name
+    
+    @property
+    def initials(self):
+        """Get user initials for avatar"""
+        first_initial = self.first_name[0] if self.first_name else "?"
+        last_initial = self.last_name[0] if self.last_name else "?"
+        return f"{first_initial}{last_initial}".upper()
     
     @property
     def zip_code(self):
@@ -198,6 +381,16 @@ class Customer(AbstractBaseUser, PermissionsMixin):
     def zip_code(self, value):
         """Allow setting zip_code which updates postal_code"""
         self.postal_code = value
+    
+    @property
+    def is_staff_member(self):
+        """Check if this customer is a staff member (not a regular customer)"""
+        return self.role in ['owner', 'admin', 'manager', 'staff']
+    
+    @property
+    def is_business_owner(self):
+        """Check if this customer is the business owner"""
+        return self.role == 'owner'
     
     def generate_verification_token(self):
         """Generate a unique verification token"""
@@ -220,104 +413,6 @@ class Customer(AbstractBaseUser, PermissionsMixin):
         self.email_verification_token = None
         self.email_verification_sent_at = None
         self.save(update_fields=['email_verified', 'email_verification_token', 'email_verification_sent_at'])
-
-
-class TenantCustomer(models.Model):
-    """
-    Through model linking Customers to Tenants.
-    Stores tenant-specific customer data like loyalty points, preferences, etc.
-    """
-    
-    ROLE_CHOICES = [
-        ('owner', 'Owner'),
-        ('admin', 'Administrator'),
-        ('manager', 'Manager'),
-        ('staff', 'Staff'),
-        ('customer', 'Customer'),
-    ]
-    
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    
-    # Relationships
-    customer = models.ForeignKey(
-        Customer,
-        on_delete=models.CASCADE,
-        related_name='tenant_relationships'
-    )
-    tenant = models.ForeignKey(
-        'tenants.Tenant',
-        on_delete=models.CASCADE,
-        related_name='tenant_customers'
-    )
-    
-    # Role & Permissions
-    role = models.CharField(
-        max_length=20,
-        choices=ROLE_CHOICES,
-        default='customer'
-    )
-    
-    # Customer-specific data for this tenant
-    loyalty_points = models.IntegerField(default=0)
-    total_purchases = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-    total_spent = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-    last_purchase_date = models.DateField(null=True, blank=True)
-    purchase_count = models.IntegerField(default=0)
-    
-    # Preferences - NOTIFICATION FIELDS
-    email_notifications = models.BooleanField(default=True)
-    sms_notifications = models.BooleanField(default=False)
-    push_notifications = models.BooleanField(default=True)
-    
-    # Customer notes (visible to business staff only)
-    notes = models.TextField(blank=True, help_text="Internal notes about this customer")
-    
-    # Tags for segmentation
-    tags = models.JSONField(
-        default=list,
-        blank=True,
-        help_text="Tags for customer segmentation (e.g., ['vip', 'frequent'])"
-    )
-    
-    # Status
-    is_active = models.BooleanField(default=True)
-    
-    # VIP Status (auto-calculated based on tenant's VIP threshold)
-    is_vip = models.BooleanField(
-        default=False,
-        help_text='VIP customer status - automatically set when total_spent exceeds tenant VIP threshold'
-    )
-    
-    # Timestamps
-    joined_at = models.DateTimeField(auto_now_add=True)
-    last_purchase_at = models.DateTimeField(null=True, blank=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    
-    class Meta:
-        db_table = 'tenant_customers'
-        unique_together = ['customer', 'tenant']
-        ordering = ['-joined_at']
-        verbose_name = 'Tenant-Customer Relationship'
-        verbose_name_plural = 'Tenant-Customer Relationships'
-        indexes = [
-            models.Index(fields=['tenant', 'role']),
-            models.Index(fields=['tenant', 'is_active']),
-            models.Index(fields=['tenant', 'is_vip']),
-            models.Index(fields=['loyalty_points']),
-        ]
-    
-    def __str__(self):
-        return f"{self.customer.get_full_name()} at {self.tenant.name}"
-    
-    @property
-    def is_staff_member(self):
-        """Check if this customer is a staff member (not a regular customer)"""
-        return self.role in ['owner', 'admin', 'manager', 'staff']
-    
-    @property
-    def is_business_owner(self):
-        """Check if this customer is the business owner"""
-        return self.role == 'owner'
     
     def add_loyalty_points(self, points):
         """Add loyalty points"""
@@ -335,7 +430,7 @@ class TenantCustomer(models.Model):
     def record_purchase(self, amount):
         """Record a purchase and auto-update VIP status"""
         self.total_purchases += amount
-        self.total_spent += amount  # Also update total_spent
+        self.total_spent += amount
         self.purchase_count += 1
         self.last_purchase_at = timezone.now()
         self.save(update_fields=['total_purchases', 'total_spent', 'purchase_count', 'last_purchase_at', 'updated_at'])
@@ -348,35 +443,26 @@ class TenantCustomer(models.Model):
         Auto-update VIP status based on tenant's VIP threshold setting.
         Returns True if status changed, False otherwise.
         """
-        try:
-            # Get tenant's VIP threshold from settings
-            tenant_settings = self.tenant.settings
-            vip_threshold = tenant_settings.vip_threshold
-            
-            # Determine new VIP status
-            should_be_vip = self.total_spent >= vip_threshold
-            
-            # Update if changed
-            if self.is_vip != should_be_vip:
-                self.is_vip = should_be_vip
-                self.save(update_fields=['is_vip', 'updated_at'])
-                return True
-            
-            return False
-        except Exception as e:
-            # If tenant settings don't exist, use default threshold of 1000
-            should_be_vip = self.total_spent >= 1000
-            if self.is_vip != should_be_vip:
-                self.is_vip = should_be_vip
-                self.save(update_fields=['is_vip', 'updated_at'])
-                return True
-            return False
+        # Get tenant's VIP threshold (default: $1000)
+        vip_threshold = getattr(self.tenant, 'vip_threshold', 1000)
+        
+        old_status = self.is_vip
+        self.is_vip = self.total_spent >= vip_threshold
+        
+        if old_status != self.is_vip:
+            self.save(update_fields=['is_vip', 'updated_at'])
+            return True
+        return False
 
+
+# ============================================
+# TRANSACTION MODEL
+# ============================================
 
 class Transaction(models.Model):
     """
-    Track customer transactions/purchases per tenant.
-    Each purchase is recorded here with details.
+    Customer transactions - purchases, refunds, and loyalty point adjustments.
+    Supports both registered customers and anonymous walk-in customers.
     """
     
     TRANSACTION_TYPE_CHOICES = [
@@ -405,14 +491,8 @@ class Transaction(models.Model):
         on_delete=models.CASCADE,
         related_name='transactions'
     )
-    customer = models.ForeignKey(
-    Customer,
-    on_delete=models.CASCADE,
-    related_name='transactions',
-    null=True,
-    blank=True,
-    help_text='Customer who made the transaction. Null for anonymous/walk-in customers.'
-)
+    
+    # UPDATED: Removed global Customer FK, only use TenantCustomer
     tenant_customer = models.ForeignKey(
         TenantCustomer,
         on_delete=models.CASCADE,
@@ -457,7 +537,7 @@ class Transaction(models.Model):
         decimal_places=2,
         default=0.00,
         help_text="Discount amount"
-    )  # 🔗 INTEGRATION: Added for POS sync
+    )
     total = models.DecimalField(
         max_digits=10,
         decimal_places=2,
@@ -467,7 +547,7 @@ class Transaction(models.Model):
         max_length=3,
         default='USD',
         help_text="Currency code (ISO 4217)"
-    )  # 🔗 INTEGRATION: Added for POS sync
+    )
     
     # Payment
     payment_method = models.CharField(
@@ -497,7 +577,7 @@ class Transaction(models.Model):
         max_length=100,
         blank=True,
         help_text="Human-readable transaction number from POS"
-    )  # 🔗 INTEGRATION: Added for POS sync
+    )
     receipt_number = models.CharField(max_length=50, blank=True)
     items_description = models.TextField(
         blank=True,
@@ -507,11 +587,11 @@ class Transaction(models.Model):
         default=list,
         blank=True,
         help_text="Detailed items list from POS"
-    )  # 🔗 INTEGRATION: Added for POS sync
+    )
     notes = models.TextField(blank=True, null=True)
     
     # ============================================
-    # 🔗 INTEGRATION: POS sync fields
+    # INTEGRATION: POS sync fields
     # ============================================
     external_id = models.UUIDField(
         unique=True,
@@ -542,32 +622,32 @@ class Transaction(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
-    # Staff who processed transaction
+    # Staff who processed transaction - UPDATED to reference TenantCustomer
     processed_by = models.ForeignKey(
-        Customer,
+        TenantCustomer,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name='processed_transactions',
-        help_text="Staff member who processed this transaction"
+        help_text="Staff member (TenantCustomer) who processed this transaction"
     )
     created_by = models.CharField(
         max_length=100,
         null=True,
         blank=True,
         help_text="ID of user who created transaction in POS"
-    )  # 🔗 INTEGRATION: Added for POS sync audit trail
+    )
     
     class Meta:
         db_table = 'transactions'
         ordering = ['-transaction_date']
         indexes = [
-            models.Index(fields=['tenant', 'customer', '-transaction_date']),
+            models.Index(fields=['tenant', 'tenant_customer', '-transaction_date']),
             models.Index(fields=['tenant', '-transaction_date']),
             models.Index(fields=['transaction_id']),
             models.Index(fields=['status']),
-            models.Index(fields=['external_id']),  # 🔗 INTEGRATION INDEX
-            models.Index(fields=['external_source']),  # 🔗 INTEGRATION INDEX
+            models.Index(fields=['external_id']),
+            models.Index(fields=['external_source']),
         ]
         verbose_name = 'Transaction'
         verbose_name_plural = 'Transactions'
@@ -575,18 +655,18 @@ class Transaction(models.Model):
     @property
     def is_customer_transaction(self):
         """Check if this transaction has a linked customer"""
-        return self.customer is not None and not self.is_anonymous
+        return self.tenant_customer is not None and not self.is_anonymous
 
     @property
     def customer_name(self):
         """Get customer name or 'Anonymous Customer' for display"""
-        if self.customer:
-            return f"{self.customer.first_name} {self.customer.last_name}"
+        if self.tenant_customer:
+            return self.tenant_customer.get_full_name()
         return "Anonymous Customer"
 
     def __str__(self):
         """String representation with anonymous support"""
-        customer_info = self.customer_name if self.customer else "Anonymous"
+        customer_info = self.customer_name
         return f"Transaction {self.transaction_number} - {customer_info} - ${self.total}"
     
     def save(self, *args, **kwargs):
@@ -621,14 +701,12 @@ class Transaction(models.Model):
             self.tenant_customer.loyalty_points -= self.points_redeemed
             
             # Update total spent
-            if not hasattr(self.tenant_customer, 'total_spent'):
-                # If field doesn't exist yet, track in total_purchases
-                self.tenant_customer.total_purchases += self.total
-            else:
-                self.tenant_customer.total_spent += self.total
+            self.tenant_customer.total_spent += self.total
+            self.tenant_customer.total_purchases += self.total
             
             # Update last purchase date
             self.tenant_customer.last_purchase_date = self.transaction_date.date()
+            self.tenant_customer.last_purchase_at = self.transaction_date
             
             self.tenant_customer.save()
     
@@ -650,7 +728,7 @@ class Transaction(models.Model):
 
 
 # ============================================
-# 🔗 INTEGRATION: Sync Log Model
+# INTEGRATION: Sync Log Model
 # ============================================
 
 class SyncLog(models.Model):
@@ -709,7 +787,7 @@ class SyncLog(models.Model):
 
 
 # ============================================
-# 🔗 INTEGRATION: System Mapping Model
+# INTEGRATION: System Mapping Model
 # ============================================
 
 class SystemMapping(models.Model):

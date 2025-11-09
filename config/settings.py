@@ -29,7 +29,7 @@ if CUSTOM_DOMAIN:
         f'.{CUSTOM_DOMAIN}',  # Wildcard for subdomains
     ])
 
-ALLOWED_HOSTS = ['.ayendecx.com', 'staging.ayendecx.com', 'ayendecx.com']
+ALLOWED_HOSTS = ['.ayendecx.com', 'staging.ayendecx.com', 'ayendecx.com' '.localhost', '127.0.0.1']
 
 
 # Application definition
@@ -134,13 +134,15 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Custom user model
-AUTH_USER_MODEL = 'customers.Customer'
+# Multi-Tenant Customer Architecture
+AUTH_USER_MODEL = 'customers.TenantCustomer'
 
-# Authentication backends
+# Authentication Backends
+# Order matters: Django tries each backend in order until one succeeds
 AUTHENTICATION_BACKENDS = [
-    'tenants.backends.TenantAwareAuthBackend',
-    'django.contrib.auth.backends.ModelBackend',
+    'customers.authentication.TenantCustomerAuthBackend',        # Primary: username + tenant
+    'customers.authentication.TenantCustomerEmailAuthBackend',   # Fallback: email + tenant
+    'django.contrib.auth.backends.ModelBackend',                 # Django default (for admin)
 ]
 
 # ===== EMAIL CONFIGURATION - SENDGRID =====
