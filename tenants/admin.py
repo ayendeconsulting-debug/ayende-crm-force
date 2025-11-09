@@ -46,12 +46,11 @@ class TenantAdmin(ModelAdmin):
     ]
     
     readonly_fields = [
-        'id',
-        'tenant_uuid',
-        'created_at',
-        'updated_at',
-        'display_trial_status',
-    ]
+    'tenant_uuid',
+    'created_at',
+    'updated_at',
+    'display_trial_status',
+]
     
     fieldsets = [
         ('Basic Information', {

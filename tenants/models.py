@@ -2,6 +2,7 @@
 Tenants Models - With trial period tracking and VIP threshold
 Added: trial_ends_at field for simple trial management
 Added: vip_threshold in TenantSettings for multi-tenant VIP management
+UPDATED: tenant_uuid is now the primary key (instead of auto-generated integer ID)
 """
 
 from django.db import models
@@ -31,13 +32,12 @@ class Tenant(models.Model):
     Each business is a separate tenant with its own subdomain
     """
     
-    # Unique Identifier
+    # Unique Identifier (Primary Key)
     tenant_uuid = models.CharField(
         max_length=20,
-        unique=True,
+        primary_key=True,
         editable=False,
         default=generate_tenant_uuid,
-        db_index=True,
         help_text='Unique tenant identifier (e.g., a-cx-3k9f2)'
     )
     
