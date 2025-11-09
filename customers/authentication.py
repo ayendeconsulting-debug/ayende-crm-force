@@ -136,7 +136,8 @@ class TenantCustomerAuthBackend(BaseBackend):
         
         try:
             # Look up TenantCustomer by tenant + username
-            tenant_customer = TenantCustomer.objects.select_related('customer', 'tenant').get(
+            # Note: customer field is nullable, so we don't select_related('customer')
+            tenant_customer = TenantCustomer.objects.select_related('tenant').get(
                 tenant=tenant,
                 username=username,
                 is_active=True
@@ -159,7 +160,8 @@ class TenantCustomerAuthBackend(BaseBackend):
         Used by Django to retrieve the user from the session.
         """
         try:
-            return TenantCustomer.objects.select_related('customer', 'tenant').get(pk=user_id)
+            # Note: customer field is nullable, so we don't select_related('customer')
+            return TenantCustomer.objects.select_related('tenant').get(pk=user_id)
         except TenantCustomer.DoesNotExist:
             return None
     
@@ -227,7 +229,8 @@ class TenantCustomerEmailAuthBackend(BaseBackend):
         
         try:
             # Look up TenantCustomer by tenant + email
-            tenant_customer = TenantCustomer.objects.select_related('customer', 'tenant').get(
+            # Note: customer field is nullable, so we don't select_related('customer')
+            tenant_customer = TenantCustomer.objects.select_related('tenant').get(
                 tenant=tenant,
                 email=email,
                 is_active=True
@@ -249,7 +252,8 @@ class TenantCustomerEmailAuthBackend(BaseBackend):
     def get_user(self, user_id):
         """Get a TenantCustomer by ID"""
         try:
-            return TenantCustomer.objects.select_related('customer', 'tenant').get(pk=user_id)
+            # Note: customer field is nullable, so we don't select_related('customer')
+            return TenantCustomer.objects.select_related('tenant').get(pk=user_id)
         except TenantCustomer.DoesNotExist:
             return None
     
