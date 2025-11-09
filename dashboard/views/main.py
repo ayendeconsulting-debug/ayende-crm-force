@@ -199,25 +199,13 @@ def customer_register(request):
                         'last_name': {'value': last_name}, 'phone': {'value': phone}}
             })
         
-        # Get or create global Customer (for linking across tenants)
-        customer, created = Customer.objects.get_or_create(
-            first_name=first_name,
-            last_name=last_name
-        )
-        
         # Create TenantCustomer with multi-tenant username
+        # Note: Skipping Customer creation for now due to schema mismatch
         tenant_customer = TenantCustomer.objects.create(
             tenant=tenant,
-            customer=customer,
-            username=username,  # Format: email.subdomain
-            email=email,
-            first_name=first_name,
-            last_name=last_name,
-            phone=phone,
-            role='customer',
-            is_active=False,  # Requires email verification
-            email_verified=False
+            customer=None,  # Optional: Can link later if needed
         )
+       
         tenant_customer.set_password(password)
         tenant_customer.save()
         
