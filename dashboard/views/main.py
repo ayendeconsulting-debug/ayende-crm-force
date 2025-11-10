@@ -433,10 +433,16 @@ def customer_login_view(request):
                 return redirect(next_url)
             
             # Role-based redirect
-            if user.role in ['admin', 'owner', 'staff']:
+            # Platform admins go to Django admin
+            if getattr(user, 'is_platform_admin', False):
+                return redirect('/admin/')
+            
+            # Tenant admins/owners/managers/staff go to reports
+            if user.role in ['owner', 'admin', 'manager', 'staff']:
                 return redirect('/reports/')
-            else:
-                return redirect('dashboard:home')
+            
+            # Customers go to customer dashboard
+            return redirect('dashboard:home')
         else:
             messages.error(request, 'Invalid email or password.')
     
@@ -461,12 +467,47 @@ def customer_logout_view(request):
 # CUSTOMER DASHBOARD - PHASE 4: Using TenantCustomer
 # ============================================
 @login_required
+def dashboard_redirect(request):
+    """
+    Smart redirect based on user role.
+    This should be the root dashboard URL.
+    """
+    user = request.user
+    
+    # Platform admins go to Django admin
+    if getattr(user, 'is_platform_admin', False):
+        return redirect('/admin/')
+    
+    # Tenant admins/owners/managers/staff go to reports
+    if user.role in ['owner', 'admin', 'manager', 'staff']:
+        return redirect('/reports/')
+    
+    # Customers go to customer dashboard
+    return redirect('dashboard:home')
+
+@login_required
 def dashboard_home(request):
+
     """
     Customer dashboard home page
     Shows customer's transactions, loyalty points, and profile summary
     """
     tenant = get_tenant_from_request(request)
+    
+        # Platform admins should use Django admin
+    if getattr(request.user, 'is_platform_admin', False):
+        return redirect('/admin/')
+    
+    # Tenant admins/staff should use reports dashboard
+    if request.user.role in ['owner', 'admin', 'manager', 'staff']:
+        return redirect('/reports/')
+    
+    # Rest of existing code for customers...
+    tenant = get_tenant_from_request(request)
+    
+    if not tenant:
+        messages.error(request, 'Unable to identify business.')
+        return redirect('/')
     
     if not tenant:
         messages.error(request, 'Unable to identify business.')

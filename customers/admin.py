@@ -1,6 +1,7 @@
 """
 Admin configuration for Customers app
 UPDATED for Multi-Tenant Architecture
+WITH Platform Admin Support
 """
 
 from django.contrib import admin
@@ -9,8 +10,53 @@ from unfold.admin import ModelAdmin
 from .models import Customer, TenantCustomer, Transaction, SyncLog, SystemMapping
 
 
+class PlatformAdminMixin:
+    """
+    Mixin to handle platform admin permissions.
+    Platform admins bypass all tenant-based restrictions.
+    """
+    
+    def has_view_permission(self, request, obj=None):
+        # Platform admins can view everything
+        if hasattr(request.user, 'is_platform_admin') and request.user.is_platform_admin:
+            return True
+        return super().has_view_permission(request, obj)
+    
+    def has_change_permission(self, request, obj=None):
+        # Platform admins can change everything
+        if hasattr(request.user, 'is_platform_admin') and request.user.is_platform_admin:
+            return True
+        return super().has_change_permission(request, obj)
+    
+    def has_add_permission(self, request):
+        # Platform admins can add anything
+        if hasattr(request.user, 'is_platform_admin') and request.user.is_platform_admin:
+            return True
+        return super().has_add_permission(request)
+    
+    def has_delete_permission(self, request, obj=None):
+        # Platform admins can delete anything
+        if hasattr(request.user, 'is_platform_admin') and request.user.is_platform_admin:
+            return True
+        return super().has_delete_permission(request, obj)
+    
+    def get_queryset(self, request):
+        """
+        Filter queryset based on user permissions.
+        Platform admins see everything, tenant users see only their data.
+        """
+        qs = super().get_queryset(request)
+        
+        # Platform admins see all data
+        if hasattr(request.user, 'is_platform_admin') and request.user.is_platform_admin:
+            return qs
+        
+        # Let other methods handle tenant filtering
+        return qs
+
+
 @admin.register(Customer)
-class CustomerAdmin(ModelAdmin):
+class CustomerAdmin(PlatformAdminMixin, ModelAdmin):
     """Admin interface for global Customer model (identity only)"""
     
     list_display = [
@@ -50,7 +96,7 @@ class CustomerAdmin(ModelAdmin):
 
 
 @admin.register(TenantCustomer)
-class TenantCustomerAdmin(BaseUserAdmin, ModelAdmin):
+class TenantCustomerAdmin(PlatformAdminMixin, BaseUserAdmin, ModelAdmin):
     """Admin interface for TenantCustomer (authentication + tenant-specific data)"""
     
     list_display = [
@@ -213,7 +259,7 @@ class TenantCustomerAdmin(BaseUserAdmin, ModelAdmin):
 
 
 @admin.register(Transaction)
-class TransactionAdmin(ModelAdmin):
+class TransactionAdmin(PlatformAdminMixin, ModelAdmin):
     """Admin interface for Transaction model"""
     
     list_display = [
@@ -309,7 +355,7 @@ class TransactionAdmin(ModelAdmin):
 
 
 @admin.register(SyncLog)
-class SyncLogAdmin(ModelAdmin):
+class SyncLogAdmin(PlatformAdminMixin, ModelAdmin):
     """Admin interface for SyncLog model"""
     
     list_display = [
@@ -346,7 +392,7 @@ class SyncLogAdmin(ModelAdmin):
 
 
 @admin.register(SystemMapping)
-class SystemMappingAdmin(ModelAdmin):
+class SystemMappingAdmin(PlatformAdminMixin, ModelAdmin):
     """Admin interface for SystemMapping model"""
     
     list_display = [
