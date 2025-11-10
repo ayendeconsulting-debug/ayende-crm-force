@@ -15,11 +15,12 @@ class TenantMiddleware(MiddlewareMixin):
         
         # IMPORTANT: Bypass tenant detection for these paths ONLY
         exempt_paths = [
-            '/admin/',
-            '/static/',
-            '/media/',
-            '/api/v1/sync/',  # POS-to-CRM sync endpoints
-            '/api/debug/',    # Debug/diagnostic endpoints
+        '/admin/',
+        '/static/',
+        '/media/',
+        '/api/v1/sync/',  # Function-based sync endpoints
+        '/api/sync/',     # REST Framework sync endpoints (NEW)
+        '/api/debug/',    # Debug/diagnostic endpoints
         ]
         
         # Check if the current path should bypass tenant detection
