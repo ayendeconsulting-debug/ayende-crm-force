@@ -16,6 +16,7 @@ from dashboard.serializers.sync import (
 )
 from customers.models import Customer, Transaction, TenantCustomer
 from tenants.models import Tenant
+from rest_framework.permissions import AllowAny
 
 
 class SyncHealthView(APIView):
@@ -24,6 +25,7 @@ class SyncHealthView(APIView):
     Returns status of CRM system
     """
     authentication_classes = [IntegrationJWTAuthentication]
+    permission_classes = [AllowAny]  # ADD THIS LINE
     
     def get(self, request):
         """Check if CRM is healthy and ready to receive data"""
@@ -40,6 +42,7 @@ class TransactionSyncView(APIView):
     Receive transaction data from POS system
     """
     authentication_classes = [IntegrationJWTAuthentication]
+    permission_classes = [AllowAny]  # ADD THIS LINE
     
     def post(self, request):
         """
@@ -131,6 +134,7 @@ class CustomerSyncView(APIView):
     Receive customer data from POS system
     """
     authentication_classes = [IntegrationJWTAuthentication]
+    permission_classes = [AllowAny]  # ADD THIS LINE
     
     def post(self, request):
         """
@@ -214,6 +218,7 @@ class CustomerBatchSyncView(APIView):
     Receive batch customer data from POS system
     """
     authentication_classes = [IntegrationJWTAuthentication]
+    permission_classes = [AllowAny]  # ADD THIS LINE
     
     def post(self, request):
         """
