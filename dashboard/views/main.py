@@ -501,10 +501,7 @@ def dashboard_home(request):
     # Tenant admins/staff should use reports dashboard
     if request.user.role in ['owner', 'admin', 'manager', 'staff']:
         return redirect('/reports/')
-    
-    # Rest of existing code for customers...
-    tenant = get_tenant_from_request(request)
-    
+      
         # Platform admins should use Django admin
     if getattr(request.user, 'is_platform_admin', False):
         return redirect('/admin/')
@@ -596,7 +593,7 @@ def manage_customers(request):
         'total_customers': customers.count(),
     }
     
-    return render(request, 'dashboard/manage_customers.html', context)
+    return render(request, 'dashboard/business_customers.html', context)
 
 
 @login_required
