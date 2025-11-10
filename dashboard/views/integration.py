@@ -75,7 +75,7 @@ class TransactionSyncView(APIView):
             
             # Get or verify tenant
             try:
-                tenant = Tenant.objects.get(id=data['tenantId'])
+                tenant = Tenant.objects.get(pk=data['tenantId'])
             except Tenant.DoesNotExist:
                 return Response({
                     'success': False,
@@ -163,7 +163,7 @@ class CustomerSyncView(APIView):
             
             # Get or verify tenant
             try:
-                tenant = Tenant.objects.get(id=data['tenantId'])
+               tenant = Tenant.objects.get(pk=data['tenantId'])
             except Tenant.DoesNotExist:
                 return Response({
                     'success': False,
@@ -239,7 +239,7 @@ class CustomerBatchSyncView(APIView):
             
             # Get tenant
             try:
-                tenant = Tenant.objects.get(id=data['tenantId'])
+                tenant = Tenant.objects.get(pk=data['tenantId'])
             except Tenant.DoesNotExist:
                 return Response({
                     'success': False,
