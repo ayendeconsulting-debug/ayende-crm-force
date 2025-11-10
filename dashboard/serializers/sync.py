@@ -21,7 +21,7 @@ class TransactionSyncSerializer(serializers.Serializer):
     Validates incoming transaction data structure
     """
     transactionId = serializers.UUIDField()
-    tenantId = serializers.UUIDField()
+    tenantId = serializers.CharField(max_length=20)
     customerId = serializers.UUIDField()
     customerEmail = serializers.EmailField()
     
