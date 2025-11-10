@@ -436,11 +436,11 @@ def customer_login_view(request):
             # Platform admins go to Django admin
             if getattr(user, 'is_platform_admin', False):
                 return redirect('/admin/')
-            
+
             # Tenant admins/owners/managers/staff go to reports
             if user.role in ['owner', 'admin', 'manager', 'staff']:
                 return redirect('/reports/')
-            
+
             # Customers go to customer dashboard
             return redirect('dashboard:home')
         else:
@@ -492,6 +492,17 @@ def dashboard_home(request):
     Customer dashboard home page
     Shows customer's transactions, loyalty points, and profile summary
     """
+    tenant = get_tenant_from_request(request)
+    
+        # Platform admins should use Django admin
+    if getattr(request.user, 'is_platform_admin', False):
+        return redirect('/admin/')
+    
+    # Tenant admins/staff should use reports dashboard
+    if request.user.role in ['owner', 'admin', 'manager', 'staff']:
+        return redirect('/reports/')
+    
+    # Rest of existing code for customers...
     tenant = get_tenant_from_request(request)
     
         # Platform admins should use Django admin

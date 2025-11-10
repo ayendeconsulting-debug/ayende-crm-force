@@ -92,21 +92,25 @@ def check_staff_permission(request):
     """
     tenant = getattr(request, 'tenant', None)
     
+    # Platform admins bypass tenant checks
+    if hasattr(request.user, 'is_platform_admin') and request.user.is_platform_admin:
+        return tenant, request.user
+    
     if not tenant:
         return None, None
     
-    try:
-        tenant_customer = TenantCustomer.objects.get(
-            customer=request.user,
-            tenant=tenant
-        )
-        
-        if not tenant_customer.is_staff_member:
-            return None, None
-        
-        return tenant, tenant_customer
-    except TenantCustomer.DoesNotExist:
+    # request.user IS already a TenantCustomer object
+    tenant_customer = request.user
+    
+    # Verify user belongs to this tenant
+    if tenant_customer.tenant != tenant:
         return None, None
+    
+    # Check if user has staff permissions
+    if not tenant_customer.is_staff_member:
+        return None, None
+    
+    return tenant, tenant_customer
 
 
 @login_required(login_url='dashboard:login')
