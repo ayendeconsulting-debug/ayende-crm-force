@@ -11,26 +11,28 @@ class TenantMiddleware(MiddlewareMixin):
     
     def process_request(self, request):
         """
-    Detect tenant from subdomain and set on request object.
-    Bypass tenant detection for platform admins.
-    """
-    # === NEW: Platform Admin Bypass ===
+        Detect tenant from subdomain and set on request object.
+        Bypass tenant detection for platform admins.
+        """
+        # === NEW: Platform Admin Bypass ===
+        # Check FIRST if user is platform admin (before any tenant detection)
         if hasattr(request, 'user') and request.user.is_authenticated:
             if getattr(request.user, 'is_platform_admin', False):
                 # Platform admins have no tenant - bypass tenant detection
                 request.tenant = None
                 return None
-            # Get the host from the request
-            host = request.get_host().split(':')[0].lower()
-            
+        
+        # Get the host from the request (for all non-platform-admin users)
+        host = request.get_host().split(':')[0].lower()
+        
         # IMPORTANT: Bypass tenant detection for these paths ONLY
         exempt_paths = [
-        '/admin/',
-        '/static/',
-        '/media/',
-        '/api/v1/sync/',  # Function-based sync endpoints
-        '/api/sync/',     # REST Framework sync endpoints (NEW)
-        '/api/debug/',    # Debug/diagnostic endpoints
+            '/admin/',
+            '/static/',
+            '/media/',
+            '/api/v1/sync/',  # Function-based sync endpoints
+            '/api/sync/',     # REST Framework sync endpoints
+            '/api/debug/',    # Debug/diagnostic endpoints
         ]
         
         # Check if the current path should bypass tenant detection
