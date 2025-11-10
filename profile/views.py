@@ -29,10 +29,7 @@ def enhanced_profile(request):
     
     # Get tenant-customer relationship
     try:
-        tenant_customer = TenantCustomer.objects.get(
-            customer=request.user,
-            tenant=tenant
-        )
+        tenant_customer = request.user
     except TenantCustomer.DoesNotExist:
         messages.error(request, 'Access denied.')
         return redirect('dashboard:login')
@@ -62,10 +59,7 @@ def edit_profile_info(request):
         return redirect('dashboard:home')
     
     try:
-        tenant_customer = TenantCustomer.objects.get(
-            customer=request.user,
-            tenant=tenant
-        )
+        tenant_customer = request.user
     except TenantCustomer.DoesNotExist:
         messages.error(request, 'Access denied.')
         return redirect('dashboard:login')
@@ -100,10 +94,7 @@ def edit_preferences(request):
         return redirect('dashboard:home')
     
     try:
-        tenant_customer = TenantCustomer.objects.get(
-            customer=request.user,
-            tenant=tenant
-        )
+        tenant_customer = request.user
     except TenantCustomer.DoesNotExist:
         messages.error(request, 'Access denied.')
         return redirect('dashboard:login')
@@ -138,10 +129,7 @@ def change_password(request):
         return redirect('dashboard:home')
     
     try:
-        tenant_customer = TenantCustomer.objects.get(
-            customer=request.user,
-            tenant=tenant
-        )
+        tenant_customer = request.user
     except TenantCustomer.DoesNotExist:
         messages.error(request, 'Access denied.')
         return redirect('dashboard:login')
@@ -177,10 +165,7 @@ def upload_profile_picture(request):
         return redirect('dashboard:home')
     
     try:
-        tenant_customer = TenantCustomer.objects.get(
-            customer=request.user,
-            tenant=tenant
-        )
+        tenant_customer = request.user
     except TenantCustomer.DoesNotExist:
         messages.error(request, 'Access denied.')
         return redirect('dashboard:login')

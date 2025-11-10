@@ -39,10 +39,8 @@ def rewards_catalog(request):
     
     # Get customer-tenant relationship
     try:
-        tenant_customer = TenantCustomer.objects.get(
-            customer=request.user,
-            tenant=tenant
-        )
+        tenant_customer = request.user
+        
     except TenantCustomer.DoesNotExist:
         messages.error(request, 'You do not have access to this page.')
         return redirect('dashboard:login')
@@ -130,10 +128,8 @@ def reward_detail(request, reward_id):
     
     # Get customer-tenant relationship
     try:
-        tenant_customer = TenantCustomer.objects.get(
-            customer=request.user,
-            tenant=tenant
-        )
+        tenant_customer = request.user
+        
     except TenantCustomer.DoesNotExist:
         messages.error(request, 'Access denied.')
         return redirect('dashboard:login')
@@ -175,10 +171,8 @@ def redeem_reward(request, reward_id):
     
     # Get customer-tenant relationship
     try:
-        tenant_customer = TenantCustomer.objects.get(
-            customer=request.user,
-            tenant=tenant
-        )
+        tenant_customer = request.user
+        
     except TenantCustomer.DoesNotExist:
         messages.error(request, 'Access denied.')
         return redirect('dashboard:login')
@@ -244,10 +238,7 @@ def my_redemptions(request):
     
     # Get customer-tenant relationship
     try:
-        tenant_customer = TenantCustomer.objects.get(
-            customer=request.user,
-            tenant=tenant
-        )
+        tenant_customer = request.user
     except TenantCustomer.DoesNotExist:
         messages.error(request, 'Access denied.')
         return redirect('dashboard:login')
@@ -296,10 +287,7 @@ def redemption_detail_customer(request, redemption_id):
     
     # Get customer-tenant relationship
     try:
-        tenant_customer = TenantCustomer.objects.get(
-            customer=request.user,
-            tenant=tenant
-        )
+        tenant_customer = request.user
     except TenantCustomer.DoesNotExist:
         messages.error(request, 'Access denied.')
         return redirect('dashboard:login')
@@ -337,10 +325,7 @@ def manage_rewards(request):
     
     # Verify permissions
     try:
-        tenant_customer = TenantCustomer.objects.get(
-            customer=request.user,
-            tenant=tenant
-        )
+        tenant_customer = request.user
         
         if not tenant_customer.is_staff_member:
             messages.error(request, 'You do not have permission to access this page.')
@@ -403,10 +388,7 @@ def create_reward(request):
     
     # Verify permissions
     try:
-        tenant_customer = TenantCustomer.objects.get(
-            customer=request.user,
-            tenant=tenant
-        )
+        tenant_customer = request.user
         
         if not tenant_customer.is_staff_member:
             messages.error(request, 'You do not have permission to access this page.')
@@ -452,10 +434,7 @@ def edit_reward(request, reward_id):
     
     # Verify permissions
     try:
-        tenant_customer = TenantCustomer.objects.get(
-            customer=request.user,
-            tenant=tenant
-        )
+        tenant_customer = request.user
         
         if not tenant_customer.is_staff_member:
             messages.error(request, 'You do not have permission to access this page.')
@@ -501,10 +480,7 @@ def delete_reward(request, reward_id):
     
     # Verify permissions
     try:
-        tenant_customer = TenantCustomer.objects.get(
-            customer=request.user,
-            tenant=tenant
-        )
+        tenant_customer = request.user
         
         if not tenant_customer.is_staff_member:
             messages.error(request, 'You do not have permission to access this page.')
@@ -558,10 +534,7 @@ def manage_redemptions(request):
     
     # Verify permissions
     try:
-        tenant_customer = TenantCustomer.objects.get(
-            customer=request.user,
-            tenant=tenant
-        )
+        tenant_customer = request.user
         
         if not tenant_customer.is_staff_member:
             messages.error(request, 'You do not have permission to access this page.')
@@ -628,10 +601,7 @@ def redemption_detail_business(request, redemption_id):
     
     # Verify permissions
     try:
-        tenant_customer = TenantCustomer.objects.get(
-            customer=request.user,
-            tenant=tenant
-        )
+        tenant_customer = request.user
         
         if not tenant_customer.is_staff_member:
             messages.error(request, 'You do not have permission to access this page.')
@@ -679,10 +649,7 @@ def use_redemption_quick(request):
     
     # Verify permissions
     try:
-        tenant_customer = TenantCustomer.objects.get(
-            customer=request.user,
-            tenant=tenant
-        )
+        tenant_customer = request.user
         
         if not tenant_customer.is_staff_member:
             return JsonResponse({'success': False, 'error': 'Permission denied'})

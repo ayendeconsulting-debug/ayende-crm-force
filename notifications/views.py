@@ -31,10 +31,7 @@ def compose_notification(request):
     
     # Verify permissions
     try:
-        tenant_customer = TenantCustomer.objects.get(
-            customer=request.user,
-            tenant=tenant
-        )
+        tenant_customer = request.user
         
         if not tenant_customer.is_staff_member:
             messages.error(request, 'You do not have permission to send notifications.')
@@ -119,10 +116,7 @@ def notification_list(request):
     
     # Verify permissions
     try:
-        tenant_customer = TenantCustomer.objects.get(
-            customer=request.user,
-            tenant=tenant
-        )
+        tenant_customer = request.user
         
         if not tenant_customer.is_staff_member:
             messages.error(request, 'You do not have permission to view notifications.')
@@ -205,10 +199,7 @@ def notification_detail(request, notification_id):
     
     # Verify permissions
     try:
-        tenant_customer = TenantCustomer.objects.get(
-            customer=request.user,
-            tenant=tenant
-        )
+        tenant_customer = request.user
         
         if not tenant_customer.is_staff_member:
             messages.error(request, 'You do not have permission to view this notification.')
@@ -267,10 +258,7 @@ def resend_notification(request, notification_id):
     
     # Verify permissions
     try:
-        tenant_customer = TenantCustomer.objects.get(
-            customer=request.user,
-            tenant=tenant
-        )
+        tenant_customer = request.user
         
         if not tenant_customer.is_staff_member:
             messages.error(request, 'You do not have permission to resend notifications.')
@@ -318,10 +306,8 @@ def customer_inbox(request):
     
     # Get customer-tenant relationship
     try:
-        tenant_customer = TenantCustomer.objects.get(
-            customer=request.user,
-            tenant=tenant
-        )
+        tenant_customer = request.user
+        
     except TenantCustomer.DoesNotExist:
         messages.error(request, 'Access denied.')
         return redirect('dashboard:login')
@@ -380,10 +366,8 @@ def view_notification(request, recipient_id):
     
     # Get customer-tenant relationship
     try:
-        tenant_customer = TenantCustomer.objects.get(
-            customer=request.user,
-            tenant=tenant
-        )
+        tenant_customer = request.user
+        
     except TenantCustomer.DoesNotExist:
         messages.error(request, 'Access denied.')
         return redirect('dashboard:login')
@@ -420,10 +404,8 @@ def mark_notification_read(request, recipient_id):
     
     # Get customer-tenant relationship
     try:
-        tenant_customer = TenantCustomer.objects.get(
-            customer=request.user,
-            tenant=tenant
-        )
+        tenant_customer = request.user
+        
     except TenantCustomer.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Access denied'})
     
@@ -463,10 +445,8 @@ def mark_notification_unread(request, recipient_id):
     
     # Get customer-tenant relationship
     try:
-        tenant_customer = TenantCustomer.objects.get(
-            customer=request.user,
-            tenant=tenant
-        )
+        tenant_customer = request.user
+        
     except TenantCustomer.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Access denied'})
     
@@ -507,10 +487,8 @@ def get_unread_count(request):
     
     # Get customer-tenant relationship
     try:
-        tenant_customer = TenantCustomer.objects.get(
-            customer=request.user,
-            tenant=tenant
-        )
+        tenant_customer = request.user
+        
     except TenantCustomer.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Access denied'})
     
