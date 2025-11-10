@@ -1,6 +1,7 @@
 """
 Authentication Module for Ayende CX
-Contains both POS Integration JWT authentication and Multi-Tenant Customer authentication
+Contains POS Integration JWT authentication, Multi-Tenant Customer authentication,
+and Platform Admin authentication
 """
 
 import jwt
@@ -77,7 +78,67 @@ class IntegrationJWTAuthentication(authentication.BaseAuthentication):
 
 
 # ============================================
-# MULTI-TENANT CUSTOMER AUTHENTICATION (New)
+# PLATFORM ADMIN AUTHENTICATION (New)
+# For platform administrators with cross-tenant access
+# ============================================
+
+class PlatformAdminBackend(BaseBackend):
+    """
+    Authentication backend for platform administrators.
+    Allows login without tenant context.
+    Platform admins can access staging.ayendecx.com/admin/
+    """
+    
+    def authenticate(self, request, username=None, password=None, **kwargs):
+        """
+        Authenticate a platform administrator.
+        
+        Args:
+            request: HTTP request
+            username: Platform admin username
+            password: Password
+        
+        Returns:
+            TenantCustomer object if authentication succeeds, None otherwise
+        """
+        if not username or not password:
+            return None
+        
+        try:
+            # Look for platform admin (no tenant required)
+            user = TenantCustomer.objects.get(
+                username=username,
+                is_platform_admin=True,
+                is_active=True
+            )
+            
+            # Check password
+            if user.check_password(password):
+                return user
+            
+        except TenantCustomer.DoesNotExist:
+            # Run the default password hasher once to reduce timing
+            # difference between existing and non-existing users
+            TenantCustomer().set_password(password)
+        
+        return None
+    
+    def get_user(self, user_id):
+        """
+        Get a platform admin by ID.
+        Used by Django to retrieve the user from the session.
+        """
+        try:
+            return TenantCustomer.objects.get(
+                pk=user_id,
+                is_platform_admin=True
+            )
+        except TenantCustomer.DoesNotExist:
+            return None
+
+
+# ============================================
+# MULTI-TENANT CUSTOMER AUTHENTICATION (Existing)
 # For customer login with username + tenant
 # ============================================
 
@@ -119,7 +180,7 @@ class TenantCustomerAuthBackend(BaseBackend):
         if not tenant:
             if tenant_id:
                 try:
-                    tenant = Tenant.objects.get(id=tenant_id)
+                    tenant = Tenant.objects.get(pk=tenant_id)
                 except Tenant.DoesNotExist:
                     return None
             elif tenant_subdomain:
@@ -213,7 +274,7 @@ class TenantCustomerEmailAuthBackend(BaseBackend):
         if not tenant:
             if tenant_id:
                 try:
-                    tenant = Tenant.objects.get(id=tenant_id)
+                    tenant = Tenant.objects.get(pk=tenant_id)
                 except Tenant.DoesNotExist:
                     return None
             elif tenant_subdomain:

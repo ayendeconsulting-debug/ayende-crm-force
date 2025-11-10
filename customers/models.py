@@ -128,6 +128,45 @@ class TenantCustomerManager(BaseUserManager):
         
         return self.create_user(tenant, username, email, password, **extra_fields)
     
+    def create_platform_admin(self, username, email, password=None, **extra_fields):
+        """
+        Create a platform administrator without tenant association.
+        Platform admins have cross-tenant access.
+        """
+        if not username:
+            raise ValueError('Username is required')
+        if not email:
+            raise ValueError('Email address is required')
+        
+        # Check if username already exists
+        if self.filter(username=username).exists():
+            raise ValueError(f'Username {username} already exists')
+        
+        # Normalize email
+        email = self.normalize_email(email)
+        
+        # Set platform admin defaults
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('is_active', True)
+        extra_fields.setdefault('email_verified', True)
+        extra_fields.setdefault('is_platform_admin', True)
+        extra_fields.setdefault('role', 'platform_admin')
+        
+        # Platform admins don't need tenant or customer
+        extra_fields['tenant'] = None
+        extra_fields['customer'] = None
+        
+        # Create platform admin
+        platform_admin = self.model(
+            username=username,
+            email=email,
+            **extra_fields
+        )
+        platform_admin.set_password(password)
+        platform_admin.save(using=self._db)
+        return platform_admin
+    
     def get_by_natural_key(self, username, tenant_id=None):
         """
         Support authentication with username + tenant.
@@ -163,6 +202,7 @@ class TenantCustomer(AbstractBaseUser, PermissionsMixin):
     """
     
     ROLE_CHOICES = [
+        ('platform_admin', 'Platform Administrator'),  # ← ADD THIS LINE
         ('owner', 'Owner'),
         ('admin', 'Administrator'),
         ('manager', 'Manager'),
@@ -185,12 +225,16 @@ class TenantCustomer(AbstractBaseUser, PermissionsMixin):
     customer = models.ForeignKey(
         Customer,
         on_delete=models.CASCADE,
-        related_name='tenant_accounts'
+        related_name='tenant_accounts',
+        null=True,  # ← ADD THIS LINE
+        blank=True  # ← ADD THIS LINE
     )
     tenant = models.ForeignKey(
         'tenants.Tenant',
         on_delete=models.CASCADE,
-        related_name='tenant_customers'
+        related_name='tenant_customers',
+        null=True,  # ← ADD THIS LINE
+        blank=True  # ← ADD THIS LINE
     )
     
     # ============================================
@@ -248,6 +292,15 @@ class TenantCustomer(AbstractBaseUser, PermissionsMixin):
     )
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    
+    # ============================================
+    # PLATFORM ADMINISTRATION
+    # ============================================
+    is_platform_admin = models.BooleanField(
+        default=False,
+        help_text='Designates whether this user is a platform administrator with cross-tenant access. '
+                  'Platform admins can manage all tenants and access the main admin panel at staging.ayendecx.com/admin/'
+    )
     
     # ============================================
     # LOYALTY PROGRAM (Tenant-Specific)
@@ -356,13 +409,20 @@ class TenantCustomer(AbstractBaseUser, PermissionsMixin):
     
     class Meta:
         db_table = 'tenant_customers'
-        # Username unique per tenant (not globally unique)
-        unique_together = [
-            ['tenant', 'username'],
-        ]
         ordering = ['-date_joined']
-        verbose_name = 'Tenant Customer'
-        verbose_name_plural = 'Tenant Customers'
+        constraints = [
+            # Username must be unique per tenant (or globally for platform admins)
+            models.UniqueConstraint(
+                fields=['tenant', 'username'],
+                name='unique_username_per_tenant',
+                condition=models.Q(tenant__isnull=False)
+            ),
+            models.UniqueConstraint(
+                fields=['username'],
+                name='unique_platform_admin_username',
+                condition=models.Q(is_platform_admin=True)
+            ),
+        ]
         indexes = [
             models.Index(fields=['tenant', 'username']),
             models.Index(fields=['tenant', 'email']),
@@ -371,12 +431,16 @@ class TenantCustomer(AbstractBaseUser, PermissionsMixin):
             models.Index(fields=['tenant', 'role']),
             models.Index(fields=['loyalty_points']),
             models.Index(fields=['external_id']),
+            models.Index(fields=['is_platform_admin']),  # ← ADD THIS LINE
             models.Index(fields=['-date_joined']),
         ]
     
     def __str__(self):
+        if self.is_platform_admin:
+            return f"{self.username} (Platform Admin)"
         full_name = self.get_full_name() or self.email
-        return f"{full_name} ({self.username}) at {self.tenant.name}"
+        tenant_name = self.tenant.name if self.tenant else 'No Tenant'
+        return f"{full_name} ({self.username}) at {tenant_name}"
     
     def get_full_name(self):
         """Return the full name"""

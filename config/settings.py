@@ -139,9 +139,11 @@ AUTH_USER_MODEL = 'customers.TenantCustomer'
 
 # Authentication Backends
 # Order matters: Django tries each backend in order until one succeeds
+# Platform admin backend first to allow cross-tenant admin access
 AUTHENTICATION_BACKENDS = [
-    'customers.authentication.TenantCustomerAuthBackend',
-    'customers.authentication.TenantCustomerEmailAuthBackend',
+    'customers.authentication.PlatformAdminBackend',  # Platform administrators (cross-tenant)
+    'customers.authentication.TenantCustomerAuthBackend',  # Tenant-specific users
+    'customers.authentication.TenantCustomerEmailAuthBackend',  # Email-based tenant auth
 ]
 
 # ===== EMAIL CONFIGURATION - SENDGRID =====
