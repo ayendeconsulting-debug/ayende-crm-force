@@ -5,6 +5,7 @@ Handles transaction and customer sync from POS system
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
 from rest_framework import status
 from datetime import datetime
 
@@ -16,7 +17,6 @@ from dashboard.serializers.sync import (
 )
 from customers.models import Customer, Transaction, TenantCustomer
 from tenants.models import Tenant
-from rest_framework.permissions import AllowAny
 
 
 class SyncHealthView(APIView):
@@ -25,7 +25,7 @@ class SyncHealthView(APIView):
     Returns status of CRM system
     """
     authentication_classes = [IntegrationJWTAuthentication]
-    permission_classes = [AllowAny]  # ADD THIS LINE
+    permission_classes = [AllowAny]
     
     def get(self, request):
         """Check if CRM is healthy and ready to receive data"""
@@ -42,7 +42,7 @@ class TransactionSyncView(APIView):
     Receive transaction data from POS system
     """
     authentication_classes = [IntegrationJWTAuthentication]
-    permission_classes = [AllowAny]  # ADD THIS LINE
+    permission_classes = [AllowAny]
     
     def post(self, request):
         """
@@ -51,7 +51,7 @@ class TransactionSyncView(APIView):
         Expected payload:
         {
             "transactionId": "uuid",
-            "tenantId": "uuid",
+            "tenantId": "a-cx-xxxxx",
             "customerId": "uuid",
             "customerEmail": "email@example.com",
             "amount": 150.00,
@@ -76,7 +76,7 @@ class TransactionSyncView(APIView):
         try:
             data = serializer.validated_data
             
-            # Get or verify tenant
+            # Get tenant
             try:
                 tenant = Tenant.objects.get(pk=data['tenantId'])
             except Tenant.DoesNotExist:
@@ -85,13 +85,16 @@ class TransactionSyncView(APIView):
                     'message': 'Tenant not found'
                 }, status=status.HTTP_404_NOT_FOUND)
             
-            # Get or verify customer
+            # Get tenant customer by external_id
             try:
-                customer = Customer.objects.get(id=data['customerId'])
-            except Customer.DoesNotExist:
+                tenant_customer = TenantCustomer.objects.get(
+                    external_id=data['customerId'],
+                    tenant=tenant
+                )
+            except TenantCustomer.DoesNotExist:
                 return Response({
                     'success': False,
-                    'message': 'Customer not found'
+                    'message': 'Customer not found for this tenant'
                 }, status=status.HTTP_404_NOT_FOUND)
             
             # Create or update transaction
@@ -99,7 +102,7 @@ class TransactionSyncView(APIView):
                 transaction_id=data['transactionId'],
                 tenant=tenant,
                 defaults={
-                    'customer': customer,
+                    'tenant_customer': tenant_customer,
                     'amount': data['amount'],
                     'tax': data['tax'],
                     'total': data['total'],
@@ -134,7 +137,7 @@ class CustomerSyncView(APIView):
     Receive customer data from POS system
     """
     authentication_classes = [IntegrationJWTAuthentication]
-    permission_classes = [AllowAny]  # ADD THIS LINE
+    permission_classes = [AllowAny]
     
     def post(self, request):
         """
@@ -143,7 +146,7 @@ class CustomerSyncView(APIView):
         Expected payload:
         {
             "customerId": "uuid",
-            "tenantId": "uuid",
+            "tenantId": "a-cx-xxxxx",
             "email": "customer@email.com",
             "firstName": "John",
             "lastName": "Doe",
@@ -165,34 +168,33 @@ class CustomerSyncView(APIView):
         try:
             data = serializer.validated_data
             
-            # Get or verify tenant
+            # Get tenant
             try:
-               tenant = Tenant.objects.get(pk=data['tenantId'])
+                tenant = Tenant.objects.get(pk=data['tenantId'])
             except Tenant.DoesNotExist:
                 return Response({
                     'success': False,
                     'message': 'Tenant not found'
                 }, status=status.HTTP_404_NOT_FOUND)
             
-            # Create or update customer
-            customer, created = Customer.objects.update_or_create(
-                email=data['email'],
+            # Generate username in the format: email.subdomain
+            username = f"{data['email']}.{tenant.subdomain}"
+            
+            # Create or update TenantCustomer directly
+            tenant_customer, created = TenantCustomer.objects.update_or_create(
+                external_id=data['customerId'],
+                tenant=tenant,
                 defaults={
+                    'username': username,
+                    'email': data['email'],
                     'first_name': data['firstName'],
                     'last_name': data['lastName'],
                     'phone': data.get('phone', ''),
-                    'external_id': data['customerId'],
-                    'last_synced_at': datetime.now(),
-                }
-            )
-            
-            # Create or update tenant-customer relationship
-            tenant_customer, tc_created = TenantCustomer.objects.update_or_create(
-                customer=customer,
-                tenant=tenant,
-                defaults={
                     'loyalty_points': data.get('loyaltyPoints', 0),
                     'total_spent': data.get('totalSpent', 0),
+                    'visit_count': data.get('visitCount', 0),
+                    'is_active': True,
+                    'role': 'customer',
                 }
             )
             
@@ -201,7 +203,7 @@ class CustomerSyncView(APIView):
             return Response({
                 'success': True,
                 'message': f'Customer {"created" if created else "updated"} successfully',
-                'entityId': str(customer.id),
+                'entityId': str(tenant_customer.id),
                 'created': created
             }, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
             
@@ -218,7 +220,7 @@ class CustomerBatchSyncView(APIView):
     Receive batch customer data from POS system
     """
     authentication_classes = [IntegrationJWTAuthentication]
-    permission_classes = [AllowAny]  # ADD THIS LINE
+    permission_classes = [AllowAny]
     
     def post(self, request):
         """
@@ -226,7 +228,7 @@ class CustomerBatchSyncView(APIView):
         
         Expected payload:
         {
-            "tenantId": "uuid",
+            "tenantId": "a-cx-xxxxx",
             "customers": [...]
         }
         """
@@ -260,23 +262,24 @@ class CustomerBatchSyncView(APIView):
             
             for customer_data in data['customers']:
                 try:
-                    customer, created = Customer.objects.update_or_create(
-                        email=customer_data['email'],
+                    # Generate username
+                    username = f"{customer_data['email']}.{tenant.subdomain}"
+                    
+                    # Create or update TenantCustomer
+                    tenant_customer, created = TenantCustomer.objects.update_or_create(
+                        external_id=customer_data['customerId'],
+                        tenant=tenant,
                         defaults={
+                            'username': username,
+                            'email': customer_data['email'],
                             'first_name': customer_data['firstName'],
                             'last_name': customer_data['lastName'],
                             'phone': customer_data.get('phone', ''),
-                            'external_id': customer_data['customerId'],
-                            'last_synced_at': datetime.now(),
-                        }
-                    )
-                    
-                    TenantCustomer.objects.update_or_create(
-                        customer=customer,
-                        tenant=tenant,
-                        defaults={
                             'loyalty_points': customer_data.get('loyaltyPoints', 0),
                             'total_spent': customer_data.get('totalSpent', 0),
+                            'visit_count': customer_data.get('visitCount', 0),
+                            'is_active': True,
+                            'role': 'customer',
                         }
                     )
                     
