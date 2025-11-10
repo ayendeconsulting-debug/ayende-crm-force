@@ -50,7 +50,7 @@ class CustomerSyncSerializer(serializers.Serializer):
     Validates incoming customer data structure
     """
     customerId = serializers.UUIDField()
-    tenantId = serializers.UUIDField()
+    tenantId = serializers.CharField(max_length=20)
     
     email = serializers.EmailField()
     firstName = serializers.CharField(max_length=100)
@@ -87,7 +87,7 @@ class CustomerBatchSyncSerializer(serializers.Serializer):
     Serializer for batch customer sync
     """
     customers = CustomerSyncSerializer(many=True)
-    tenantId = serializers.UUIDField()
+    tenantId = serializers.CharField(max_length=20)
 
 
 class SyncResponseSerializer(serializers.Serializer):
