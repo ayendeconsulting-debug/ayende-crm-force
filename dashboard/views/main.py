@@ -929,28 +929,7 @@ class TenantPasswordResetCompleteView(PasswordResetCompleteView):
 def get_tenant_info(request):
     """
     Temporary endpoint to get tenant UUIDs for POS sync.
-    
-    Usage:
-        GET /api/debug/tenants?secret=INTEGRATION_SECRET
-        
-    Returns:
-        {
-            "tenants": [
-                {
-                    "id": "uuid-here",
-                    "subdomain": "bashevents",
-                    "name": "BASH EVENTS"
-                },
-                ...
-            ],
-            "count": 3,
-            "sql_updates": [
-                "UPDATE Business SET externalTenantId = 'uuid' WHERE businessName = 'name';",
-                ...
-            ]
-        }
     """
-    # Security check
     secret = request.GET.get('secret', '')
     if secret != settings.INTEGRATION_SECRET:
         logger.warning(f"Unauthorized tenant info access attempt from {request.META.get('REMOTE_ADDR')}")
@@ -964,14 +943,13 @@ def get_tenant_info(request):
         
         for tenant in tenants:
             tenant_data = {
-                'id': str(tenant.id),  # Convert UUID to string
+                'id': str(tenant.tenant_uuid),  # FIXED: use tenant_uuid
                 'subdomain': tenant.subdomain,
                 'name': tenant.name
             }
             tenant_list.append(tenant_data)
             
-            # Generate SQL update statement
-            sql = f"UPDATE Business SET externalTenantId = '{tenant.id}' WHERE businessName = '{tenant.name}';"
+            sql = f"UPDATE Business SET externalTenantId = '{tenant.tenant_uuid}' WHERE businessName = '{tenant.name}';"  # FIXED
             sql_updates.append(sql)
         
         response_data = {
