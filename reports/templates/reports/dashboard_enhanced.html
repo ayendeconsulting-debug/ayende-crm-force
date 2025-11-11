@@ -1,0 +1,1259 @@
+{% extends 'dashboard/business_base.html' %}
+{% load static %}
+
+{% block title %}Command Center - {{ tenant.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ===================================
+       THEME VARIABLES
+    =================================== */
+    :root {
+        /* Light Theme */
+        --bg-primary: #f8fafc;
+        --bg-secondary: #ffffff;
+        --bg-tertiary: #f1f5f9;
+        --text-primary: #0f172a;
+        --text-secondary: #64748b;
+        --text-muted: #94a3b8;
+        --border-color: #e2e8f0;
+        --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+        --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+        --shadow-lg: 0 10px 25px rgba(0,0,0,0.12);
+        
+        /* Accent Colors */
+        --accent-primary: #3b82f6;
+        --accent-secondary: #06b6d4;
+        --accent-success: #10b981;
+        --accent-warning: #f59e0b;
+        --accent-danger: #ef4444;
+        --accent-purple: #8b5cf6;
+        --accent-pink: #ec4899;
+        
+        /* Chart Colors */
+        --chart-1: #3b82f6;
+        --chart-2: #06b6d4;
+        --chart-3: #10b981;
+        --chart-4: #f59e0b;
+        --chart-5: #ef4444;
+        --chart-6: #8b5cf6;
+    }
+
+    [data-theme="dark"] {
+        /* Dark Theme */
+        --bg-primary: #0f172a;
+        --bg-secondary: #1e293b;
+        --bg-tertiary: #334155;
+        --text-primary: #f1f5f9;
+        --text-secondary: #cbd5e1;
+        --text-muted: #94a3b8;
+        --border-color: #334155;
+        --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+        --shadow-md: 0 4px 6px rgba(0,0,0,0.4);
+        --shadow-lg: 0 10px 25px rgba(0,0,0,0.5);
+    }
+
+    /* ===================================
+       BASE STYLES
+    =================================== */
+    body {
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    /* ===================================
+       COMMAND CENTER HEADER
+    =================================== */
+    .command-header {
+        background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+        color: white;
+        padding: 25px 30px;
+        border-radius: 12px;
+        margin-bottom: 25px;
+        box-shadow: var(--shadow-lg);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .command-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        opacity: 0.1;
+    }
+
+    .command-header-content {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    .command-header h1 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .live-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(255, 255, 255, 0.2);
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .live-dot {
+        width: 8px;
+        height: 8px;
+        background: #10b981;
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+
+    .header-controls {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .period-selector {
+        display: flex;
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 10px;
+        padding: 4px;
+        backdrop-filter: blur(10px);
+    }
+
+    .period-btn {
+        padding: 8px 16px;
+        border: none;
+        background: transparent;
+        color: rgba(255, 255, 255, 0.8);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-decoration: none;
+        font-weight: 500;
+        font-size: 0.85rem;
+    }
+
+    .period-btn:hover,
+    .period-btn.active {
+        background: rgba(255, 255, 255, 0.25);
+        color: white;
+        transform: scale(1.05);
+    }
+
+    .theme-toggle-btn {
+        background: rgba(255, 255, 255, 0.15);
+        border: none;
+        color: white;
+        padding: 10px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 500;
+        transition: all 0.3s;
+        backdrop-filter: blur(10px);
+    }
+
+    .theme-toggle-btn:hover {
+        background: rgba(255, 255, 255, 0.25);
+        transform: translateY(-2px);
+    }
+
+    .refresh-btn {
+        background: rgba(255, 255, 255, 0.15);
+        border: none;
+        color: white;
+        padding: 10px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 500;
+        transition: all 0.3s;
+        backdrop-filter: blur(10px);
+    }
+
+    .refresh-btn:hover {
+        background: rgba(255, 255, 255, 0.25);
+    }
+
+    .refresh-btn.refreshing {
+        pointer-events: none;
+    }
+
+    .refresh-btn.refreshing i {
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    /* ===================================
+       DENSE METRICS GRID
+    =================================== */
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+
+    .metric-widget {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 18px;
+        box-shadow: var(--shadow-sm);
+        transition: all 0.3s;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .metric-widget::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: var(--widget-accent, var(--accent-primary));
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+
+    .metric-widget:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .metric-widget:hover::before {
+        opacity: 1;
+    }
+
+    .metric-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+    }
+
+    .metric-label {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 600;
+        line-height: 1.3;
+    }
+
+    .metric-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        background: var(--widget-accent, var(--accent-primary));
+        color: white;
+        opacity: 0.9;
+    }
+
+    .metric-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+        line-height: 1.2;
+    }
+
+    .metric-change {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .metric-change.positive {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--accent-success);
+    }
+
+    .metric-change.negative {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--accent-danger);
+    }
+
+    .metric-change.neutral {
+        background: rgba(100, 116, 139, 0.1);
+        color: var(--text-secondary);
+    }
+
+    /* Metric Widget Color Variants */
+    .metric-widget.revenue { --widget-accent: #3b82f6; }
+    .metric-widget.transactions { --widget-accent: #06b6d4; }
+    .metric-widget.customers { --widget-accent: #8b5cf6; }
+    .metric-widget.average { --widget-accent: #f59e0b; }
+    .metric-widget.success { --widget-accent: #10b981; }
+    .metric-widget.warning { --widget-accent: #f59e0b; }
+    .metric-widget.danger { --widget-accent: #ef4444; }
+    .metric-widget.info { --widget-accent: #06b6d4; }
+
+    /* ===================================
+       DASHBOARD PANELS
+    =================================== */
+    .dashboard-panel {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 20px;
+        transition: all 0.3s;
+    }
+
+    .dashboard-panel:hover {
+        box-shadow: var(--shadow-md);
+    }
+
+    .panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid var(--border-color);
+    }
+
+    .panel-title {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0;
+    }
+
+    .panel-title i {
+        color: var(--accent-primary);
+        font-size: 1.3rem;
+    }
+
+    .panel-action {
+        font-size: 0.85rem;
+        color: var(--accent-primary);
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .panel-action:hover {
+        color: var(--accent-secondary);
+        transform: translateX(3px);
+    }
+
+    /* ===================================
+       CHART CONTAINERS
+    =================================== */
+    .chart-container {
+        position: relative;
+        height: 300px;
+        margin-top: 15px;
+    }
+
+    .chart-container.large {
+        height: 400px;
+    }
+
+    .chart-container.small {
+        height: 200px;
+    }
+
+    /* ===================================
+       ACTIVITY TIMELINE
+    =================================== */
+    .activity-timeline {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .activity-item {
+        display: flex;
+        gap: 15px;
+        padding: 12px;
+        border-radius: 8px;
+        transition: all 0.2s;
+        border-left: 3px solid transparent;
+    }
+
+    .activity-item:hover {
+        background: var(--bg-tertiary);
+        border-left-color: var(--accent-primary);
+    }
+
+    .activity-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 1.1rem;
+    }
+
+    .activity-icon.success {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--accent-success);
+    }
+
+    .activity-icon.info {
+        background: rgba(59, 130, 246, 0.1);
+        color: var(--accent-primary);
+    }
+
+    .activity-icon.warning {
+        background: rgba(245, 158, 11, 0.1);
+        color: var(--accent-warning);
+    }
+
+    .activity-content {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .activity-title {
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 4px;
+        font-size: 0.95rem;
+    }
+
+    .activity-meta {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+    }
+
+    .activity-value {
+        font-weight: 700;
+        color: var(--accent-primary);
+        font-size: 0.95rem;
+    }
+
+    /* ===================================
+       RESPONSIVE DESIGN
+    =================================== */
+    @media (max-width: 1400px) {
+        .metrics-grid {
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        }
+    }
+
+    @media (max-width: 992px) {
+        .metrics-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .command-header-content {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .metrics-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .chart-container {
+            height: 250px;
+        }
+    }
+
+    /* ===================================
+       ALERT BANNER
+    =================================== */
+    .alert-banner {
+        background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(239, 68, 68, 0.1) 100%);
+        border: 1px solid rgba(245, 158, 11, 0.3);
+        border-left: 4px solid var(--accent-warning);
+        border-radius: 10px;
+        padding: 18px 20px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .alert-banner i {
+        font-size: 1.8rem;
+        color: var(--accent-warning);
+    }
+
+    .alert-banner-content h5 {
+        margin: 0 0 5px 0;
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    .alert-banner-content p {
+        margin: 0;
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+    }
+
+    /* ===================================
+       SCROLLBAR STYLING
+    =================================== */
+    .activity-timeline::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .activity-timeline::-webkit-scrollbar-track {
+        background: var(--bg-tertiary);
+        border-radius: 3px;
+    }
+
+    .activity-timeline::-webkit-scrollbar-thumb {
+        background: var(--accent-primary);
+        border-radius: 3px;
+    }
+
+    .activity-timeline::-webkit-scrollbar-thumb:hover {
+        background: var(--accent-secondary);
+    }
+
+    /* ===================================
+       LOADING STATES
+    =================================== */
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+    }
+
+    .loading-overlay.active {
+        display: flex;
+    }
+
+    .loading-spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid rgba(255, 255, 255, 0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner"></div>
+</div>
+
+<!-- Command Center Header -->
+<div class="command-header">
+    <div class="command-header-content">
+        <div>
+            <h1>
+                <i class="bi bi-speedometer2"></i>
+                Command Center
+            </h1>
+            <div class="live-indicator">
+                <span class="live-dot"></span>
+                <span>Live Data</span>
+            </div>
+            <small style="opacity: 0.9; margin-top: 8px; display: block;">
+                <i class="bi bi-calendar3"></i>
+                {{ start_date|date:"M d, Y" }} - {{ end_date|date:"M d, Y" }}
+            </small>
+        </div>
+        
+        <div class="header-controls">
+            <div class="period-selector">
+                <a href="?period=today" class="period-btn {% if period == 'today' %}active{% endif %}">Today</a>
+                <a href="?period=week" class="period-btn {% if period == 'week' %}active{% endif %}">Week</a>
+                <a href="?period=month" class="period-btn {% if period == 'month' %}active{% endif %}">Month</a>
+                <a href="?period=quarter" class="period-btn {% if period == 'quarter' %}active{% endif %}">Quarter</a>
+                <a href="?period=year" class="period-btn {% if period == 'year' %}active{% endif %}">Year</a>
+            </div>
+            
+            <button class="theme-toggle-btn" id="themeToggle">
+                <i class="bi bi-moon-stars-fill"></i>
+                <span id="themeLabel">Dark</span>
+            </button>
+            
+            <button class="refresh-btn" id="refreshBtn">
+                <i class="bi bi-arrow-clockwise"></i>
+                <span>Refresh</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Alert Banner (if needed) -->
+{% if anonymous_metrics.anonymous_percentage > 30 %}
+<div class="alert-banner">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    <div class="alert-banner-content">
+        <h5>Conversion Opportunity Detected!</h5>
+        <p>
+            <strong>{{ anonymous_metrics.anonymous_percentage }}%</strong> of transactions are walk-ins. 
+            Potential revenue impact: <strong>{{ currency_symbol }}{{ anonymous_metrics.anonymous_revenue|floatformat:2 }}</strong>.
+            Consider launching a loyalty signup campaign.
+        </p>
+    </div>
+</div>
+{% endif %}
+
+<!-- Dense Metrics Grid (12 widgets) -->
+<div class="metrics-grid">
+    <!-- Revenue -->
+    <div class="metric-widget revenue">
+        <div class="metric-header">
+            <div class="metric-label">Total Revenue</div>
+            <div class="metric-icon">
+                <i class="bi bi-currency-dollar"></i>
+            </div>
+        </div>
+        <div class="metric-value">{{ currency_symbol }}{{ revenue_stats.total_revenue|floatformat:2 }}</div>
+        <div class="metric-change {% if comparison.revenue_growth > 0 %}positive{% elif comparison.revenue_growth < 0 %}negative{% else %}neutral{% endif %}">
+            <i class="bi bi-{% if comparison.revenue_growth > 0 %}arrow-up{% elif comparison.revenue_growth < 0 %}arrow-down{% else %}dash{% endif %}"></i>
+            {{ comparison.revenue_growth|floatformat:1 }}%
+        </div>
+    </div>
+
+    <!-- Transactions -->
+    <div class="metric-widget transactions">
+        <div class="metric-header">
+            <div class="metric-label">Transactions</div>
+            <div class="metric-icon">
+                <i class="bi bi-receipt"></i>
+            </div>
+        </div>
+        <div class="metric-value">{{ revenue_stats.total_transactions }}</div>
+        <div class="metric-change {% if comparison.transaction_growth > 0 %}positive{% elif comparison.transaction_growth < 0 %}negative{% else %}neutral{% endif %}">
+            <i class="bi bi-{% if comparison.transaction_growth > 0 %}arrow-up{% elif comparison.transaction_growth < 0 %}arrow-down{% else %}dash{% endif %}"></i>
+            {{ comparison.transaction_growth|floatformat:1 }}%
+        </div>
+    </div>
+
+    <!-- Active Customers -->
+    <div class="metric-widget customers">
+        <div class="metric-header">
+            <div class="metric-label">Active Customers</div>
+            <div class="metric-icon">
+                <i class="bi bi-people-fill"></i>
+            </div>
+        </div>
+        <div class="metric-value">{{ customer_metrics.active_customers }}</div>
+        <div class="metric-change neutral">
+            <i class="bi bi-star-fill"></i>
+            {{ customer_metrics.vip_customers }} VIP
+        </div>
+    </div>
+
+    <!-- Average Transaction -->
+    <div class="metric-widget average">
+        <div class="metric-header">
+            <div class="metric-label">Avg Transaction</div>
+            <div class="metric-icon">
+                <i class="bi bi-calculator"></i>
+            </div>
+        </div>
+        <div class="metric-value">{{ currency_symbol }}{{ revenue_stats.avg_transaction|floatformat:2 }}</div>
+        <div class="metric-change neutral">
+            <i class="bi bi-graph-up"></i>
+            Per order
+        </div>
+    </div>
+
+    <!-- Walk-In Transactions -->
+    <div class="metric-widget info">
+        <div class="metric-header">
+            <div class="metric-label">Walk-In Sales</div>
+            <div class="metric-icon">
+                <i class="bi bi-person-walking"></i>
+            </div>
+        </div>
+        <div class="metric-value">{{ anonymous_metrics.anonymous_count }}</div>
+        <div class="metric-change neutral">
+            <i class="bi bi-percent"></i>
+            {{ anonymous_metrics.anonymous_percentage }}%
+        </div>
+    </div>
+
+    <!-- Walk-In Revenue -->
+    <div class="metric-widget info">
+        <div class="metric-header">
+            <div class="metric-label">Walk-In Revenue</div>
+            <div class="metric-icon">
+                <i class="bi bi-cash-stack"></i>
+            </div>
+        </div>
+        <div class="metric-value">{{ currency_symbol }}{{ anonymous_metrics.anonymous_revenue|floatformat:2 }}</div>
+        <div class="metric-change neutral">
+            <i class="bi bi-percent"></i>
+            {{ anonymous_metrics.anonymous_revenue_percentage }}%
+        </div>
+    </div>
+
+    <!-- Total Customers -->
+    <div class="metric-widget success">
+        <div class="metric-header">
+            <div class="metric-label">Total Customers</div>
+            <div class="metric-icon">
+                <i class="bi bi-person-check-fill"></i>
+            </div>
+        </div>
+        <div class="metric-value">{{ customer_metrics.total_customers }}</div>
+        <div class="metric-change positive">
+            <i class="bi bi-arrow-up"></i>
+            Growing
+        </div>
+    </div>
+
+    <!-- Retention Rate -->
+    <div class="metric-widget success">
+        <div class="metric-header">
+            <div class="metric-label">Retention Rate</div>
+            <div class="metric-icon">
+                <i class="bi bi-heart-fill"></i>
+            </div>
+        </div>
+        <div class="metric-value">{{ retention_rate }}%</div>
+        <div class="metric-change positive">
+            <i class="bi bi-check-circle"></i>
+            30 days
+        </div>
+    </div>
+
+    <!-- Loyalty Points -->
+    <div class="metric-widget warning">
+        <div class="metric-header">
+            <div class="metric-label">Points Issued</div>
+            <div class="metric-icon">
+                <i class="bi bi-star-fill"></i>
+            </div>
+        </div>
+        <div class="metric-value">{{ loyalty_metrics.total_points_issued|floatformat:0 }}</div>
+        <div class="metric-change neutral">
+            <i class="bi bi-award"></i>
+            Loyalty
+        </div>
+    </div>
+
+    <!-- Redemption Rate -->
+    <div class="metric-widget warning">
+        <div class="metric-header">
+            <div class="metric-label">Redemption Rate</div>
+            <div class="metric-icon">
+                <i class="bi bi-gift-fill"></i>
+            </div>
+        </div>
+        <div class="metric-value">{{ loyalty_metrics.redemption_rate }}%</div>
+        <div class="metric-change neutral">
+            <i class="bi bi-graph-up"></i>
+            Active
+        </div>
+    </div>
+
+    <!-- Customer Lifetime Value -->
+    <div class="metric-widget customers">
+        <div class="metric-header">
+            <div class="metric-label">Customer LTV</div>
+            <div class="metric-icon">
+                <i class="bi bi-piggy-bank-fill"></i>
+            </div>
+        </div>
+        <div class="metric-value">{{ currency_symbol }}{{ customer_metrics.avg_customer_value|floatformat:2 }}</div>
+        <div class="metric-change positive">
+            <i class="bi bi-trending-up"></i>
+            Lifetime
+        </div>
+    </div>
+
+    <!-- Active Loyalty Members -->
+    <div class="metric-widget customers">
+        <div class="metric-header">
+            <div class="metric-label">Loyalty Members</div>
+            <div class="metric-icon">
+                <i class="bi bi-award-fill"></i>
+            </div>
+        </div>
+        <div class="metric-value">{{ loyalty_metrics.active_participants }}</div>
+        <div class="metric-change positive">
+            <i class="bi bi-people"></i>
+            Engaged
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row">
+    <!-- Revenue Trend Chart -->
+    <div class="col-lg-8 mb-4">
+        <div class="dashboard-panel">
+            <div class="panel-header">
+                <h3 class="panel-title">
+                    <i class="bi bi-graph-up"></i>
+                    Revenue Trend
+                </h3>
+                <a href="{% url 'reports:revenue' %}?period={{ period }}" class="panel-action">
+                    View Details <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+            <div class="chart-container large">
+                <canvas id="revenueChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Growth & Distribution -->
+    <div class="col-lg-4 mb-4">
+        <div class="dashboard-panel">
+            <div class="panel-header">
+                <h3 class="panel-title">
+                    <i class="bi bi-pie-chart-fill"></i>
+                    Customer Mix
+                </h3>
+            </div>
+            <div class="chart-container">
+                <canvas id="customerMixChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Activity & Quick Stats Row -->
+<div class="row">
+    <!-- Recent Activity Timeline -->
+    <div class="col-lg-6 mb-4">
+        <div class="dashboard-panel">
+            <div class="panel-header">
+                <h3 class="panel-title">
+                    <i class="bi bi-activity"></i>
+                    Recent Activity
+                </h3>
+                <a href="{% url 'reports:sales' %}?period={{ period }}" class="panel-action">
+                    View All <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+            <div class="activity-timeline">
+                {% if recent_transactions %}
+                    {% for transaction in recent_transactions|slice:":10" %}
+                    <div class="activity-item">
+                        <div class="activity-icon success">
+                            <i class="bi bi-check-circle-fill"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">
+                                {% if transaction.tenant_customer %}
+                                    {{ transaction.tenant_customer.first_name }} {{ transaction.tenant_customer.last_name }}
+                                {% else %}
+                                    Walk-in Customer
+                                {% endif %}
+                            </div>
+                            <div class="activity-meta">
+                                {{ transaction.transaction_date|date:"M d, Y g:i A" }}
+                            </div>
+                        </div>
+                        <div class="activity-value">
+                            {{ currency_symbol }}{{ transaction.total|floatformat:2 }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                        <p>No recent activity</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Methods & Hourly Sales -->
+    <div class="col-lg-6 mb-4">
+        <div class="dashboard-panel">
+            <div class="panel-header">
+                <h3 class="panel-title">
+                    <i class="bi bi-credit-card-fill"></i>
+                    Payment Methods
+                </h3>
+            </div>
+            <div class="chart-container">
+                <canvas id="paymentChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Report Links -->
+<div class="row">
+    <div class="col-md-3 mb-3">
+        <a href="{% url 'reports:revenue' %}?period={{ period }}" class="dashboard-panel" style="text-decoration: none; display: block; text-align: center; padding: 30px;">
+            <i class="bi bi-currency-dollar" style="font-size: 2.5rem; color: var(--accent-primary);"></i>
+            <h5 style="margin-top: 15px; color: var(--text-primary);">Revenue Report</h5>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0;">Detailed analysis</p>
+        </a>
+    </div>
+    <div class="col-md-3 mb-3">
+        <a href="{% url 'reports:customers' %}?period={{ period }}" class="dashboard-panel" style="text-decoration: none; display: block; text-align: center; padding: 30px;">
+            <i class="bi bi-people-fill" style="font-size: 2.5rem; color: var(--accent-secondary);"></i>
+            <h5 style="margin-top: 15px; color: var(--text-primary);">Customer Report</h5>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0;">Insights & trends</p>
+        </a>
+    </div>
+    <div class="col-md-3 mb-3">
+        <a href="{% url 'reports:sales' %}?period={{ period }}" class="dashboard-panel" style="text-decoration: none; display: block; text-align: center; padding: 30px;">
+            <i class="bi bi-graph-up-arrow" style="font-size: 2.5rem; color: var(--accent-success);"></i>
+            <h5 style="margin-top: 15px; color: var(--text-primary);">Sales Report</h5>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0;">Transaction data</p>
+        </a>
+    </div>
+    <div class="col-md-3 mb-3">
+        <a href="{% url 'reports:loyalty' %}?period={{ period }}" class="dashboard-panel" style="text-decoration: none; display: block; text-align: center; padding: 30px;">
+            <i class="bi bi-star-fill" style="font-size: 2.5rem; color: var(--accent-warning);"></i>
+            <h5 style="margin-top: 15px; color: var(--text-primary);">Loyalty Report</h5>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0;">Program stats</p>
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// ===================================
+// THEME MANAGEMENT
+// ===================================
+const themeToggle = document.getElementById('themeToggle');
+const themeLabel = document.getElementById('themeLabel');
+const themeIcon = themeToggle.querySelector('i');
+
+// Load saved theme
+const savedTheme = localStorage.getItem('theme') || 'light';
+document.documentElement.setAttribute('data-theme', savedTheme);
+updateThemeButton(savedTheme);
+
+themeToggle.addEventListener('click', () => {
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    updateThemeButton(newTheme);
+    
+    // Recreate charts with new theme colors
+    recreateCharts();
+});
+
+function updateThemeButton(theme) {
+    if (theme === 'dark') {
+        themeIcon.className = 'bi bi-sun-fill';
+        themeLabel.textContent = 'Light';
+    } else {
+        themeIcon.className = 'bi bi-moon-stars-fill';
+        themeLabel.textContent = 'Dark';
+    }
+}
+
+// ===================================
+// AUTO-REFRESH SYSTEM
+// ===================================
+const refreshBtn = document.getElementById('refreshBtn');
+let autoRefreshInterval;
+
+// Auto-refresh every 30 seconds
+autoRefreshInterval = setInterval(() => {
+    refreshData();
+}, 30000);
+
+refreshBtn.addEventListener('click', () => {
+    refreshData();
+});
+
+function refreshData() {
+    refreshBtn.classList.add('refreshing');
+    
+    // Simulate data refresh (in production, make AJAX call)
+    setTimeout(() => {
+        refreshBtn.classList.remove('refreshing');
+        // Update charts and data here
+        console.log('Data refreshed');
+    }, 1000);
+}
+
+// ===================================
+// CHART THEME COLORS
+// ===================================
+function getChartColors() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    return {
+        textColor: isDark ? '#cbd5e1' : '#64748b',
+        gridColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+        primary: '#3b82f6',
+        secondary: '#06b6d4',
+        success: '#10b981',
+        warning: '#f59e0b',
+        danger: '#ef4444',
+        purple: '#8b5cf6',
+    };
+}
+
+// ===================================
+// REVENUE TREND CHART
+// ===================================
+let revenueChart;
+const revenueData = JSON.parse('{{ revenue_by_day|safe|escapejs }}');
+const labels = Object.keys(revenueData);
+const values = Object.values(revenueData);
+
+function createRevenueChart() {
+    const colors = getChartColors();
+    const ctx = document.getElementById('revenueChart');
+    
+    if (revenueChart) {
+        revenueChart.destroy();
+    }
+    
+    revenueChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Revenue',
+                data: values,
+                borderColor: colors.primary,
+                backgroundColor: `${colors.primary}20`,
+                borderWidth: 3,
+                tension: 0.4,
+                fill: true,
+                pointRadius: 4,
+                pointBackgroundColor: colors.primary,
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointHoverRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 12,
+                    titleColor: '#fff',
+                    bodyColor: '#fff',
+                    borderColor: colors.primary,
+                    borderWidth: 2,
+                    displayColors: false,
+                    callbacks: {
+                        label: (context) => '{{ currency_symbol }}' + context.parsed.y.toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        })
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: colors.textColor,
+                        callback: (value) => '{{ currency_symbol }}' + value.toLocaleString()
+                    },
+                    grid: { color: colors.gridColor }
+                },
+                x: {
+                    ticks: { 
+                        color: colors.textColor,
+                        maxRotation: 45,
+                        minRotation: 45
+                    },
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+}
+
+// ===================================
+// CUSTOMER MIX CHART
+// ===================================
+let customerMixChart;
+
+function createCustomerMixChart() {
+    const colors = getChartColors();
+    const ctx = document.getElementById('customerMixChart');
+    
+    if (customerMixChart) {
+        customerMixChart.destroy();
+    }
+    
+    customerMixChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Registered', 'Walk-in', 'VIP'],
+            datasets: [{
+                data: [
+                    {{ anonymous_metrics.customer_count }},
+                    {{ anonymous_metrics.anonymous_count }},
+                    {{ customer_metrics.vip_customers }}
+                ],
+                backgroundColor: [
+                    colors.primary,
+                    colors.secondary,
+                    colors.warning
+                ],
+                borderWidth: 0,
+                hoverOffset: 10
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: colors.textColor,
+                        padding: 15,
+                        font: { size: 12 }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 12,
+                    titleColor: '#fff',
+                    bodyColor: '#fff'
+                }
+            }
+        }
+    });
+}
+
+// ===================================
+// PAYMENT METHODS CHART
+// ===================================
+let paymentChart;
+
+function createPaymentChart() {
+    const colors = getChartColors();
+    const ctx = document.getElementById('paymentChart');
+    
+    if (paymentChart) {
+        paymentChart.destroy();
+    }
+    
+    paymentChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Cash', 'Card', 'Mobile', 'Other'],
+            datasets: [{
+                label: 'Transactions',
+                data: [45, 65, 30, 10],
+                backgroundColor: [
+                    colors.success,
+                    colors.primary,
+                    colors.secondary,
+                    colors.textColor
+                ],
+                borderRadius: 6,
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 12,
+                    titleColor: '#fff',
+                    bodyColor: '#fff'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { color: colors.textColor },
+                    grid: { color: colors.gridColor }
+                },
+                x: {
+                    ticks: { color: colors.textColor },
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+}
+
+// ===================================
+// RECREATE CHARTS ON THEME CHANGE
+// ===================================
+function recreateCharts() {
+    createRevenueChart();
+    createCustomerMixChart();
+    createPaymentChart();
+}
+
+// ===================================
+// INITIALIZE CHARTS
+// ===================================
+window.addEventListener('load', () => {
+    createRevenueChart();
+    createCustomerMixChart();
+    createPaymentChart();
+});
+</script>
+{% endblock %}

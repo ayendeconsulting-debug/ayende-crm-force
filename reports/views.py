@@ -182,6 +182,71 @@ def reports_dashboard(request):
     
     return render(request, 'reports/dashboard.html', context)
 
+@login_required(login_url='dashboard:login')
+def reports_dashboard_enhanced(request):
+    """
+    Enhanced Command Center dashboard with dense widgets and dark theme.
+    Operations/Command Center style with real-time metrics.
+    """
+    tenant, tenant_customer = check_staff_permission(request)
+
+    if not tenant:
+        messages.error(request, 'You do not have permission to access reports.')
+        return redirect('dashboard:home')
+
+    # Get date range from request or default to last 30 days
+    period = request.GET.get('period', 'month')
+    start_date, end_date = get_date_range(period)
+
+    # Get all data
+    all_transactions = Transaction.objects.filter(
+        tenant=tenant,
+        status='completed'
+    )
+
+    period_transactions = all_transactions.filter(
+        transaction_date__gte=start_date,
+        transaction_date__lte=end_date
+    )
+
+    all_customers = TenantCustomer.objects.filter(
+        tenant=tenant,
+        role='customer'
+    )
+
+    # Get recent transactions for activity feed
+    recent_transactions = period_transactions.order_by('-transaction_date')[:10]
+
+    # Calculate key metrics (same as regular dashboard)
+    revenue_stats = calculate_revenue_stats(period_transactions)
+    customer_metrics = calculate_customer_metrics(all_customers, all_transactions)
+    loyalty_metrics = calculate_loyalty_metrics(all_customers, all_transactions)
+    sales_analytics = get_sales_analytics(period_transactions)
+    anonymous_metrics = calculate_anonymous_metrics(period_transactions)
+    comparison = get_comparison_data(all_transactions, start_date, end_date)
+    retention_rate = calculate_retention_rate(all_customers, days=30)
+    revenue_by_day = get_revenue_by_period(period_transactions, 'day')
+
+    context = {
+        'tenant': tenant,
+        'tenant_customer': tenant_customer,
+        'is_business_view': True,
+        'period': period,
+        'start_date': start_date,
+        'end_date': end_date,
+        'revenue_stats': revenue_stats,
+        'customer_metrics': customer_metrics,
+        'loyalty_metrics': loyalty_metrics,
+        'sales_analytics': sales_analytics,
+        'anonymous_metrics': anonymous_metrics,
+        'comparison': comparison,
+        'retention_rate': retention_rate,
+        'revenue_by_day': json.dumps(revenue_by_day),
+        'recent_transactions': recent_transactions,  # Added for activity feed
+        'currency_symbol': '$',  # Add currency symbol to context
+    }
+
+    return render(request, 'reports/dashboard_enhanced.html', context)
 
 @login_required(login_url='dashboard:login')
 def revenue_report(request):
