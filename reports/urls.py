@@ -7,8 +7,11 @@ from . import views
 app_name = 'reports'
 
 urlpatterns = [
-    # Main dashboard (now uses enhanced version)
+    # Main dashboard
     path('', views.reports_dashboard, name='dashboard'),
+    
+    # Enhanced dashboard (NEW - ADD THIS LINE)
+    path('enhanced/', views.reports_dashboard_enhanced, name='dashboard_enhanced'),
     
     # Detailed reports
     path('revenue/', views.revenue_report, name='revenue'),
