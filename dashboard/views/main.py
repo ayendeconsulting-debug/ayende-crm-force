@@ -810,10 +810,7 @@ def export_customers(request):
         'Active', 'Joined Date', 'Last Purchase'
     ])
     
-    customers = TenantCustomer.objects.filter(
-        tenant=tenant,
-        role='customer'
-    ).order_by('-joined_at')
+    customers = TenantCustomer.objects.filter(tenant=tenant).order_by('-joined_at')
     
     for customer in customers:
         writer.writerow([
