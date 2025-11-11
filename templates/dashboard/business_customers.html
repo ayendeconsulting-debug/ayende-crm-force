@@ -119,10 +119,10 @@
                                         <td>
                                             <div class="d-flex align-items-center">
                                                 <div class="avatar-circle me-2">
-                                                    {{ tc.customer.first_name|first }}{{ tc.customer.last_name|first }}
+                                                    {{ tc.first_name|first }}{{ tc.last_name|first }}
                                                 </div>
                                                 <div>
-                                                    <strong>{{ tc.customer.get_full_name }}</strong>
+                                                    <strong>{{ tc.get_full_name }}</strong>
                                                     {% if tc.is_vip %}
                                                         <span class="badge bg-warning ms-1">VIP</span>
                                                     {% endif %}
@@ -130,9 +130,9 @@
                                             </div>
                                         </td>
                                         <td>
-                                            <div>{{ tc.customer.email }}</div>
-                                            {% if tc.customer.phone %}
-                                                <small class="text-muted">{{ tc.customer.phone }}</small>
+                                            <div>{{ tc.email }}</div>
+                                            {% if tc.phone %}
+                                                <small class="text-muted">{{ tc.phone }}</small>
                                             {% endif %}
                                         </td>
                                         <td>{{ tc.joined_at|date:"M d, Y" }}</td>
