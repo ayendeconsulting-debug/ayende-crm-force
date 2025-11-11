@@ -498,18 +498,6 @@ def dashboard_home(request):
     if getattr(request.user, 'is_platform_admin', False):
         return redirect('/admin/')
     
-    # Tenant admins/staff should use reports dashboard
-    if request.user.role in ['owner', 'admin', 'manager', 'staff']:
-        return redirect('/reports/')
-      
-        # Platform admins should use Django admin
-    if getattr(request.user, 'is_platform_admin', False):
-        return redirect('/admin/')
-    
-    # Tenant admins/staff should use reports dashboard
-    if request.user.role in ['owner', 'admin', 'manager', 'staff']:
-        return redirect('/reports/')
-    
     # Rest of existing code for customers...
     tenant = get_tenant_from_request(request)
     
@@ -517,11 +505,7 @@ def dashboard_home(request):
         messages.error(request, 'Unable to identify business.')
         return redirect('/')
     
-    if not tenant:
-        messages.error(request, 'Unable to identify business.')
-        return redirect('/')
-    
-    # Get TenantCustomer for current user
+     # Get TenantCustomer for current user
     tenant_customer = request.user
     
     # Get recent transactions
