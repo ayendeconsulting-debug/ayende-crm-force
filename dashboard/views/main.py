@@ -644,16 +644,16 @@ def customer_detail(request, customer_id):
         tenant=tenant,
         tenant_customer=tenant_customer
     ).aggregate(
-        total_spent=Sum('amount'),
-        transaction_count=Count('id'),
-        avg_transaction=Avg('amount')
+        total_spent=Sum('total'),  # Changed from 'amount' to 'total'
+        total_transactions=Count('id')  # Changed key name to match template
     )
-    
+
     context = {
         'tenant': tenant,
         'customer': tenant_customer,
         'transactions': transactions,
-        'stats': transaction_stats,
+        'total_spent': transaction_stats['total_spent'] or 0,  # Pass directly, not nested
+        'total_transactions': transaction_stats['total_transactions'] or 0,  # Pass directly
     }
     
     return render(request, 'dashboard/business_customer_detail.html', context)
@@ -810,7 +810,10 @@ def export_customers(request):
         'Active', 'Joined Date', 'Last Purchase'
     ])
     
-    customers = TenantCustomer.objects.filter(tenant=tenant).order_by('-joined_at')
+    customers = TenantCustomer.objects.filter(
+        tenant=tenant,
+        role='customer'
+    ).order_by('-joined_at')
     
     for customer in customers:
         writer.writerow([
