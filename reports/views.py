@@ -15,6 +15,8 @@ import csv
 import json
 
 from customers.models import Customer, TenantCustomer, Transaction
+from tenants.models import Tenant
+from decimal import Decimal
 from .utils import (
     get_date_range,
     calculate_revenue_stats,
@@ -644,3 +646,234 @@ def print_report(request, report_type):
     else:
         messages.error(request, 'Invalid report type.')
         return redirect('reports:dashboard')
+    
+@login_required(login_url='dashboard:login')
+def platform_dashboard(request):
+    """
+    Platform admin dashboard - system-wide view of all tenants.
+    Only accessible to platform administrators.
+    """
+    # Check if user is platform admin
+    if not hasattr(request.user, 'is_platform_admin') or not request.user.is_platform_admin:
+        messages.error(request, 'Access denied. Platform admin privileges required.')
+        return redirect('dashboard:home')
+    
+    # Get date range (default last 30 days)
+    period = request.GET.get('period', 'month')
+    if period == 'today':
+        start_date = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        end_date = timezone.now()
+    elif period == 'week':
+        start_date = timezone.now() - timedelta(days=7)
+        end_date = timezone.now()
+    elif period == 'month':
+        start_date = timezone.now() - timedelta(days=30)
+        end_date = timezone.now()
+    elif period == 'quarter':
+        start_date = timezone.now() - timedelta(days=90)
+        end_date = timezone.now()
+    elif period == 'year':
+        start_date = timezone.now() - timedelta(days=365)
+        end_date = timezone.now()
+    else:
+        start_date = timezone.now() - timedelta(days=30)
+        end_date = timezone.now()
+    
+    # Total tenants
+    all_tenants = Tenant.objects.all()
+    total_tenants = all_tenants.count()
+    active_tenants = all_tenants.filter(is_active=True).count()
+    
+    # New tenants in period
+    new_tenants = all_tenants.filter(
+        created_at__gte=start_date,
+        created_at__lte=end_date
+    ).count()
+    
+    # Total customers across all tenants
+    all_customers = TenantCustomer.objects.filter(role='customer')
+    total_customers = all_customers.count()
+    
+    # New customers in period
+    new_customers = all_customers.filter(
+        joined_at__gte=start_date,
+        joined_at__lte=end_date
+    ).count()
+    
+    # Total transactions
+    all_transactions = Transaction.objects.filter(status='completed')
+    total_transactions = all_transactions.count()
+    
+    # Transactions in period
+    period_transactions = all_transactions.filter(
+        transaction_date__gte=start_date,
+        transaction_date__lte=end_date
+    )
+    period_transaction_count = period_transactions.count()
+    
+    # Total revenue (all time)
+    total_revenue = all_transactions.aggregate(
+        total=Sum('total')
+    )['total'] or Decimal('0')
+    
+    # Revenue in period
+    period_revenue = period_transactions.aggregate(
+        total=Sum('total')
+    )['total'] or Decimal('0')
+    
+    # Average revenue per tenant
+    avg_revenue_per_tenant = (total_revenue / total_tenants) if total_tenants > 0 else Decimal('0')
+    
+    # Average transaction value
+    avg_transaction_value = (period_revenue / period_transaction_count) if period_transaction_count > 0 else Decimal('0')
+    
+    # Total loyalty points issued
+    total_loyalty_points = all_customers.aggregate(
+        total=Sum('loyalty_points')
+    )['total'] or 0
+    
+    # Active users today (had transaction today)
+    today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    active_users_today = Transaction.objects.filter(
+        transaction_date__gte=today_start,
+        status='completed'
+    ).values('tenant_customer').distinct().count()
+    
+    # Top tenants by revenue
+    tenant_performance = []
+    for tenant in all_tenants:
+        tenant_transactions = Transaction.objects.filter(
+            tenant=tenant,
+            status='completed'
+        )
+        
+        tenant_revenue = tenant_transactions.aggregate(
+            total=Sum('total')
+        )['total'] or Decimal('0')
+        
+        tenant_customer_count = TenantCustomer.objects.filter(
+            tenant=tenant,
+            role='customer'
+        ).count()
+        
+        tenant_transaction_count = tenant_transactions.count()
+        
+        tenant_performance.append({
+            'tenant': tenant,
+            'revenue': tenant_revenue,
+            'customers': tenant_customer_count,
+            'transactions': tenant_transaction_count,
+            'avg_transaction': (tenant_revenue / tenant_transaction_count) if tenant_transaction_count > 0 else Decimal('0')
+        })
+    
+    # Sort by revenue
+    tenant_performance.sort(key=lambda x: x['revenue'], reverse=True)
+    top_tenants = tenant_performance[:10]
+    
+    # Calculate previous period for comparison
+    period_length = (end_date - start_date).days
+    previous_start = start_date - timedelta(days=period_length)
+    previous_end = start_date
+    
+    previous_revenue = Transaction.objects.filter(
+        status='completed',
+        transaction_date__gte=previous_start,
+        transaction_date__lte=previous_end
+    ).aggregate(total=Sum('total'))['total'] or Decimal('0')
+    
+    previous_transactions = Transaction.objects.filter(
+        status='completed',
+        transaction_date__gte=previous_start,
+        transaction_date__lte=previous_end
+    ).count()
+    
+    # Calculate growth rates
+    revenue_growth = 0
+    if previous_revenue > 0:
+        revenue_growth = float((period_revenue - previous_revenue) / previous_revenue * 100)
+    
+    transaction_growth = 0
+    if previous_transactions > 0:
+        transaction_growth = float((period_transaction_count - previous_transactions) / previous_transactions * 100)
+    
+    # Revenue by day
+    revenue_by_day = period_transactions.annotate(
+        day=TruncDate('transaction_date')
+    ).values('day').annotate(
+        revenue=Sum('total')
+    ).order_by('day')
+    
+    revenue_chart_data = {
+        item['day'].strftime('%Y-%m-%d'): float(item['revenue'])
+        for item in revenue_by_day if item['day']
+    }
+    
+    # Tenant distribution by customer count
+    tenant_distribution = [
+        {'name': '0-10 customers', 'count': 0},
+        {'name': '11-50 customers', 'count': 0},
+        {'name': '51-100 customers', 'count': 0},
+        {'name': '100+ customers', 'count': 0},
+    ]
+    
+    for tenant in all_tenants:
+        customer_count = TenantCustomer.objects.filter(
+            tenant=tenant,
+            role='customer'
+        ).count()
+        
+        if customer_count <= 10:
+            tenant_distribution[0]['count'] += 1
+        elif customer_count <= 50:
+            tenant_distribution[1]['count'] += 1
+        elif customer_count <= 100:
+            tenant_distribution[2]['count'] += 1
+        else:
+            tenant_distribution[3]['count'] += 1
+    
+    # Recent tenant registrations
+    recent_tenants = all_tenants.order_by('-created_at')[:10]
+    
+    # Low activity tenants (no transactions in last 7 days)
+    seven_days_ago = timezone.now() - timedelta(days=7)
+    low_activity_tenants = []
+    
+    for tenant in all_tenants:
+        recent_txs = Transaction.objects.filter(
+            tenant=tenant,
+            transaction_date__gte=seven_days_ago
+        ).count()
+        
+        if recent_txs == 0:
+            low_activity_tenants.append(tenant)
+    
+    context = {
+        'is_platform_admin': True,
+        'period': period,
+        'start_date': start_date,
+        'end_date': end_date,
+        'total_tenants': total_tenants,
+        'active_tenants': active_tenants,
+        'new_tenants': new_tenants,
+        'total_customers': total_customers,
+        'new_customers': new_customers,
+        'total_transactions': total_transactions,
+        'period_transaction_count': period_transaction_count,
+        'total_revenue': total_revenue,
+        'period_revenue': period_revenue,
+        'avg_revenue_per_tenant': avg_revenue_per_tenant,
+        'avg_transaction_value': avg_transaction_value,
+        'total_loyalty_points': total_loyalty_points,
+        'active_users_today': active_users_today,
+        'revenue_growth': revenue_growth,
+        'transaction_growth': transaction_growth,
+        'top_tenants': top_tenants,
+        'tenant_distribution': tenant_distribution,
+        'revenue_chart_data': json.dumps(revenue_chart_data),
+        'recent_tenants': recent_tenants,
+        'low_activity_tenants': low_activity_tenants,
+        'low_activity_count': len(low_activity_tenants),
+        'currency_symbol': '$',
+    }
+    
+    return render(request, 'platform/dashboard.html', context)

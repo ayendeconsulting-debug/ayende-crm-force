@@ -10,6 +10,17 @@ urlpatterns = [
     # Command Center (Main Dashboard)
     path('', views.reports_dashboard, name='dashboard'),
     
+    # Platform Admin Dashboard (ADD THIS LINE)
+    path('platform/', views.platform_dashboard, name='platform_dashboard'),
+    
+    # Detailed reports
+    path('revenue/', views.revenue_report, name='revenue'),
+    path('customers/', views.customer_report, name='customers'),
+    path('sales/', views.sales_report, name='sales'),
+    path('loyalty/', views.loyalty_report, name='loyalty'),
+    # Command Center (Main Dashboard)
+    path('', views.reports_dashboard, name='dashboard'),
+    
     # Detailed reports
     path('revenue/', views.revenue_report, name='revenue'),
     path('customers/', views.customer_report, name='customers'),
