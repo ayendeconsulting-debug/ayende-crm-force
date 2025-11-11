@@ -79,12 +79,13 @@ class Tenant(models.Model):
     
     # FIXED: Use string reference instead of direct import
     owner = models.ForeignKey(
-        'customers.Customer',
-        on_delete=models.CASCADE,
+        'customers.TenantCustomer',
+        on_delete=models.SET_NULL,
         related_name='owned_tenants',
-        help_text='Business owner'
+        help_text='Business owner',
+        null=True,
+        blank=True
     )
-    
     # Regional Settings
     CURRENCY_CHOICES = [
         ('USD', 'US Dollar ($)'),
