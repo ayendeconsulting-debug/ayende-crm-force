@@ -877,3 +877,319 @@ def platform_dashboard(request):
     }
     
     return render(request, 'platform/dashboard.html', context)
+
+@login_required(login_url='dashboard:login')
+def platform_revenue_dashboard(request):
+    """
+    Platform Revenue Dashboard - Shows income from tenant subscriptions and fees.
+    Only accessible to platform administrators.
+    """
+    # Check if user is platform admin
+    if not hasattr(request.user, 'is_platform_admin') or not request.user.is_platform_admin:
+        messages.error(request, 'Access denied. Platform admin privileges required.')
+        return redirect('dashboard:home')
+    
+    # Import models (avoid circular import)
+    from billing.models import (
+        SubscriptionPlan, TenantSubscription, ProfessionalFee,
+        PlatformInvoice, PlatformPayment, RevenueMetrics
+    )
+    from tenants.models import Tenant
+    
+    # Get date range
+    period = request.GET.get('period', 'month')
+    if period == 'today':
+        start_date = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        end_date = timezone.now()
+    elif period == 'week':
+        start_date = timezone.now() - timedelta(days=7)
+        end_date = timezone.now()
+    elif period == 'month':
+        start_date = timezone.now() - timedelta(days=30)
+        end_date = timezone.now()
+    elif period == 'quarter':
+        start_date = timezone.now() - timedelta(days=90)
+        end_date = timezone.now()
+    elif period == 'year':
+        start_date = timezone.now() - timedelta(days=365)
+        end_date = timezone.now()
+    else:
+        start_date = timezone.now() - timedelta(days=30)
+        end_date = timezone.now()
+    
+    # ===================================
+    # SUBSCRIPTION METRICS
+    # ===================================
+    
+    # Current MRR (Monthly Recurring Revenue)
+    active_subscriptions = TenantSubscription.objects.filter(
+        status__in=['trial', 'active']
+    )
+    
+    total_mrr = Decimal('0')
+    for sub in active_subscriptions:
+        total_mrr += sub.calculate_mrr()
+    
+    # ARR (Annual Recurring Revenue)
+    total_arr = total_mrr * 12
+    
+    # Subscription breakdown by status
+    trial_count = TenantSubscription.objects.filter(status='trial').count()
+    active_count = TenantSubscription.objects.filter(status='active').count()
+    past_due_count = TenantSubscription.objects.filter(status='past_due').count()
+    canceled_count = TenantSubscription.objects.filter(status='canceled').count()
+    
+    # Subscription breakdown by plan
+    plan_breakdown = []
+    for plan in SubscriptionPlan.objects.filter(is_active=True):
+        sub_count = TenantSubscription.objects.filter(
+            plan=plan,
+            status__in=['trial', 'active']
+        ).count()
+        
+        plan_mrr = Decimal('0')
+        for sub in TenantSubscription.objects.filter(plan=plan, status__in=['trial', 'active']):
+            plan_mrr += sub.calculate_mrr()
+        
+        plan_breakdown.append({
+            'plan': plan,
+            'subscribers': sub_count,
+            'mrr': plan_mrr,
+            'percentage': (plan_mrr / total_mrr * 100) if total_mrr > 0 else 0
+        })
+    
+    # New subscriptions in period
+    new_subscriptions = TenantSubscription.objects.filter(
+        created_at__gte=start_date,
+        created_at__lte=end_date
+    ).count()
+    
+    # Canceled subscriptions in period
+    canceled_in_period = TenantSubscription.objects.filter(
+        canceled_at__gte=start_date,
+        canceled_at__lte=end_date
+    ).count()
+    
+    # Churn rate
+    churn_rate = 0
+    if active_count > 0:
+        churn_rate = (canceled_in_period / active_count) * 100
+    
+    # ===================================
+    # REVENUE METRICS
+    # ===================================
+    
+    # Professional fees in period
+    professional_fees = ProfessionalFee.objects.filter(
+        service_date__gte=start_date.date(),
+        service_date__lte=end_date.date(),
+        status='paid'
+    )
+    
+    professional_fees_total = professional_fees.aggregate(
+        total=Sum('amount')
+    )['total'] or Decimal('0')
+    
+    # Payments received in period
+    payments = PlatformPayment.objects.filter(
+        payment_date__gte=start_date,
+        payment_date__lte=end_date,
+        status='completed'
+    )
+    
+    period_revenue = payments.aggregate(
+        total=Sum('amount')
+    )['total'] or Decimal('0')
+    
+    # Total revenue (all time)
+    total_revenue_all_time = PlatformPayment.objects.filter(
+        status='completed'
+    ).aggregate(
+        total=Sum('amount')
+    )['total'] or Decimal('0')
+    
+    # Average revenue per tenant
+    total_tenants = Tenant.objects.filter(is_active=True).count()
+    avg_revenue_per_tenant = (total_revenue_all_time / total_tenants) if total_tenants > 0 else Decimal('0')
+    
+    # ===================================
+    # INVOICE METRICS
+    # ===================================
+    
+    # Outstanding invoices
+    outstanding_invoices = PlatformInvoice.objects.filter(
+        status__in=['sent', 'overdue']
+    )
+    
+    outstanding_amount = outstanding_invoices.aggregate(
+        total=Sum('total_amount')
+    )['total'] or Decimal('0')
+    
+    # Overdue invoices
+    overdue_invoices = PlatformInvoice.objects.filter(status='overdue')
+    overdue_amount = overdue_invoices.aggregate(
+        total=Sum('total_amount')
+    )['total'] or Decimal('0')
+    
+    # Paid invoices in period
+    paid_invoices_count = PlatformInvoice.objects.filter(
+        paid_date__gte=start_date.date(),
+        paid_date__lte=end_date.date(),
+        status='paid'
+    ).count()
+    
+    # ===================================
+    # GROWTH METRICS
+    # ===================================
+    
+    # Calculate previous period
+    period_length = (end_date - start_date).days
+    previous_start = start_date - timedelta(days=period_length)
+    previous_end = start_date
+    
+    # Previous period revenue
+    previous_payments = PlatformPayment.objects.filter(
+        payment_date__gte=previous_start,
+        payment_date__lte=previous_end,
+        status='completed'
+    ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+    
+    # Revenue growth
+    revenue_growth = 0
+    if previous_payments > 0:
+        revenue_growth = float((period_revenue - previous_payments) / previous_payments * 100)
+    
+    # MRR growth (compare current vs 30 days ago)
+    # This is simplified - you'd want to store historical MRR in RevenueMetrics
+    mrr_growth = 0  # Placeholder - implement with RevenueMetrics table
+    
+    # ===================================
+    # CHARTS DATA
+    # ===================================
+    
+    # Revenue by day
+    daily_revenue = payments.annotate(
+        day=TruncDate('payment_date')
+    ).values('day').annotate(
+        revenue=Sum('amount')
+    ).order_by('day')
+    
+    revenue_chart_data = {
+        item['day'].strftime('%Y-%m-%d'): float(item['revenue'])
+        for item in daily_revenue if item['day']
+    }
+    
+    # MRR trend (last 12 months)
+    # Simplified - would use RevenueMetrics table for historical data
+    mrr_trend_data = {}
+    
+    # Revenue by plan
+    plan_revenue_data = {
+        item['plan'].name: float(item['mrr'])
+        for item in plan_breakdown
+    }
+    
+    # ===================================
+    # TOP CUSTOMERS (by revenue)
+    # ===================================
+    
+    top_tenants_by_revenue = []
+    for tenant in Tenant.objects.filter(is_active=True):
+        tenant_payments = PlatformPayment.objects.filter(
+            tenant=tenant,
+            status='completed'
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+        
+        try:
+            subscription = tenant.subscription
+            current_plan = subscription.plan.name
+            sub_status = subscription.status
+        except:
+            current_plan = 'No subscription'
+            sub_status = 'none'
+        
+        if tenant_payments > 0:
+            top_tenants_by_revenue.append({
+                'tenant': tenant,
+                'revenue': tenant_payments,
+                'plan': current_plan,
+                'status': sub_status
+            })
+    
+    # Sort by revenue
+    top_tenants_by_revenue.sort(key=lambda x: x['revenue'], reverse=True)
+    top_tenants = top_tenants_by_revenue[:10]
+    
+    # ===================================
+    # RECENT ACTIVITY
+    # ===================================
+    
+    # Recent payments
+    recent_payments = PlatformPayment.objects.filter(
+        status='completed'
+    ).order_by('-payment_date')[:10]
+    
+    # Recent invoices
+    recent_invoices = PlatformInvoice.objects.order_by('-created_at')[:10]
+    
+    # Upcoming renewals (next 30 days)
+    thirty_days_from_now = timezone.now().date() + timedelta(days=30)
+    upcoming_renewals = TenantSubscription.objects.filter(
+        status='active',
+        next_billing_date__lte=thirty_days_from_now,
+        next_billing_date__gte=timezone.now().date()
+    ).order_by('next_billing_date')[:10]
+    
+    # ===================================
+    # CONTEXT
+    # ===================================
+    
+    context = {
+        'is_platform_admin': True,
+        'period': period,
+        'start_date': start_date,
+        'end_date': end_date,
+        
+        # Subscription metrics
+        'total_mrr': total_mrr,
+        'total_arr': total_arr,
+        'mrr_growth': mrr_growth,
+        'trial_count': trial_count,
+        'active_count': active_count,
+        'past_due_count': past_due_count,
+        'canceled_count': canceled_count,
+        'new_subscriptions': new_subscriptions,
+        'canceled_in_period': canceled_in_period,
+        'churn_rate': churn_rate,
+        
+        # Revenue metrics
+        'period_revenue': period_revenue,
+        'total_revenue_all_time': total_revenue_all_time,
+        'professional_fees_total': professional_fees_total,
+        'avg_revenue_per_tenant': avg_revenue_per_tenant,
+        'revenue_growth': revenue_growth,
+        
+        # Invoice metrics
+        'outstanding_amount': outstanding_amount,
+        'overdue_amount': overdue_amount,
+        'outstanding_invoices_count': outstanding_invoices.count(),
+        'overdue_invoices_count': overdue_invoices.count(),
+        'paid_invoices_count': paid_invoices_count,
+        
+        # Breakdowns
+        'plan_breakdown': plan_breakdown,
+        'top_tenants': top_tenants,
+        
+        # Charts
+        'revenue_chart_data': json.dumps(revenue_chart_data),
+        'plan_revenue_data': json.dumps(plan_revenue_data),
+        
+        # Activity
+        'recent_payments': recent_payments,
+        'recent_invoices': recent_invoices,
+        'upcoming_renewals': upcoming_renewals,
+        
+        'currency_symbol': '$',
+    }
+    
+    return render(request, 'platform/revenue_dashboard.html', context)

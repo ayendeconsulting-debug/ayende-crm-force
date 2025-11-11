@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'rewards',
     'profile',
     'reports',
+    'billing',  # ADD THIS LINE
 ]
 
 MIDDLEWARE = [
