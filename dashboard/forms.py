@@ -68,8 +68,8 @@ class CustomerRegistrationForm(forms.Form):
     
     def clean_email(self):
         email = self.cleaned_data.get('email')
-        if Customer.objects.filter(email=email).exists():
-            raise ValidationError('A customer with this email already exists.')
+        # Note: For registration, we need to check across all tenants or implement tenant-specific registration
+        # For now, allow same email across different tenants
         return email
     
     def clean(self):
@@ -244,13 +244,9 @@ class BusinessCustomerAddForm(forms.Form):
     def clean_email(self):
         email = self.cleaned_data.get('email')
         
-        # Check if email already exists
-        if Customer.objects.filter(email=email).exists():
-            # Check if already linked to this tenant
-            customer = Customer.objects.get(email=email)
-            if TenantCustomer.objects.filter(customer=customer, tenant=self.tenant).exists():
-                raise ValidationError('This customer already exists in your system.')
-            # Email exists but not in this tenant - we can link them
+        # Check if email already exists in THIS tenant (refactored architecture)
+        if TenantCustomer.objects.filter(email=email, tenant=self.tenant).exists():
+            raise ValidationError('This customer already exists in your system.')
         
         return email
     
@@ -270,34 +266,24 @@ class BusinessCustomerAddForm(forms.Form):
         return phone
     
     def save(self):
-        """Create customer and link to tenant, or link existing customer."""
-        email = self.cleaned_data['email']
+        """Create TenantCustomer directly (refactored architecture)."""
+        from django.contrib.auth.hashers import make_password
         
-        # Check if customer already exists
-        try:
-            customer = Customer.objects.get(email=email)
-            # Customer exists, just link to this tenant
-        except Customer.DoesNotExist:
-            # Create new customer
-            customer = Customer.objects.create_user(
-                email=email,
-                password=self.cleaned_data['password'],
-                first_name=self.cleaned_data['first_name'],
-                last_name=self.cleaned_data['last_name'],
-                phone=self.cleaned_data.get('phone', '')
-            )
-        
-        # Create or get TenantCustomer relationship
-        tenant_customer, created = TenantCustomer.objects.get_or_create(
-            customer=customer,
+        # Create TenantCustomer directly (no separate Customer object needed)
+        tenant_customer = TenantCustomer.objects.create(
+            email=self.cleaned_data['email'],
+            username=f"{self.cleaned_data['email']}.{self.tenant.subdomain}",
+            password=make_password(self.cleaned_data['password']),
+            first_name=self.cleaned_data['first_name'],
+            last_name=self.cleaned_data['last_name'],
+            phone=self.cleaned_data.get('phone', ''),
             tenant=self.tenant,
-            defaults={
-                'role': 'customer',
-                'is_active': True,
-                'loyalty_points': self.cleaned_data.get('loyalty_points', 0),
-                'is_vip': self.cleaned_data.get('is_vip', False),
-                'notes': self.cleaned_data.get('notes', '')
-            }
+            role='customer',
+            is_active=True,
+            loyalty_points=self.cleaned_data.get('loyalty_points', 0),
+            is_vip=self.cleaned_data.get('is_vip', False),
+            notes=self.cleaned_data.get('notes', ''),
+            email_verified=False  # Will need email verification
         )
         
         return tenant_customer
