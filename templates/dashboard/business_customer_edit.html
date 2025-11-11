@@ -13,7 +13,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="mb-1">Edit Customer</h2>
-            <p class="text-muted">Update {{ customer.customer.get_full_name }}'s information</p>
+            <p class="text-muted">Update {{ customer.get_full_name }}'s information</p>
         </div>
         <div class="d-flex gap-2">
             <a href="{% url 'dashboard:customer_detail' customer.id %}" class="btn btn-action-outline">
@@ -48,7 +48,7 @@
                                        name="first_name" 
                                        id="id_first_name"
                                        class="form-control"
-                                       value="{{ form.first_name.value|default:customer.customer.first_name }}"
+                                       value="{{ form.first_name.value|default:customer.first_name }}"
                                        required>
                             </div>
 
@@ -60,7 +60,7 @@
                                        name="last_name" 
                                        id="id_last_name"
                                        class="form-control"
-                                       value="{{ form.last_name.value|default:customer.customer.last_name }}"
+                                       value="{{ form.last_name.value|default:customer.last_name }}"
                                        required>
                             </div>
                         </div>
@@ -72,7 +72,7 @@
                                 </label>
                                 <input type="email" 
                                        class="form-control" 
-                                       value="{{ customer.customer.email }}"
+                                       value="{{ customer.email }}"
                                        disabled>
                                 <small class="form-text text-muted">Email cannot be changed</small>
                             </div>
@@ -85,7 +85,7 @@
                                        name="phone" 
                                        id="id_phone"
                                        class="form-control"
-                                       value="{{ form.phone.value|default:customer.customer.phone }}">
+                                       value="{{ form.phone.value|default:customer.phone }}">
                             </div>
                         </div>
 
@@ -180,10 +180,10 @@
                 <div class="card-body">
                     <div class="customer-info mb-3">
                         <div class="customer-avatar" style="width: 80px; height: 80px; font-size: 2rem; margin: 0 auto 15px;">
-                            {{ customer.customer.first_name|first }}{{ customer.customer.last_name|first }}
+                            {{ customer.first_name|first }}{{ customer.last_name|first }}
                         </div>
-                        <h5 class="text-center mb-0">{{ customer.customer.get_full_name }}</h5>
-                        <p class="text-center text-muted small">{{ customer.customer.email }}</p>
+                        <h5 class="text-center mb-0">{{ customer.get_full_name }}</h5>
+                        <p class="text-center text-muted small">{{ customer.email }}</p>
                     </div>
 
                     <hr>

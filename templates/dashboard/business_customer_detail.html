@@ -1,6 +1,6 @@
 {% extends 'dashboard/business_base.html' %}
 
-{% block title %}{{ customer.customer.get_full_name }} - Customer Details{% endblock %}
+{% block title %}{{ customer.get_full_name }} - Customer Details{% endblock %}
 
 {% block content %}
 <div class="row mb-4">
@@ -18,10 +18,10 @@
         <div class="card">
             <div class="card-body text-center">
                 <div class="avatar-circle-large mx-auto mb-3">
-                    {{ customer.customer.first_name|first }}{{ customer.customer.last_name|first }}
+                    {{ customer.first_name|first }}{{ customer.last_name|first }}
                 </div>
-                <h4>{{ customer.customer.get_full_name }}</h4>
-                <p class="text-muted mb-3">{{ customer.customer.email }}</p>
+                <h4>{{ customer.get_full_name }}</h4>
+                <p class="text-muted mb-3">{{ customer.email }}</p>
 
                 {% if customer.is_vip %}
                     <span class="badge bg-warning mb-3">VIP Customer</span>
@@ -39,13 +39,13 @@
                     <p class="mb-2">
                         <i class="bi bi-envelope text-muted"></i>
                         <strong>Email:</strong><br>
-                        <span class="ms-4">{{ customer.customer.email }}</span>
+                        <span class="ms-4">{{ customer.email }}</span>
                     </p>
-                    {% if customer.customer.phone %}
+                    {% if customer.phone %}
                         <p class="mb-2">
                             <i class="bi bi-telephone text-muted"></i>
                             <strong>Phone:</strong><br>
-                            <span class="ms-4">{{ customer.customer.phone }}</span>
+                            <span class="ms-4">{{ customer.phone }}</span>
                         </p>
                     {% endif %}
                     <p class="mb-2">
