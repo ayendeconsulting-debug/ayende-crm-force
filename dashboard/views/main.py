@@ -553,7 +553,11 @@ def manage_customers(request):
         return redirect('dashboard:home')
     
     # Get all customers for this tenant
-    customers = TenantCustomer.objects.filter(tenant=tenant).order_by('-joined_at')
+    
+    customers = TenantCustomer.objects.filter(
+        tenant=tenant,
+        role='customer'  # Only show customers, not admin/staff
+    ).order_by('-joined_at')
     
     # Search functionality
     search_query = request.GET.get('q', '')
@@ -806,7 +810,10 @@ def export_customers(request):
         'Active', 'Joined Date', 'Last Purchase'
     ])
     
-    customers = TenantCustomer.objects.filter(tenant=tenant).order_by('-joined_at')
+    customers = TenantCustomer.objects.filter(
+        tenant=tenant,
+        role='customer'
+    ).order_by('-joined_at')
     
     for customer in customers:
         writer.writerow([
