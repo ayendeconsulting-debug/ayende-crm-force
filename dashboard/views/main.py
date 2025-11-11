@@ -611,7 +611,7 @@ def add_customer(request):
         'form': form,
     }
     
-    return render(request, 'dashboard/add_customer.html', context)
+    return render(request, 'dashboard/business_customer_add.html', context)
 
 
 @login_required
@@ -652,7 +652,7 @@ def customer_detail(request, customer_id):
         'stats': transaction_stats,
     }
     
-    return render(request, 'dashboard/customer_detail.html', context)
+    return render(request, 'dashboard/business_customer_detail.html', context)
 
 
 @login_required
@@ -696,7 +696,7 @@ def edit_customer(request, customer_id):
         'form': form,
     }
     
-    return render(request, 'dashboard/edit_customer.html', context)
+    return render(request, 'dashboard/business_customer_edit.html', context)
 
 
 @login_required
