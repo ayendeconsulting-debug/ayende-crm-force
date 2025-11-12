@@ -187,6 +187,11 @@ CSRF_TRUSTED_ORIGINS = [
     'https://*.ayendecx.com',
 ]
 
+CSRF_USE_SESSIONS = False
+CSRF_COOKIE_SECURE = False if DEBUG else True
+CSRF_COOKIE_SAMESITE = None
+SESSION_COOKIE_SAMESITE = None
+
 if CUSTOM_DOMAIN:
     CSRF_TRUSTED_ORIGINS.extend([
         f'https://{CUSTOM_DOMAIN}',
