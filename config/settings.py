@@ -139,6 +139,13 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Multi-Tenant Customer Architecture
 AUTH_USER_MODEL = 'customers.TenantCustomer'
 
+# Authentication URLs
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/customers/'
+LOGOUT_REDIRECT_URL = '/'
+
+# Authentication Backends
+
 # Authentication Backends
 # Order matters: Django tries each backend in order until one succeeds
 # Platform admin backend first to allow cross-tenant admin access
