@@ -312,10 +312,10 @@
                 <h1><i class="bi bi-inbox"></i> Messages Inbox</h1>
                 <p class="mb-0">Manage customer communications</p>
             </div>
-            <button class="compose-btn" onclick="location.href='{% url 'notifications:compose_message' %}'">
+            <a href="{% url 'notifications:compose_message' %}" class="compose-btn" style="text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
                 <i class="bi bi-pencil-square"></i>
                 Compose Message
-            </button>
+            </a>
         </div>
 
         <div class="stat-cards">
@@ -343,22 +343,18 @@
         <!-- Toolbar -->
         <div class="messages-toolbar">
             <div class="filter-tabs">
-                <button class="filter-tab {% if not status_filter %}active{% endif %}" 
-                        onclick="location.href='{% url 'notifications:staff_inbox' %}'">
+                <a href="{% url 'notifications:staff_inbox' %}" class="filter-tab {% if not status_filter %}active{% endif %}" style="text-decoration: none;">
                     All
-                </button>
-                <button class="filter-tab {% if status_filter == 'unread' %}active{% endif %}"
-                        onclick="location.href='{% url 'notifications:staff_inbox' %}?status=unread'">
+                </a>
+                <a href="{% url 'notifications:staff_inbox' %}?status=unread" class="filter-tab {% if status_filter == 'unread' %}active{% endif %}" style="text-decoration: none;">
                     Unread ({{ unread_count }})
-                </button>
-                <button class="filter-tab {% if status_filter == 'read' %}active{% endif %}"
-                        onclick="location.href='{% url 'notifications:staff_inbox' %}?status=read'">
+                </a>
+                <a href="{% url 'notifications:staff_inbox' %}?status=read" class="filter-tab {% if status_filter == 'read' %}active{% endif %}" style="text-decoration: none;">
                     Read
-                </button>
-                <button class="filter-tab {% if status_filter == 'archived' %}active{% endif %}"
-                        onclick="location.href='{% url 'notifications:staff_inbox' %}?status=archived'">
+                </a>
+                <a href="{% url 'notifications:staff_inbox' %}?status=archived" class="filter-tab {% if status_filter == 'archived' %}active{% endif %}" style="text-decoration: none;">
                     Archived
-                </button>
+                </a>
             </div>
 
             <input type="text" 
@@ -372,8 +368,7 @@
         <div class="messages-list">
             {% if messages %}
                 {% for message in messages %}
-                <div class="message-item {% if message.is_unread %}unread{% endif %}"
-                     onclick="location.href='{% url 'notifications:staff_message_detail' message.id %}'">
+                <a href="{% url 'notifications:staff_message_detail' message.id %}" class="message-item {% if message.is_unread %}unread{% endif %}" style="text-decoration: none; display: flex;">
                     
                     <div class="message-avatar">
                         {{ message.sender.first_name|first }}{{ message.sender.last_name|first }}
@@ -410,7 +405,7 @@
                             {% endif %}
                         </div>
                     </div>
-                </div>
+                </a>
                 {% endfor %}
             {% else %}
                 <div class="empty-state">
