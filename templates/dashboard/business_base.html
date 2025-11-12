@@ -332,12 +332,17 @@
                             <span>Rewards</span>
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if 'notifications' in request.path and 'compose' in request.path %}active{% endif %}" 
-                           href="{% url 'notifications:compose' %}">
-                            <i class="bi bi-send"></i>
-                            <span>Notifications</span>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-chat-dots"></i>
+                            <span>Communications</span>
                         </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'notifications:staff_inbox' %}">Inbox</a></li>
+                            <li><a class="dropdown-item" href="{% url 'notifications:compose_message' %}">Compose</a></li>
+                            <li><a class="dropdown-item" href="{% url 'notifications:template_library' %}">Templates</a></li>
+                            <li><a class="dropdown-item" href="{% url 'notifications:notification_list' %}">Campaigns</a></li>
+                        </ul>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if 'reports' in request.path %}active{% endif %}" 

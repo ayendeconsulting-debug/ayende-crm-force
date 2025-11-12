@@ -29,7 +29,7 @@ if CUSTOM_DOMAIN:
         f'.{CUSTOM_DOMAIN}',  # Wildcard for subdomains
     ])
 
-ALLOWED_HOSTS = ['.ayendecx.com', 'staging.ayendecx.com', 'ayendecx.com' '.localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['.ayendecx.com', 'staging.ayendecx.com', 'ayendecx.com', '.localhost', '127.0.0.1']
 
 
 # Application definition
