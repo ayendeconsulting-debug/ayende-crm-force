@@ -194,7 +194,7 @@ if CUSTOM_DOMAIN:
     ])
 
 # Cookie domain configuration for multi-tenant subdomains
-if CUSTOM_DOMAIN and not DEBUG:
+if CUSTOM_DOMAIN:
     SESSION_COOKIE_DOMAIN = f'.{CUSTOM_DOMAIN}'
     CSRF_COOKIE_DOMAIN = f'.{CUSTOM_DOMAIN}'
 
