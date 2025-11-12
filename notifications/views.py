@@ -20,7 +20,7 @@ from customers.models import TenantCustomer
 
 # Business Owner Views (Sending Notifications)
 
-@login_required(login_url='dashboard:login')
+@login_required
 def compose_notification(request):
     """
     Business owner view to compose and send notifications.
@@ -105,7 +105,7 @@ def compose_notification(request):
     return render(request, 'notifications/compose.html', context)
 
 
-@login_required(login_url='dashboard:login')
+@login_required
 def notification_list(request):
     """
     Business owner view to see all sent notifications.
@@ -188,7 +188,7 @@ def notification_list(request):
     return render(request, 'notifications/list.html', context)
 
 
-@login_required(login_url='dashboard:login')
+@login_required
 def notification_detail(request, notification_id):
     """
     Business owner view to see detailed notification statistics.
@@ -247,7 +247,7 @@ def notification_detail(request, notification_id):
     return render(request, 'notifications/detail.html', context)
 
 
-@login_required(login_url='dashboard:login')
+@login_required
 def resend_notification(request, notification_id):
     """
     Resend a notification to customers who didn't receive it.
@@ -295,7 +295,7 @@ def resend_notification(request, notification_id):
 
 # Customer Views (Receiving Notifications)
 
-@login_required(login_url='dashboard:login')
+@login_required
 def customer_inbox(request):
     """
     Customer view to see their notifications (inbox).
@@ -354,7 +354,7 @@ def customer_inbox(request):
     return render(request, 'notifications/inbox.html', context)
 
 
-@login_required(login_url='dashboard:login')
+@login_required
 def view_notification(request, recipient_id):
     """
     Customer view to read a specific notification.
@@ -394,7 +394,7 @@ def view_notification(request, recipient_id):
     return render(request, 'notifications/view.html', context)
 
 
-@login_required(login_url='dashboard:login')
+@login_required
 def mark_notification_read(request, recipient_id):
     """
     AJAX endpoint to mark notification as read.
@@ -435,7 +435,7 @@ def mark_notification_read(request, recipient_id):
     })
 
 
-@login_required(login_url='dashboard:login')
+@login_required
 def mark_notification_unread(request, recipient_id):
     """
     AJAX endpoint to mark notification as unread.
@@ -476,7 +476,7 @@ def mark_notification_unread(request, recipient_id):
     })
 
 
-@login_required(login_url='dashboard:login')
+@login_required
 def get_unread_count(request):
     """
     AJAX endpoint to get unread notification count.
@@ -510,7 +510,7 @@ def get_unread_count(request):
    # Staff inbox, messaging, templates
    # ============================================
    
-@login_required(login_url='dashboard:login')
+@login_required
 def staff_inbox(request):
     """
     Staff inbox to view messages from customers.
@@ -598,7 +598,7 @@ def staff_inbox(request):
     return render(request, 'notifications/staff_inbox.html', context)
 
 
-@login_required(login_url='dashboard:login')
+@login_required
 def staff_message_detail(request, message_id):
     """
     Staff view a specific message from customer.
@@ -644,7 +644,7 @@ def staff_message_detail(request, message_id):
 # MESSAGE COMPOSITION VIEWS (Staff Send Messages)
 # ==============================================
 
-@login_required(login_url='dashboard:login')
+@login_required
 def compose_message(request):
     """
     Staff compose message to send to customer.
@@ -737,7 +737,7 @@ def compose_message(request):
     return render(request, 'notifications/compose_message.html', context)
 
 
-@login_required(login_url='dashboard:login')
+@login_required
 def reply_to_message(request, message_id):
     """
     Staff reply to a customer message.
@@ -792,7 +792,7 @@ def reply_to_message(request, message_id):
 # MESSAGE TEMPLATE VIEWS
 # ==============================================
 
-@login_required(login_url='dashboard:login')
+@login_required
 def template_library(request):
     """
     Staff view and manage message templates.
@@ -843,7 +843,7 @@ def template_library(request):
     return render(request, 'notifications/template_library.html', context)
 
 
-@login_required(login_url='dashboard:login')
+@login_required
 def create_template(request):
     """
     Staff create new message template.
@@ -906,7 +906,7 @@ def create_template(request):
 # AJAX API ENDPOINTS
 # ==============================================
 
-@login_required(login_url='dashboard:login')
+@login_required
 def get_template_content(request, template_id):
     """
     AJAX: Get template content for preview/use.
@@ -932,7 +932,7 @@ def get_template_content(request, template_id):
         return JsonResponse({'success': False, 'error': 'Template not found'})
 
 
-@login_required(login_url='dashboard:login')
+@login_required
 def archive_message(request, message_id):
     """
     AJAX: Archive a message.
