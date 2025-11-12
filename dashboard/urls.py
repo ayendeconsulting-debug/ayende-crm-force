@@ -9,7 +9,6 @@ from django.contrib.auth import views as auth_views
 # Import regular views from dashboard.views (the views.py file)
 from dashboard import views
 from .views.main import check_customer_by_phone
-from .views.main import check_customer_by_phone
 
 # Import integration views from dashboard.views package (the views/ directory)
 from dashboard.views import integration as integration_views
@@ -26,8 +25,10 @@ urlpatterns = [
     path('resend-verification/', views.main.resend_verification_email, name='resend_verification'),
     path('api/debug/tenants', views.main.get_tenant_info, name='debug_tenants'),
     
-    # Dashboard
-    path('dashboard/', views.main.dashboard_home, name='home'),
+    # Dashboard - Business Command Center (accessible at root, /dashboard/, and /admin/)
+    path('', views.main.dashboard_home, name='home'),  # Root of subdomain
+    path('dashboard/', views.main.dashboard_home, name='dashboard'),  # Also at /dashboard/
+    path('admin/', views.main.dashboard_home, name='admin'),  # Also at /admin/ for business users
     
     # Password Reset Flow
     path('password-reset/', 
