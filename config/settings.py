@@ -50,7 +50,7 @@ INSTALLED_APPS = [
     'profile',
     'reports',
     'billing',  # ADD THIS LINE
-    'communications',  # Add after 'billing'
+    
 ]
 
 MIDDLEWARE = [

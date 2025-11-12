@@ -356,3 +356,352 @@ class NotificationRecipient(models.Model):
             delta = timezone.now() - self.delivered_at
             return delta.days
         return 0
+
+# ============================================
+   # ENHANCED COMMUNICATION MODELS
+   # Two-way messaging, templates, attachments
+   # ============================================
+    """
+Enhanced Communication Models
+Add these models to your existing notifications/models.py file
+
+These models add:
+1. Two-way messaging (Message model)
+2. Message templates with variables (MessageTemplate model)
+3. Message threading support
+"""
+
+from django.db import models
+from django.utils import timezone
+import uuid
+
+
+class Message(models.Model):
+    """
+    Two-way messaging between customers and business staff.
+    Supports conversations and threading.
+    """
+    MESSAGE_TYPE_CHOICES = [
+        ('customer_to_business', 'Customer to Business'),
+        ('business_to_customer', 'Business to Customer'),
+        ('internal', 'Internal Note'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('draft', 'Draft'),
+        ('sent', 'Sent'),
+        ('delivered', 'Delivered'),
+        ('read', 'Read'),
+        ('archived', 'Archived'),
+    ]
+    
+    PRIORITY_CHOICES = [
+        ('low', 'Low'),
+        ('normal', 'Normal'),
+        ('high', 'High'),
+        ('urgent', 'Urgent'),
+    ]
+    
+    # Identification
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    # Relationships
+    tenant = models.ForeignKey(
+        'tenants.Tenant',
+        on_delete=models.CASCADE,
+        related_name='messages'
+    )
+    sender = models.ForeignKey(
+        'customers.TenantCustomer',
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='sent_messages',
+        help_text='Person who sent the message'
+    )
+    receiver = models.ForeignKey(
+        'customers.TenantCustomer',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='received_messages',
+        help_text='Specific recipient (null = all staff)'
+    )
+    
+    # Message Content
+    message_type = models.CharField(
+        max_length=30,
+        choices=MESSAGE_TYPE_CHOICES,
+        default='business_to_customer'
+    )
+    subject = models.CharField(max_length=255)
+    body = models.TextField()
+    priority = models.CharField(
+        max_length=10,
+        choices=PRIORITY_CHOICES,
+        default='normal'
+    )
+    
+    # Status & Tracking
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='draft'
+    )
+    sent_at = models.DateTimeField(null=True, blank=True)
+    delivered_at = models.DateTimeField(null=True, blank=True)
+    read_at = models.DateTimeField(null=True, blank=True)
+    
+    # Threading (for conversations)
+    parent_message = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='replies',
+        help_text='Parent message for threading'
+    )
+    
+    # Template reference
+    template_used = models.ForeignKey(
+        'MessageTemplate',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        help_text='Template used to create this message'
+    )
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'messages'
+        ordering = ['-created_at']
+        verbose_name = 'Message'
+        verbose_name_plural = 'Messages'
+        indexes = [
+            models.Index(fields=['tenant', '-created_at']),
+            models.Index(fields=['receiver', 'status']),
+            models.Index(fields=['sender', '-created_at']),
+            models.Index(fields=['message_type', 'status']),
+        ]
+    
+    def __str__(self):
+        return f"{self.subject} ({self.get_message_type_display()})"
+    
+    def mark_as_read(self):
+        """Mark message as read"""
+        if self.status in ['sent', 'delivered']:
+            self.status = 'read'
+            self.read_at = timezone.now()
+            self.save(update_fields=['status', 'read_at'])
+            return True
+        return False
+    
+    def mark_as_delivered(self):
+        """Mark message as delivered"""
+        if self.status == 'sent':
+            self.status = 'delivered'
+            self.delivered_at = timezone.now()
+            self.save(update_fields=['status', 'delivered_at'])
+            return True
+        return False
+    
+    @property
+    def is_unread(self):
+        return self.status in ['sent', 'delivered']
+    
+    @property
+    def sender_name(self):
+        """Get sender display name"""
+        if self.sender:
+            return f"{self.sender.first_name} {self.sender.last_name}"
+        return "System"
+    
+    @property
+    def receiver_name(self):
+        """Get receiver display name"""
+        if self.receiver:
+            return f"{self.receiver.first_name} {self.receiver.last_name}"
+        return "Staff Team"
+    
+    @property
+    def has_replies(self):
+        """Check if message has replies"""
+        return self.replies.exists()
+    
+    @property
+    def reply_count(self):
+        """Count number of replies"""
+        return self.replies.count()
+    
+    def get_conversation_thread(self):
+        """Get full conversation thread"""
+        if self.parent_message:
+            # This is a reply, get the root message
+            root = self.parent_message
+            while root.parent_message:
+                root = root.parent_message
+            # Return root and all its replies
+            return [root] + list(root.replies.all().order_by('created_at'))
+        else:
+            # This is the root, return it and all replies
+            return [self] + list(self.replies.all().order_by('created_at'))
+
+
+class MessageTemplate(models.Model):
+    """
+    Reusable message templates with variable substitution.
+    Allows business to create pre-written messages with placeholders.
+    """
+    TEMPLATE_TYPE_CHOICES = [
+        ('welcome', 'Welcome Message'),
+        ('thank_you', 'Thank You'),
+        ('promotion', 'Promotional Message'),
+        ('reminder', 'Reminder'),
+        ('birthday', 'Birthday Greeting'),
+        ('reward', 'Reward Notification'),
+        ('follow_up', 'Follow Up'),
+        ('apology', 'Apology'),
+        ('custom', 'Custom Template'),
+    ]
+    
+    # Identification
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    # Relationships
+    tenant = models.ForeignKey(
+        'tenants.Tenant',
+        on_delete=models.CASCADE,
+        related_name='message_templates'
+    )
+    created_by = models.ForeignKey(
+        'customers.TenantCustomer',
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='created_templates'
+    )
+    
+    # Template Details
+    name = models.CharField(
+        max_length=100,
+        help_text='Template name for internal reference'
+    )
+    template_type = models.CharField(
+        max_length=20,
+        choices=TEMPLATE_TYPE_CHOICES,
+        default='custom'
+    )
+    subject = models.CharField(
+        max_length=255,
+        help_text='Subject line (supports variables)'
+    )
+    body = models.TextField(
+        help_text='Message body (supports variables like {{customer_name}}, {{points}}, etc.)'
+    )
+    
+    # Usage Statistics
+    times_used = models.IntegerField(
+        default=0,
+        help_text='How many times this template has been used'
+    )
+    last_used_at = models.DateTimeField(null=True, blank=True)
+    
+    # Status
+    is_active = models.BooleanField(default=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'message_templates'
+        ordering = ['name']
+        verbose_name = 'Message Template'
+        verbose_name_plural = 'Message Templates'
+        indexes = [
+            models.Index(fields=['tenant', 'template_type']),
+            models.Index(fields=['is_active']),
+        ]
+    
+    def __str__(self):
+        return f"{self.name} ({self.get_template_type_display()})"
+    
+    def render(self, customer):
+        """
+        Render template with customer data.
+        Replaces variables like {{customer_name}}, {{points}}, etc.
+        """
+        rendered_subject = self.subject
+        rendered_body = self.body
+        
+        # Replace common variables
+        replacements = {
+            '{{customer_name}}': f"{customer.first_name} {customer.last_name}",
+            '{{first_name}}': customer.first_name,
+            '{{last_name}}': customer.last_name,
+            '{{email}}': customer.email,
+            '{{phone}}': customer.phone or 'N/A',
+            '{{points}}': str(customer.loyalty_points),
+            '{{business_name}}': customer.tenant.name,
+        }
+        
+        for variable, value in replacements.items():
+            rendered_subject = rendered_subject.replace(variable, value)
+            rendered_body = rendered_body.replace(variable, value)
+        
+        return rendered_subject, rendered_body
+    
+    def increment_usage(self):
+        """Increment usage counter"""
+        self.times_used += 1
+        self.last_used_at = timezone.now()
+        self.save(update_fields=['times_used', 'last_used_at'])
+    
+    @property
+    def available_variables(self):
+        """List of available variables for this template"""
+        return [
+            '{{customer_name}}',
+            '{{first_name}}',
+            '{{last_name}}',
+            '{{email}}',
+            '{{phone}}',
+            '{{points}}',
+            '{{business_name}}',
+        ]
+
+
+class MessageAttachment(models.Model):
+    """
+    Optional: File attachments for messages
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    message = models.ForeignKey(
+        Message,
+        on_delete=models.CASCADE,
+        related_name='attachments'
+    )
+    file = models.FileField(upload_to='message_attachments/%Y/%m/')
+    filename = models.CharField(max_length=255)
+    file_size = models.IntegerField(help_text='File size in bytes')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'message_attachments'
+        ordering = ['-uploaded_at']
+    
+    def __str__(self):
+        return f"{self.filename} ({self.file_size} bytes)"
+
+
+# ============================================
+# ADD THESE TO YOUR EXISTING notifications/models.py
+# ============================================
+# 
+# Instructions:
+# 1. Open notifications/models.py
+# 2. Add these three models (Message, MessageTemplate, MessageAttachment) at the end
+# 3. They will work alongside your existing Notification and NotificationRecipient models
+# 4. Run: python manage.py makemigrations notifications
+# 5. Run: python manage.py migrate notifications

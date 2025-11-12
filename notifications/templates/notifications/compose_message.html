@@ -1,0 +1,429 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Compose Message - {{ tenant.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .compose-container {
+        background: #1a1f2e;
+        min-height: calc(100vh - 100px);
+        padding: 2rem;
+    }
+
+    .compose-card {
+        background: #252b3b;
+        border-radius: 16px;
+        padding: 2rem;
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .compose-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #1a1f2e;
+    }
+
+    .compose-header h1 {
+        color: white;
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        color: #94a3b8;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
+    .form-control, .form-select {
+        background: #1a1f2e;
+        border: 2px solid #334155;
+        border-radius: 12px;
+        padding: 0.75rem 1rem;
+        color: white;
+        width: 100%;
+        transition: all 0.3s;
+    }
+
+    .form-control:focus, .form-select:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .form-select option {
+        background: #1a1f2e;
+        color: white;
+    }
+
+    textarea.form-control {
+        min-height: 200px;
+        resize: vertical;
+        font-family: inherit;
+    }
+
+    .priority-options {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .priority-option {
+        position: relative;
+    }
+
+    .priority-option input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+    }
+
+    .priority-option label {
+        background: #1a1f2e;
+        border: 2px solid #334155;
+        border-radius: 12px;
+        padding: 0.75rem 1.5rem;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: block;
+        color: #94a3b8;
+        font-weight: 500;
+    }
+
+    .priority-option input[type="radio"]:checked + label {
+        background: #667eea;
+        border-color: #667eea;
+        color: white;
+    }
+
+    .priority-option label:hover {
+        border-color: #667eea;
+        color: white;
+    }
+
+    .template-selector {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .template-selector label {
+        color: white;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
+    .template-selector select {
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        color: white;
+        backdrop-filter: blur(10px);
+    }
+
+    .template-selector select option {
+        background: #252b3b;
+    }
+
+    .variables-help {
+        background: rgba(102, 126, 234, 0.1);
+        border: 2px solid rgba(102, 126, 234, 0.3);
+        border-radius: 12px;
+        padding: 1rem;
+        margin-top: 0.5rem;
+    }
+
+    .variables-help .title {
+        color: #667eea;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .variable-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .variable-chip {
+        background: #667eea;
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-family: 'Courier New', monospace;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .variable-chip:hover {
+        background: #764ba2;
+        transform: translateY(-2px);
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 2px solid #1a1f2e;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 1rem 2rem;
+        border-radius: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        flex: 1;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-secondary {
+        background: #334155;
+        color: white;
+        border: none;
+        padding: 1rem 2rem;
+        border-radius: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .btn-secondary:hover {
+        background: #475569;
+    }
+
+    .preview-mode {
+        background: #1a1f2e;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-top: 1rem;
+    }
+
+    .preview-mode .label {
+        color: #667eea;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+
+    .preview-content {
+        color: white;
+        line-height: 1.6;
+    }
+
+    @media (max-width: 768px) {
+        .compose-container {
+            padding: 1rem;
+        }
+
+        .compose-card {
+            padding: 1rem;
+        }
+
+        .form-actions {
+            flex-direction: column;
+        }
+
+        .priority-options {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="compose-container">
+    <div class="compose-card">
+        <div class="compose-header">
+            <i class="bi bi-pencil-square" style="color: #667eea; font-size: 2rem;"></i>
+            <h1>Compose New Message</h1>
+        </div>
+
+        <form method="post" id="composeForm">
+            {% csrf_token %}
+
+            <!-- Template Selector (Optional) -->
+            <div class="template-selector">
+                <label for="template">
+                    <i class="bi bi-file-text"></i> Use a Template (Optional)
+                </label>
+                <select class="form-select" id="template" name="template" onchange="loadTemplate(this.value)">
+                    <option value="">-- No Template --</option>
+                    {% for template in templates %}
+                    <option value="{{ template.id }}" 
+                            data-subject="{{ template.subject }}"
+                            data-body="{{ template.body }}">
+                        {{ template.name }} ({{ template.get_template_type_display }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Recipient -->
+            <div class="form-group">
+                <label class="form-label" for="receiver">
+                    <i class="bi bi-person-fill"></i> To (Customer) *
+                </label>
+                <select class="form-select" id="receiver" name="receiver" required>
+                    <option value="">-- Select Customer --</option>
+                    {% for customer in customers %}
+                    <option value="{{ customer.id }}">
+                        {{ customer.first_name }} {{ customer.last_name }} ({{ customer.email }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Subject -->
+            <div class="form-group">
+                <label class="form-label" for="subject">
+                    <i class="bi bi-tag-fill"></i> Subject *
+                </label>
+                <input type="text" 
+                       class="form-control" 
+                       id="subject" 
+                       name="subject" 
+                       placeholder="Enter message subject"
+                       required>
+            </div>
+
+            <!-- Priority -->
+            <div class="form-group">
+                <label class="form-label">
+                    <i class="bi bi-flag-fill"></i> Priority
+                </label>
+                <div class="priority-options">
+                    <div class="priority-option">
+                        <input type="radio" id="priority_low" name="priority" value="low">
+                        <label for="priority_low">Low</label>
+                    </div>
+                    <div class="priority-option">
+                        <input type="radio" id="priority_normal" name="priority" value="normal" checked>
+                        <label for="priority_normal">Normal</label>
+                    </div>
+                    <div class="priority-option">
+                        <input type="radio" id="priority_high" name="priority" value="high">
+                        <label for="priority_high">High</label>
+                    </div>
+                    <div class="priority-option">
+                        <input type="radio" id="priority_urgent" name="priority" value="urgent">
+                        <label for="priority_urgent">Urgent</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Message Body -->
+            <div class="form-group">
+                <label class="form-label" for="body">
+                    <i class="bi bi-chat-text-fill"></i> Message *
+                </label>
+                <textarea class="form-control" 
+                          id="body" 
+                          name="body" 
+                          placeholder="Type your message here..."
+                          required></textarea>
+
+                <!-- Variable Helper -->
+                <div class="variables-help">
+                    <div class="title">
+                        <i class="bi bi-magic"></i> Available Variables (click to insert)
+                    </div>
+                    <div class="variable-chips">
+                        <span class="variable-chip" onclick="insertVariable('{{customer_name}}')">
+                            {{customer_name}}
+                        </span>
+                        <span class="variable-chip" onclick="insertVariable('{{first_name}}')">
+                            {{first_name}}
+                        </span>
+                        <span class="variable-chip" onclick="insertVariable('{{last_name}}')">
+                            {{last_name}}
+                        </span>
+                        <span class="variable-chip" onclick="insertVariable('{{email}}')">
+                            {{email}}
+                        </span>
+                        <span class="variable-chip" onclick="insertVariable('{{phone}}')">
+                            {{phone}}
+                        </span>
+                        <span class="variable-chip" onclick="insertVariable('{{points}}')">
+                            {{points}}
+                        </span>
+                        <span class="variable-chip" onclick="insertVariable('{{business_name}}')">
+                            {{business_name}}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" onclick="history.back()">
+                    <i class="bi bi-x-circle"></i> Cancel
+                </button>
+                <button type="submit" class="btn-primary">
+                    <i class="bi bi-send-fill"></i> Send Message
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Load template content
+function loadTemplate(templateId) {
+    if (!templateId) {
+        document.getElementById('subject').value = '';
+        document.getElementById('body').value = '';
+        return;
+    }
+
+    const select = document.getElementById('template');
+    const option = select.options[select.selectedIndex];
+    
+    document.getElementById('subject').value = option.dataset.subject;
+    document.getElementById('body').value = option.dataset.body;
+}
+
+// Insert variable at cursor position
+function insertVariable(variable) {
+    const textarea = document.getElementById('body');
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    
+    textarea.value = text.substring(0, start) + variable + text.substring(end);
+    textarea.selectionStart = textarea.selectionEnd = start + variable.length;
+    textarea.focus();
+}
+
+// Form validation
+document.getElementById('composeForm').addEventListener('submit', function(e) {
+    const receiver = document.getElementById('receiver').value;
+    const subject = document.getElementById('subject').value;
+    const body = document.getElementById('body').value;
+
+    if (!receiver || !subject || !body) {
+        e.preventDefault();
+        alert('Please fill in all required fields.');
+    }
+});
+</script>
+{% endblock %}

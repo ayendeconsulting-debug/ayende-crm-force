@@ -10,9 +10,11 @@ from django.core.paginator import Paginator
 from django.db.models import Q, Count
 from django.http import JsonResponse
 from django.utils import timezone
+from django.contrib import messages as django_messages
 
 from .models import Notification, NotificationRecipient
 from .forms import NotificationComposeForm
+from .models import Message, MessageTemplate
 from customers.models import TenantCustomer
 
 
@@ -502,3 +504,457 @@ def get_unread_count(request):
         'success': True,
         'unread_count': unread_count
     })
+    
+    # ============================================
+   # ENHANCED COMMUNICATION VIEWS
+   # Staff inbox, messaging, templates
+   # ============================================
+   
+@login_required(login_url='dashboard:login')
+def staff_inbox(request):
+    """
+    Staff inbox to view messages from customers.
+    Shows customer_to_business messages.
+    """
+    tenant = getattr(request, 'tenant', None)
+    
+    if not tenant:
+        django_messages.error(request, 'Unable to load inbox.')
+        return redirect('dashboard:home')
+    
+    # Verify permissions - only staff can access
+    tenant_customer = request.user
+    if not tenant_customer.is_staff_member:
+        django_messages.error(request, 'You do not have permission to access staff inbox.')
+        return redirect('dashboard:home')
+    
+    # Get all customer messages to this business
+    messages_list = Message.objects.filter(
+        tenant=tenant,
+        message_type='customer_to_business'
+    ).select_related('sender').order_by('-created_at')
+    
+    # Filter by status
+    status_filter = request.GET.get('status', '')
+    if status_filter == 'unread':
+        messages_list = messages_list.filter(status__in=['sent', 'delivered'])
+    elif status_filter == 'read':
+        messages_list = messages_list.filter(status='read')
+    elif status_filter == 'archived':
+        messages_list = messages_list.filter(status='archived')
+    
+    # Filter by priority
+    priority_filter = request.GET.get('priority', '')
+    if priority_filter:
+        messages_list = messages_list.filter(priority=priority_filter)
+    
+    # Search
+    search_query = request.GET.get('search', '')
+    if search_query:
+        messages_list = messages_list.filter(
+            Q(subject__icontains=search_query) |
+            Q(body__icontains=search_query) |
+            Q(sender__first_name__icontains=search_query) |
+            Q(sender__last_name__icontains=search_query)
+        )
+    
+    # Pagination
+    paginator = Paginator(messages_list, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Statistics
+    unread_count = Message.objects.filter(
+        tenant=tenant,
+        message_type='customer_to_business',
+        status__in=['sent', 'delivered']
+    ).count()
+    
+    total_messages = Message.objects.filter(
+        tenant=tenant,
+        message_type='customer_to_business'
+    ).count()
+    
+    urgent_count = Message.objects.filter(
+        tenant=tenant,
+        message_type='customer_to_business',
+        priority='urgent',
+        status__in=['sent', 'delivered']
+    ).count()
+    
+    context = {
+        'tenant': tenant,
+        'tenant_customer': tenant_customer,
+        'is_business_view': True,
+        'messages': page_obj,
+        'unread_count': unread_count,
+        'total_messages': total_messages,
+        'urgent_count': urgent_count,
+        'status_filter': status_filter,
+        'priority_filter': priority_filter,
+        'search_query': search_query,
+    }
+    
+    return render(request, 'notifications/staff_inbox.html', context)
+
+
+@login_required(login_url='dashboard:login')
+def staff_message_detail(request, message_id):
+    """
+    Staff view a specific message from customer.
+    Shows full conversation thread.
+    """
+    tenant = getattr(request, 'tenant', None)
+    
+    if not tenant:
+        django_messages.error(request, 'Unable to load message.')
+        return redirect('dashboard:home')
+    
+    tenant_customer = request.user
+    if not tenant_customer.is_staff_member:
+        django_messages.error(request, 'Access denied.')
+        return redirect('dashboard:home')
+    
+    # Get message
+    message = get_object_or_404(
+        Message,
+        id=message_id,
+        tenant=tenant
+    )
+    
+    # Mark as read if unread
+    if message.is_unread:
+        message.mark_as_read()
+    
+    # Get conversation thread
+    conversation = message.get_conversation_thread()
+    
+    context = {
+        'tenant': tenant,
+        'tenant_customer': tenant_customer,
+        'is_business_view': True,
+        'message': message,
+        'conversation': conversation,
+    }
+    
+    return render(request, 'notifications/staff_message_detail.html', context)
+
+
+# ==============================================
+# MESSAGE COMPOSITION VIEWS (Staff Send Messages)
+# ==============================================
+
+@login_required(login_url='dashboard:login')
+def compose_message(request):
+    """
+    Staff compose message to send to customer.
+    Can use templates.
+    """
+    tenant = getattr(request, 'tenant', None)
+    
+    if not tenant:
+        django_messages.error(request, 'Unable to compose message.')
+        return redirect('dashboard:home')
+    
+    tenant_customer = request.user
+    if not tenant_customer.is_staff_member:
+        django_messages.error(request, 'Access denied.')
+        return redirect('dashboard:home')
+    
+    if request.method == 'POST':
+        receiver_id = request.POST.get('receiver')
+        subject = request.POST.get('subject')
+        body = request.POST.get('body')
+        priority = request.POST.get('priority', 'normal')
+        template_id = request.POST.get('template')
+        
+        # Validate
+        if not receiver_id or not subject or not body:
+            django_messages.error(request, 'Please fill in all required fields.')
+            return redirect('notifications:compose_message')
+        
+        try:
+            receiver = TenantCustomer.objects.get(
+                id=receiver_id,
+                tenant=tenant,
+                role='customer'
+            )
+        except TenantCustomer.DoesNotExist:
+            django_messages.error(request, 'Invalid recipient.')
+            return redirect('notifications:compose_message')
+        
+        # Create message
+        message = Message.objects.create(
+            tenant=tenant,
+            sender=tenant_customer,
+            receiver=receiver,
+            message_type='business_to_customer',
+            subject=subject,
+            body=body,
+            priority=priority,
+            status='sent',
+            sent_at=timezone.now()
+        )
+        
+        # If template was used, link it and increment usage
+        if template_id:
+            try:
+                template = MessageTemplate.objects.get(id=template_id, tenant=tenant)
+                message.template_used = template
+                message.save()
+                template.increment_usage()
+            except MessageTemplate.DoesNotExist:
+                pass
+        
+        django_messages.success(
+            request,
+            f'Message sent successfully to {receiver.first_name} {receiver.last_name}!'
+        )
+        return redirect('notifications:staff_inbox')
+    
+    # GET request - show form
+    # Get all customers for this tenant
+    customers = TenantCustomer.objects.filter(
+        tenant=tenant,
+        role='customer',
+        is_active=True
+    ).order_by('first_name', 'last_name')
+    
+    # Get active templates
+    templates = MessageTemplate.objects.filter(
+        tenant=tenant,
+        is_active=True
+    ).order_by('name')
+    
+    context = {
+        'tenant': tenant,
+        'tenant_customer': tenant_customer,
+        'is_business_view': True,
+        'customers': customers,
+        'templates': templates,
+    }
+    
+    return render(request, 'notifications/compose_message.html', context)
+
+
+@login_required(login_url='dashboard:login')
+def reply_to_message(request, message_id):
+    """
+    Staff reply to a customer message.
+    Creates threaded conversation.
+    """
+    tenant = getattr(request, 'tenant', None)
+    
+    if not tenant:
+        return JsonResponse({'success': False, 'error': 'Invalid tenant'})
+    
+    tenant_customer = request.user
+    if not tenant_customer.is_staff_member:
+        return JsonResponse({'success': False, 'error': 'Access denied'})
+    
+    if request.method == 'POST':
+        # Get original message
+        try:
+            original_message = Message.objects.get(
+                id=message_id,
+                tenant=tenant
+            )
+        except Message.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Message not found'})
+        
+        reply_body = request.POST.get('reply_body')
+        if not reply_body:
+            return JsonResponse({'success': False, 'error': 'Reply cannot be empty'})
+        
+        # Create reply message
+        reply = Message.objects.create(
+            tenant=tenant,
+            sender=tenant_customer,
+            receiver=original_message.sender,  # Reply to original sender
+            message_type='business_to_customer',
+            subject=f"Re: {original_message.subject}",
+            body=reply_body,
+            parent_message=original_message,  # Link to parent
+            status='sent',
+            sent_at=timezone.now()
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Reply sent successfully',
+            'reply_id': str(reply.id)
+        })
+    
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+
+# ==============================================
+# MESSAGE TEMPLATE VIEWS
+# ==============================================
+
+@login_required(login_url='dashboard:login')
+def template_library(request):
+    """
+    Staff view and manage message templates.
+    """
+    tenant = getattr(request, 'tenant', None)
+    
+    if not tenant:
+        django_messages.error(request, 'Unable to load templates.')
+        return redirect('dashboard:home')
+    
+    tenant_customer = request.user
+    if not tenant_customer.is_staff_member:
+        django_messages.error(request, 'Access denied.')
+        return redirect('dashboard:home')
+    
+    # Get all templates for this tenant
+    templates = MessageTemplate.objects.filter(
+        tenant=tenant
+    ).order_by('-times_used', 'name')
+    
+    # Filter by type
+    type_filter = request.GET.get('type', '')
+    if type_filter:
+        templates = templates.filter(template_type=type_filter)
+    
+    # Filter by status
+    status_filter = request.GET.get('status', '')
+    if status_filter == 'active':
+        templates = templates.filter(is_active=True)
+    elif status_filter == 'inactive':
+        templates = templates.filter(is_active=False)
+    
+    # Statistics
+    total_templates = templates.count()
+    most_used = templates.first() if templates.exists() else None
+    
+    context = {
+        'tenant': tenant,
+        'tenant_customer': tenant_customer,
+        'is_business_view': True,
+        'templates': templates,
+        'type_filter': type_filter,
+        'status_filter': status_filter,
+        'total_templates': total_templates,
+        'most_used': most_used,
+    }
+    
+    return render(request, 'notifications/template_library.html', context)
+
+
+@login_required(login_url='dashboard:login')
+def create_template(request):
+    """
+    Staff create new message template.
+    """
+    tenant = getattr(request, 'tenant', None)
+    
+    if not tenant:
+        django_messages.error(request, 'Unable to create template.')
+        return redirect('dashboard:home')
+    
+    tenant_customer = request.user
+    if not tenant_customer.is_staff_member:
+        django_messages.error(request, 'Access denied.')
+        return redirect('dashboard:home')
+    
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        template_type = request.POST.get('template_type')
+        subject = request.POST.get('subject')
+        body = request.POST.get('body')
+        
+        if not all([name, template_type, subject, body]):
+            django_messages.error(request, 'Please fill in all required fields.')
+            return redirect('notifications:create_template')
+        
+        # Create template
+        template = MessageTemplate.objects.create(
+            tenant=tenant,
+            created_by=tenant_customer,
+            name=name,
+            template_type=template_type,
+            subject=subject,
+            body=body,
+            is_active=True
+        )
+        
+        django_messages.success(request, f'Template "{name}" created successfully!')
+        return redirect('notifications:template_library')
+    
+    # GET - show form
+    context = {
+        'tenant': tenant,
+        'tenant_customer': tenant_customer,
+        'is_business_view': True,
+        'available_variables': [
+            '{{customer_name}}',
+            '{{first_name}}',
+            '{{last_name}}',
+            '{{email}}',
+            '{{phone}}',
+            '{{points}}',
+            '{{business_name}}',
+        ]
+    }
+    
+    return render(request, 'notifications/create_template.html', context)
+
+
+# ==============================================
+# AJAX API ENDPOINTS
+# ==============================================
+
+@login_required(login_url='dashboard:login')
+def get_template_content(request, template_id):
+    """
+    AJAX: Get template content for preview/use.
+    """
+    tenant = getattr(request, 'tenant', None)
+    
+    if not tenant:
+        return JsonResponse({'success': False, 'error': 'Invalid tenant'})
+    
+    try:
+        template = MessageTemplate.objects.get(
+            id=template_id,
+            tenant=tenant
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'subject': template.subject,
+            'body': template.body,
+            'variables': template.available_variables
+        })
+    except MessageTemplate.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Template not found'})
+
+
+@login_required(login_url='dashboard:login')
+def archive_message(request, message_id):
+    """
+    AJAX: Archive a message.
+    """
+    tenant = getattr(request, 'tenant', None)
+    
+    if not tenant:
+        return JsonResponse({'success': False, 'error': 'Invalid tenant'})
+    
+    tenant_customer = request.user
+    if not tenant_customer.is_staff_member:
+        return JsonResponse({'success': False, 'error': 'Access denied'})
+    
+    try:
+        message = Message.objects.get(
+            id=message_id,
+            tenant=tenant
+        )
+        message.status = 'archived'
+        message.save()
+        
+        return JsonResponse({'success': True})
+    except Message.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Message not found'})
+
