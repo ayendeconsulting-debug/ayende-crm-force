@@ -306,7 +306,49 @@ class TenantSettings(models.Model):
         blank=True,
         help_text='Business operating hours'
     )
+    # Automated Messaging Settings
+    # Welcome Messages
+    welcome_bonus_enabled = models.BooleanField(
+        default=True,
+        help_text='Send automated welcome message to new customers'
+    )
+    welcome_bonus_points = models.IntegerField(
+        default=100,
+        help_text='Bonus loyalty points awarded on registration'
+    )
     
+    # Birthday Messages
+    birthday_bonus_enabled = models.BooleanField(
+        default=True,
+        help_text='Send birthday greetings to customers'
+    )
+    birthday_bonus_points = models.IntegerField(
+        default=50,
+        help_text='Bonus points awarded on birthday'
+    )
+    
+    # Loyalty Milestone Messages
+    loyalty_milestone_enabled = models.BooleanField(
+        default=True,
+        help_text='Send congratulations messages on loyalty milestones'
+    )
+    loyalty_milestones = models.JSONField(
+        default=list,
+        blank=True,
+        help_text='Point thresholds for milestone messages (e.g., [100, 500, 1000, 2500, 5000])'
+    )
+    
+    # Large Purchase Messages
+    large_purchase_enabled = models.BooleanField(
+        default=True,
+        help_text='Send thank you message for large purchases'
+    )
+    large_purchase_threshold = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=100.00,
+        help_text='Minimum purchase amount to trigger thank you message'
+    )
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
