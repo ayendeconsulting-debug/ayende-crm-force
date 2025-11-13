@@ -214,35 +214,30 @@
                 <h1><i class="bi bi-file-text"></i> Message Templates</h1>
                 <p class="mb-0">Create and manage reusable message templates</p>
             </div>
-            <button class="create-btn" onclick="location.href='{% url 'notifications:create_template' %}'">
+            <a href="{% url 'notifications:create_template' %}" class="create-btn" style="text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
                 <i class="bi bi-plus-circle"></i>
                 Create Template
-            </button>
+            </a>
         </div>
     </div>
 
     <div class="templates-content">
         <div class="filter-tabs">
-            <button class="filter-tab {% if not type_filter %}active{% endif %}"
-                    onclick="location.href='{% url 'notifications:template_library' %}'">
+            <a href="{% url 'notifications:template_library' %}" class="filter-tab {% if not type_filter %}active{% endif %}" style="text-decoration: none;">
                 All Templates
-            </button>
-            <button class="filter-tab {% if type_filter == 'welcome' %}active{% endif %}"
-                    onclick="location.href='?type=welcome'">
+            </a>
+            <a href="?type=welcome" class="filter-tab {% if type_filter == 'welcome' %}active{% endif %}" style="text-decoration: none;">
                 Welcome
-            </button>
-            <button class="filter-tab {% if type_filter == 'promotion' %}active{% endif %}"
-                    onclick="location.href='?type=promotion'">
+            </a>
+            <a href="?type=promotion" class="filter-tab {% if type_filter == 'promotion' %}active{% endif %}" style="text-decoration: none;">
                 Promotional
-            </button>
-            <button class="filter-tab {% if type_filter == 'birthday' %}active{% endif %}"
-                    onclick="location.href='?type=birthday'">
+            </a>
+            <a href="?type=birthday" class="filter-tab {% if type_filter == 'birthday' %}active{% endif %}" style="text-decoration: none;">
                 Birthday
-            </button>
-            <button class="filter-tab {% if type_filter == 'custom' %}active{% endif %}"
-                    onclick="location.href='?type=custom'">
+            </a>
+            <a href="?type=custom" class="filter-tab {% if type_filter == 'custom' %}active{% endif %}" style="text-decoration: none;">
                 Custom
-            </button>
+            </a>
         </div>
 
         <div class="templates-grid">
@@ -289,9 +284,9 @@
                     <i class="bi bi-file-text"></i>
                     <h3>No templates yet</h3>
                     <p>Create your first message template to get started!</p>
-                    <button class="btn btn-primary" onclick="location.href='{% url 'notifications:create_template' %}'">
+                    <a href="{% url 'notifications:create_template' %}" class="btn btn-primary" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
                         <i class="bi bi-plus-circle"></i> Create Template
-                    </button>
+                    </a>
                 </div>
             {% endif %}
         </div>

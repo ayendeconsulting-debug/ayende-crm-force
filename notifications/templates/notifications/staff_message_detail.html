@@ -1,21 +1,31 @@
-{% extends 'dashboard/business_base.html' %}
+{% extends 'dashboard/base.html' %}
 {% load static %}
 
-{% block title %}{{ message.subject }} - {{ tenant.name }}{% endblock %}
+{% block title %}Message Templates - {{ tenant.name }}{% endblock %}
 
 {% block extra_css %}
 <style>
-    .message-detail-container {
+    .templates-container {
         background: #1a1f2e;
         min-height: calc(100vh - 100px);
         padding: 2rem;
     }
 
-    .message-header-bar {
-        background: #252b3b;
+    .templates-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         border-radius: 16px;
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        color: white;
+    }
+
+    .templates-header h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .header-actions {
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -23,29 +33,133 @@
         gap: 1rem;
     }
 
-    .back-btn {
-        background: #334155;
+    .create-btn {
+        background: rgba(255, 255, 255, 0.2);
         color: white;
-        border: none;
-        padding: 0.5rem 1rem;
-        border-radius: 8px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        padding: 0.75rem 2rem;
+        border-radius: 12px;
+        font-weight: 600;
         cursor: pointer;
         display: flex;
         align-items: center;
         gap: 0.5rem;
         transition: all 0.3s;
+        backdrop-filter: blur(10px);
     }
 
-    .back-btn:hover {
-        background: #475569;
+    .create-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: translateY(-2px);
     }
 
-    .message-actions {
+    .templates-content {
+        background: #252b3b;
+        border-radius: 16px;
+        padding: 1.5rem;
+    }
+
+    .filter-tabs {
+        display: flex;
+        gap: 0.5rem;
+        background: #1a1f2e;
+        padding: 0.5rem;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+    }
+
+    .filter-tab {
+        padding: 0.5rem 1.5rem;
+        border-radius: 8px;
+        background: transparent;
+        color: #94a3b8;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-weight: 500;
+    }
+
+    .filter-tab.active {
+        background: #667eea;
+        color: white;
+    }
+
+    .templates-grid {
+        display: grid;
+        gap: 1.5rem;
+    }
+
+    .template-card {
+        background: #1a1f2e;
+        border-radius: 12px;
+        padding: 1.5rem;
+        transition: all 0.3s;
+        border: 2px solid transparent;
+    }
+
+    .template-card:hover {
+        border-color: #667eea;
+        transform: translateY(-2px);
+    }
+
+    .template-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        margin-bottom: 1rem;
+        gap: 1rem;
+    }
+
+    .template-name {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: white;
+    }
+
+    .template-type {
+        background: #667eea;
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .template-preview {
+        background: rgba(102, 126, 234, 0.1);
+        border-left: 4px solid #667eea;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+    }
+
+    .template-subject {
+        color: white;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .template-body {
+        color: #94a3b8;
+        font-size: 0.875rem;
+        line-height: 1.5;
+    }
+
+    .template-stats {
+        display: flex;
+        gap: 1.5rem;
+        color: #94a3b8;
+        font-size: 0.875rem;
+        margin-bottom: 1rem;
+    }
+
+    .template-actions {
         display: flex;
         gap: 0.5rem;
     }
 
-    .btn-action {
+    .btn {
         padding: 0.5rem 1rem;
         border-radius: 8px;
         border: none;
@@ -54,267 +168,138 @@
         transition: all 0.3s;
     }
 
-    .btn-archive {
-        background: #f59e0b;
+    .btn-primary {
+        background: #667eea;
         color: white;
     }
 
-    .btn-delete {
-        background: #ef4444;
+    .btn-primary:hover {
+        background: #5568d3;
+    }
+
+    .btn-secondary {
+        background: #334155;
         color: white;
     }
 
-    .message-content {
-        background: #252b3b;
-        border-radius: 16px;
-        padding: 2rem;
+    .btn-secondary:hover {
+        background: #475569;
     }
 
-    .message-meta {
-        border-bottom: 2px solid #1a1f2e;
-        padding-bottom: 1.5rem;
-        margin-bottom: 1.5rem;
-    }
-
-    .message-subject {
-        font-size: 1.75rem;
-        font-weight: 700;
-        color: white;
-        margin-bottom: 1rem;
-    }
-
-    .message-info {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1.5rem;
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
         color: #94a3b8;
-        font-size: 0.875rem;
     }
 
-    .priority-badge {
-        padding: 0.25rem 0.75rem;
-        border-radius: 12px;
-        font-size: 0.75rem;
-        font-weight: 600;
-    }
-
-    .priority-urgent {
-        background: #ef4444;
-        color: white;
-    }
-
-    .priority-high {
-        background: #f59e0b;
-        color: white;
-    }
-
-    .priority-normal {
-        background: #10b981;
-        color: white;
-    }
-
-    .conversation-thread {
-        display: flex;
-        flex-direction: column;
-        gap: 1.5rem;
-    }
-
-    .message-bubble {
-        background: #1a1f2e;
-        border-radius: 12px;
-        padding: 1.5rem;
-        position: relative;
-    }
-
-    .message-bubble.from-customer {
-        border-left: 4px solid #667eea;
-    }
-
-    .message-bubble.from-staff {
-        border-left: 4px solid #10b981;
-        margin-left: 2rem;
-    }
-
-    .message-bubble-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+    .empty-state i {
+        font-size: 4rem;
         margin-bottom: 1rem;
-    }
-
-    .sender-info {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-    }
-
-    .sender-avatar {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-weight: 700;
-    }
-
-    .sender-name {
-        color: white;
-        font-weight: 600;
-    }
-
-    .message-time {
-        color: #94a3b8;
-        font-size: 0.875rem;
-    }
-
-    .message-body {
-        color: #e2e8f0;
-        line-height: 1.6;
-        white-space: pre-wrap;
-    }
-
-    .reply-section {
-        background: #1a1f2e;
-        border-radius: 12px;
-        padding: 1.5rem;
-        margin-top: 1.5rem;
-    }
-
-    .reply-section h3 {
-        color: white;
-        margin-bottom: 1rem;
-    }
-
-    .reply-form textarea {
-        background: #252b3b;
-        border: 2px solid #334155;
-        border-radius: 12px;
-        padding: 1rem;
-        color: white;
-        width: 100%;
-        min-height: 120px;
-        resize: vertical;
-        margin-bottom: 1rem;
-    }
-
-    .reply-form textarea:focus {
-        outline: none;
-        border-color: #667eea;
-    }
-
-    .send-reply-btn {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
-        padding: 0.75rem 2rem;
-        border-radius: 12px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s;
-    }
-
-    .send-reply-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        opacity: 0.5;
     }
 
     @media (max-width: 768px) {
-        .message-detail-container {
+        .templates-container {
             padding: 1rem;
-        }
-
-        .message-bubble.from-staff {
-            margin-left: 0;
         }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="message-detail-container">
-    <div class="message-header-bar">
-        <button class="back-btn" onclick="history.back()">
-            <i class="bi bi-arrow-left"></i> Back to Inbox
-        </button>
-
-        <div class="message-actions">
-            <button class="btn-action btn-archive">
-                <i class="bi bi-archive"></i> Archive
-            </button>
-            <button class="btn-action btn-delete">
-                <i class="bi bi-trash"></i> Delete
-            </button>
+<div class="templates-container">
+    <div class="templates-header">
+        <div class="header-actions">
+            <div>
+                <h1><i class="bi bi-file-text"></i> Message Templates</h1>
+                <p class="mb-0">Create and manage reusable message templates</p>
+            </div>
+            <a href="{% url 'notifications:create_template' %}" class="create-btn" style="text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
+                <i class="bi bi-plus-circle"></i>
+                Create Template
+            </a>
         </div>
     </div>
 
-    <div class="message-content">
-        <div class="message-meta">
-            <h1 class="message-subject">
-                <i class="bi bi-envelope-open"></i> {{ message.subject }}
-            </h1>
-
-            <div class="message-info">
-                <span>
-                    <i class="bi bi-person-fill"></i> From: <strong>{{ message.sender_name }}</strong>
-                </span>
-                <span>
-                    <i class="bi bi-building"></i> To: <strong>{{ tenant.name }} Staff</strong>
-                </span>
-                {% if message.priority != 'normal' %}
-                <span class="priority-badge priority-{{ message.priority }}">
-                    <i class="bi bi-exclamation-circle"></i> {{ message.get_priority_display }}
-                </span>
-                {% endif %}
-                <span>
-                    <i class="bi bi-clock"></i> {{ message.created_at|date:"F d, Y at g:i A" }}
-                </span>
-            </div>
+    <div class="templates-content">
+        <div class="filter-tabs">
+            <a href="{% url 'notifications:template_library' %}" class="filter-tab {% if not type_filter %}active{% endif %}" style="text-decoration: none;">
+                All Templates
+            </a>
+            <a href="?type=welcome" class="filter-tab {% if type_filter == 'welcome' %}active{% endif %}" style="text-decoration: none;">
+                Welcome
+            </a>
+            <a href="?type=promotion" class="filter-tab {% if type_filter == 'promotion' %}active{% endif %}" style="text-decoration: none;">
+                Promotional
+            </a>
+            <a href="?type=birthday" class="filter-tab {% if type_filter == 'birthday' %}active{% endif %}" style="text-decoration: none;">
+                Birthday
+            </a>
+            <a href="?type=custom" class="filter-tab {% if type_filter == 'custom' %}active{% endif %}" style="text-decoration: none;">
+                Custom
+            </a>
         </div>
 
-        <div class="conversation-thread">
-            {% for msg in conversation %}
-            <div class="message-bubble {% if msg.message_type == 'customer_to_business' %}from-customer{% else %}from-staff{% endif %}">
-                <div class="message-bubble-header">
-                    <div class="sender-info">
-                        <div class="sender-avatar">
-                            {{ msg.sender.first_name|first }}{{ msg.sender.last_name|first }}
+        <div class="templates-grid">
+            {% if templates %}
+                {% for template in templates %}
+                <div class="template-card">
+                    <div class="template-card-header">
+                        <span class="template-name">{{ template.name }}</span>
+                        <span class="template-type">{{ template.get_template_type_display }}</span>
+                    </div>
+
+                    <div class="template-preview">
+                        <div class="template-subject">
+                            <i class="bi bi-envelope"></i> {{ template.subject }}
                         </div>
-                        <div>
-                            <div class="sender-name">
-                                {{ msg.sender_name }}
-                                {% if msg.message_type == 'customer_to_business' %}
-                                <span style="color: #667eea;">(Customer)</span>
-                                {% else %}
-                                <span style="color: #10b981;">(Staff)</span>
-                                {% endif %}
-                            </div>
-                            <div class="message-time">
-                                <i class="bi bi-clock"></i> {{ msg.created_at|timesince }} ago
-                            </div>
+                        <div class="template-body">
+                            {{ template.body|truncatewords:30 }}
                         </div>
                     </div>
+
+                    <div class="template-stats">
+                        <span>
+                            <i class="bi bi-graph-up"></i> Used {{ template.times_used }} times
+                        </span>
+                        {% if template.last_used_at %}
+                        <span>
+                            <i class="bi bi-clock"></i> Last used {{ template.last_used_at|timesince }} ago
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <div class="template-actions">
+                        <button class="btn btn-primary" onclick="useTemplate('{{ template.id }}')">
+                            <i class="bi bi-pencil"></i> Use Template
+                        </button>
+                        <button class="btn btn-secondary" onclick="editTemplate('{{ template.id }}')">
+                            <i class="bi bi-gear"></i> Edit
+                        </button>
+                    </div>
                 </div>
-
-                <div class="message-body">{{ msg.body }}</div>
-            </div>
-            {% endfor %}
-        </div>
-
-        <div class="reply-section">
-            <h3><i class="bi bi-reply-fill"></i> Reply to {{ message.sender.first_name }}</h3>
-            <form class="reply-form" method="post" action="{% url 'notifications:reply_to_message' message.id %}">
-                {% csrf_token %}
-                <textarea name="reply_body" 
-                          placeholder="Type your reply here..." 
-                          required></textarea>
-                <button type="submit" class="send-reply-btn">
-                    <i class="bi bi-send-fill"></i> Send Reply
-                </button>
-            </form>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <i class="bi bi-file-text"></i>
+                    <h3>No templates yet</h3>
+                    <p>Create your first message template to get started!</p>
+                    <a href="{% url 'notifications:create_template' %}" class="btn btn-primary" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
+                        <i class="bi bi-plus-circle"></i> Create Template
+                    </a>
+                </div>
+            {% endif %}
         </div>
     </div>
 </div>
+
+<script>
+function useTemplate(templateId) {
+    location.href = '{% url "notifications:compose_message" %}?template=' + templateId;
+}
+
+function editTemplate(templateId) {
+    alert('Edit functionality coming soon!');
+}
+</script>
 {% endblock %}
