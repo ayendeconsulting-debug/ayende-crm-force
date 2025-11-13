@@ -683,28 +683,35 @@ def compose_message(request):
             django_messages.error(request, 'Invalid recipient.')
             return redirect('notifications:compose_message')
         
-        # Create message
+        # ✅ FIX: Render template variables if template was used
+        template_obj = None
+        if template_id:
+            try:
+                template_obj = MessageTemplate.objects.get(id=template_id, tenant=tenant)
+                # Render template with customer data (replaces {{first_name}}, {{business_name}}, etc.)
+                subject, body = template_obj.render(receiver)
+            except MessageTemplate.DoesNotExist:
+                pass
+        # If no template, use the subject/body from form as-is
+        
+        # Create message with rendered content
         message = Message.objects.create(
             tenant=tenant,
             sender=tenant_customer,
             receiver=receiver,
             message_type='business_to_customer',
-            subject=subject,
-            body=body,
+            subject=subject,  # ✅ Now contains rendered content
+            body=body,        # ✅ Now contains rendered content
             priority=priority,
             status='sent',
             sent_at=timezone.now()
         )
         
-        # If template was used, link it and increment usage
-        if template_id:
-            try:
-                template = MessageTemplate.objects.get(id=template_id, tenant=tenant)
-                message.template_used = template
-                message.save()
-                template.increment_usage()
-            except MessageTemplate.DoesNotExist:
-                pass
+        # Link template and increment usage
+        if template_obj:
+            message.template_used = template_obj
+            message.save()
+            template_obj.increment_usage()
         
         django_messages.success(
             request,
@@ -957,4 +964,3 @@ def archive_message(request, message_id):
         return JsonResponse({'success': True})
     except Message.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Message not found'})
-
