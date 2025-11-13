@@ -521,24 +521,26 @@ def dashboard_home(request):
     ).count()
     
     # Get unread messages count (customer_to_business + business_to_customer)
+    unread_messages = 0
+    unread_notifications = 0
+    
     try:
+        from notifications.models import Message, NotificationRecipient
+        
         unread_messages = Message.objects.filter(
             tenant=tenant,
             status__in=['sent', 'delivered']
         ).filter(
             Q(sender=tenant_customer) | Q(receiver=tenant_customer) | Q(receiver__isnull=True, message_type='business_to_customer')
         ).count()
-    except:
-        unread_messages = 0
-    
-    # Get unread notifications count
-    try:
+        
         unread_notifications = NotificationRecipient.objects.filter(
             tenant_customer=tenant_customer,
             is_read=False
         ).count()
-    except:
-        unread_notifications = 0
+    except Exception as e:
+        # Models don't exist yet or other error - that's okay, default to 0
+        pass
     
     context = {
         'tenant': tenant,
