@@ -909,7 +909,7 @@ def transaction_list(request):
         'date_to': date_to,
     }
     
-    return render(request, 'dashboard/transaction_list.html', context)
+    return render(request, 'dashboard/transactions.html', context)
 
 
 @login_required
