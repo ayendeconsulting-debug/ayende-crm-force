@@ -1,0 +1,248 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Send Message - {{ tenant.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Theme Support */
+    :root[data-theme="light"] {
+        --bg-primary: #f8f9fa;
+        --bg-secondary: #ffffff;
+        --text-primary: #2c3e50;
+        --text-secondary: #6c757d;
+        --border-color: #dee2e6;
+    }
+
+    :root[data-theme="dark"] {
+        --bg-primary: #1a1f2e;
+        --bg-secondary: #252b3b;
+        --text-primary: #ffffff;
+        --text-secondary: #94a3b8;
+        --border-color: #334155;
+    }
+
+    body {
+        background-color: var(--bg-primary) !important;
+        color: var(--text-primary) !important;
+    }
+
+    .compose-container {
+        max-width: 800px;
+        margin: 2rem auto;
+    }
+
+    .compose-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 16px 16px 0 0;
+        text-align: center;
+    }
+
+    .compose-header h2 {
+        margin: 0 0 0.5rem 0;
+        font-weight: 700;
+    }
+
+    .compose-form {
+        background: var(--bg-secondary);
+        padding: 2rem;
+        border-radius: 0 0 16px 16px;
+    }
+
+    .form-label {
+        color: var(--text-primary);
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control, .form-select {
+        background: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        color: var(--text-primary);
+        border-radius: 8px;
+        padding: 0.75rem;
+    }
+
+    .form-control:focus, .form-select:focus {
+        background: var(--bg-primary);
+        border-color: #667eea;
+        color: var(--text-primary);
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+
+    .form-select option {
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        border-radius: 8px;
+        transition: all 0.3s;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .help-text {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        margin-top: 0.5rem;
+    }
+
+    .priority-info {
+        background: var(--bg-primary);
+        padding: 1rem;
+        border-radius: 8px;
+        border-left: 4px solid #667eea;
+        margin-bottom: 1.5rem;
+    }
+
+    .priority-info h6 {
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+    }
+
+    .priority-info ul {
+        margin: 0;
+        padding-left: 1.5rem;
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+    }
+
+    @media (max-width: 768px) {
+        .compose-container {
+            margin: 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="compose-container">
+    <!-- Back Button -->
+    <div class="mb-3">
+        <a href="{% url 'dashboard:customer_messages' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Messages
+        </a>
+    </div>
+
+    <!-- Compose Card -->
+    <div class="card border-0 shadow">
+        <!-- Header -->
+        <div class="compose-header">
+            <h2><i class="bi bi-pencil-square"></i> Send Message to {{ tenant.name }}</h2>
+            <p class="mb-0">We typically respond within 24 hours</p>
+        </div>
+
+        <!-- Form -->
+        <div class="compose-form">
+            <!-- Priority Information -->
+            <div class="priority-info">
+                <h6><i class="bi bi-info-circle"></i> Message Priority</h6>
+                <ul>
+                    <li><strong>Normal:</strong> General inquiries (24-48 hour response)</li>
+                    <li><strong>High:</strong> Important matters (12-24 hour response)</li>
+                    <li><strong>Urgent:</strong> Time-sensitive issues (respond ASAP)</li>
+                </ul>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+                
+                <!-- Subject -->
+                <div class="mb-3">
+                    <label for="subject" class="form-label">
+                        <i class="bi bi-chat-square-text"></i> Subject *
+                    </label>
+                    <input 
+                        type="text" 
+                        name="subject" 
+                        id="subject" 
+                        class="form-control" 
+                        placeholder="What is this message about?"
+                        required
+                        maxlength="255">
+                    <div class="help-text">Brief summary of your message (max 255 characters)</div>
+                </div>
+
+                <!-- Priority -->
+                <div class="mb-3">
+                    <label for="priority" class="form-label">
+                        <i class="bi bi-flag"></i> Priority
+                    </label>
+                    <select name="priority" id="priority" class="form-select">
+                        <option value="normal" selected>Normal - General inquiry</option>
+                        <option value="high">High - Important matter</option>
+                        <option value="urgent">Urgent - Time-sensitive</option>
+                    </select>
+                </div>
+
+                <!-- Message Body -->
+                <div class="mb-3">
+                    <label for="body" class="form-label">
+                        <i class="bi bi-textarea-t"></i> Message *
+                    </label>
+                    <textarea 
+                        name="body" 
+                        id="body" 
+                        class="form-control" 
+                        rows="10" 
+                        placeholder="Type your message here... Be as detailed as possible to help us assist you better."
+                        required></textarea>
+                    <div class="help-text">Provide as much detail as possible</div>
+                </div>
+
+                <!-- Submit Buttons -->
+                <div class="d-flex gap-2 flex-wrap">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-send"></i> Send Message
+                    </button>
+                    <a href="{% url 'dashboard:customer_messages' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Contact Info Card -->
+    <div class="card mt-3">
+        <div class="card-body text-center">
+            <h6><i class="bi bi-telephone"></i> Need Immediate Assistance?</h6>
+            <p class="mb-0 text-muted">
+                For urgent matters, you can also reach us at:<br>
+                <strong>{{ tenant.email|default:'Contact us directly' }}</strong>
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+// Load theme preference
+document.addEventListener('DOMContentLoaded', function() {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+});
+
+// Character counter for subject
+document.getElementById('subject').addEventListener('input', function() {
+    const maxLength = 255;
+    const currentLength = this.value.length;
+    const helpText = this.nextElementSibling;
+    helpText.textContent = `${currentLength}/${maxLength} characters`;
+    
+    if (currentLength > maxLength - 50) {
+        helpText.style.color = '#f59e0b';
+    } else {
+        helpText.style.color = '';
+    }
+});
+</script>
+{% endblock %}

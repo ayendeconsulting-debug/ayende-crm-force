@@ -1,0 +1,262 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}{{ notification.title }} - {{ tenant.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Theme Support */
+    :root[data-theme="light"] {
+        --bg-primary: #f8f9fa;
+        --bg-secondary: #ffffff;
+        --text-primary: #2c3e50;
+        --text-secondary: #6c757d;
+        --border-color: #dee2e6;
+    }
+
+    :root[data-theme="dark"] {
+        --bg-primary: #1a1f2e;
+        --bg-secondary: #252b3b;
+        --text-primary: #ffffff;
+        --text-secondary: #94a3b8;
+        --border-color: #334155;
+    }
+
+    body {
+        background-color: var(--bg-primary) !important;
+        color: var(--text-primary) !important;
+    }
+
+    .notification-container {
+        max-width: 800px;
+        margin: 2rem auto;
+    }
+
+    .notification-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 16px 16px 0 0;
+    }
+
+    .notification-header h2 {
+        margin: 0 0 1rem 0;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .notification-meta {
+        display: flex;
+        gap: 2rem;
+        flex-wrap: wrap;
+        opacity: 0.95;
+        font-size: 0.95rem;
+    }
+
+    .notification-body {
+        background: var(--bg-secondary);
+        padding: 2rem;
+        border-radius: 0 0 16px 16px;
+    }
+
+    .notification-message {
+        color: var(--text-primary);
+        line-height: 1.8;
+        font-size: 1.05rem;
+        white-space: pre-wrap;
+    }
+
+    .category-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .category-promotion {
+        background: #10b981;
+        color: white;
+    }
+
+    .category-announcement {
+        background: #3b82f6;
+        color: white;
+    }
+
+    .category-birthday {
+        background: #f59e0b;
+        color: white;
+    }
+
+    .category-reminder {
+        background: #8b5cf6;
+        color: white;
+    }
+
+    .category-alert {
+        background: #ef4444;
+        color: white;
+    }
+
+    .category-update {
+        background: #06b6d4;
+        color: white;
+    }
+
+    .priority-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+
+    .priority-urgent {
+        background: #ef4444;
+        color: white;
+    }
+
+    .priority-high {
+        background: #f59e0b;
+        color: white;
+    }
+
+    .notification-notes {
+        background: var(--bg-primary);
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin-top: 2rem;
+        border-left: 4px solid #667eea;
+    }
+
+    .notification-notes h6 {
+        color: var(--text-primary);
+        margin-bottom: 0.75rem;
+    }
+
+    .notification-notes p {
+        color: var(--text-secondary);
+        margin: 0;
+        font-size: 0.95rem;
+    }
+
+    @media (max-width: 768px) {
+        .notification-container {
+            margin: 1rem;
+        }
+
+        .notification-header h2 {
+            font-size: 1.5rem;
+        }
+
+        .notification-meta {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="notification-container">
+    <!-- Back Button -->
+    <div class="mb-3">
+        <a href="{% url 'dashboard:customer_notifications' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Notifications
+        </a>
+    </div>
+
+    <!-- Notification Card -->
+    <div class="card border-0 shadow">
+        <!-- Header -->
+        <div class="notification-header">
+            <h2>
+                {% if notification.category == 'promotion' %}
+                    <i class="bi bi-tag"></i>
+                {% elif notification.category == 'announcement' %}
+                    <i class="bi bi-megaphone"></i>
+                {% elif notification.category == 'birthday' %}
+                    <i class="bi bi-cake2"></i>
+                {% elif notification.category == 'reminder' %}
+                    <i class="bi bi-alarm"></i>
+                {% elif notification.category == 'alert' %}
+                    <i class="bi bi-exclamation-triangle"></i>
+                {% elif notification.category == 'update' %}
+                    <i class="bi bi-arrow-repeat"></i>
+                {% else %}
+                    <i class="bi bi-bell"></i>
+                {% endif %}
+                {{ notification.title }}
+            </h2>
+            
+            <div class="notification-meta">
+                <span>
+                    <i class="bi bi-calendar"></i>
+                    {{ notification_recipient.delivered_at|date:"F d, Y \a\t h:i A" }}
+                </span>
+                <span>
+                    <i class="bi bi-building"></i>
+                    From {{ tenant.name }}
+                </span>
+                {% if notification.priority != 'normal' %}
+                <span class="priority-badge priority-{{ notification.priority }}">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    {{ notification.get_priority_display }} Priority
+                </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Body -->
+        <div class="notification-body">
+            <div class="mb-3">
+                <span class="category-badge category-{{ notification.category }}">
+                    {{ notification.get_category_display }}
+                </span>
+            </div>
+
+            <div class="notification-message">
+                {{ notification.message }}
+            </div>
+
+            {% if notification.notes %}
+            <div class="notification-notes">
+                <h6><i class="bi bi-info-circle"></i> Additional Information</h6>
+                <p>{{ notification.notes }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="d-flex gap-2 mt-3 flex-wrap">
+        <a href="{% url 'dashboard:customer_notifications' %}" class="btn btn-primary">
+            <i class="bi bi-arrow-left"></i> Back to Notifications
+        </a>
+        <a href="{% url 'dashboard:compose_message_business' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-reply"></i> Reply to {{ tenant.name }}
+        </a>
+    </div>
+
+    <!-- Business Contact -->
+    <div class="card mt-3">
+        <div class="card-body text-center">
+            <h6>Questions about this notification?</h6>
+            <p class="mb-0 text-muted">
+                <i class="bi bi-envelope"></i> Contact us at {{ tenant.email|default:'our support team' }}
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+// Load theme preference
+document.addEventListener('DOMContentLoaded', function() {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+});
+</script>
+{% endblock %}

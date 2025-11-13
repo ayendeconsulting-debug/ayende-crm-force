@@ -1,0 +1,282 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}{{ message.subject }} - {{ tenant.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Theme Support */
+    :root[data-theme="light"] {
+        --bg-primary: #f8f9fa;
+        --bg-secondary: #ffffff;
+        --text-primary: #2c3e50;
+        --text-secondary: #6c757d;
+        --border-color: #dee2e6;
+    }
+
+    :root[data-theme="dark"] {
+        --bg-primary: #1a1f2e;
+        --bg-secondary: #252b3b;
+        --text-primary: #ffffff;
+        --text-secondary: #94a3b8;
+        --border-color: #334155;
+    }
+
+    body {
+        background-color: var(--bg-primary) !important;
+        color: var(--text-primary) !important;
+    }
+
+    .message-container {
+        max-width: 900px;
+        margin: 2rem auto;
+    }
+
+    .message-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 16px 16px 0 0;
+    }
+
+    .message-header h2 {
+        margin: 0 0 0.5rem 0;
+        font-weight: 700;
+    }
+
+    .message-meta {
+        display: flex;
+        gap: 2rem;
+        flex-wrap: wrap;
+        opacity: 0.95;
+    }
+
+    .conversation-thread {
+        background: var(--bg-secondary);
+        border-radius: 0 0 16px 16px;
+        padding: 0;
+    }
+
+    .message-item {
+        padding: 2rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .message-item:last-child {
+        border-bottom: none;
+    }
+
+    .message-sender {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .sender-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 1.25rem;
+    }
+
+    .sender-info {
+        flex: 1;
+    }
+
+    .sender-name {
+        font-weight: 600;
+        font-size: 1.1rem;
+        color: var(--text-primary);
+    }
+
+    .sender-time {
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+    }
+
+    .message-body {
+        color: var(--text-primary);
+        line-height: 1.6;
+        margin-left: 66px;
+        white-space: pre-wrap;
+    }
+
+    .reply-form {
+        background: var(--bg-primary);
+        padding: 2rem;
+        border-radius: 12px;
+        margin-top: 2rem;
+    }
+
+    .form-control {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        color: var(--text-primary);
+        border-radius: 8px;
+    }
+
+    .form-control:focus {
+        background: var(--bg-secondary);
+        border-color: #667eea;
+        color: var(--text-primary);
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        border-radius: 8px;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .priority-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .priority-urgent {
+        background: #ef4444;
+        color: white;
+    }
+
+    .priority-high {
+        background: #f59e0b;
+        color: white;
+    }
+
+    @media (max-width: 768px) {
+        .message-container {
+            margin: 1rem;
+        }
+
+        .message-body {
+            margin-left: 0;
+            margin-top: 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="message-container">
+    <!-- Back Button -->
+    <div class="mb-3">
+        <a href="{% url 'dashboard:customer_messages' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Messages
+        </a>
+    </div>
+
+    <!-- Message Card -->
+    <div class="card border-0 shadow">
+        <!-- Message Header -->
+        <div class="message-header">
+            <h2><i class="bi bi-chat-square-text"></i> {{ message.subject }}</h2>
+            <div class="message-meta">
+                <span>
+                    <i class="bi bi-calendar"></i>
+                    {{ message.created_at|date:"F d, Y \a\t h:i A" }}
+                </span>
+                {% if message.priority != 'normal' %}
+                <span class="priority-badge priority-{{ message.priority }}">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    {{ message.get_priority_display }} Priority
+                </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Conversation Thread -->
+        <div class="conversation-thread">
+            {% for msg in conversation %}
+            <div class="message-item">
+                <div class="message-sender">
+                    <div class="sender-avatar">
+                        {% if msg.sender.first_name %}
+                            {{ msg.sender.first_name|first }}{{ msg.sender.last_name|first }}
+                        {% else %}
+                            {{ tenant.name|first }}
+                        {% endif %}
+                    </div>
+                    <div class="sender-info">
+                        <div class="sender-name">
+                            {% if msg.message_type == 'business_to_customer' %}
+                                {{ tenant.name }}
+                            {% else %}
+                                {{ msg.sender.first_name }} {{ msg.sender.last_name }}
+                            {% endif %}
+                        </div>
+                        <div class="sender-time">
+                            {{ msg.created_at|date:"F d, Y \a\t h:i A" }}
+                        </div>
+                    </div>
+                </div>
+                <div class="message-body">{{ msg.body }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Reply Form -->
+    <div class="reply-form">
+        <h4 class="mb-3"><i class="bi bi-reply"></i> Reply to this message</h4>
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="mb-3">
+                <label for="reply_body" class="form-label">Your Reply</label>
+                <textarea 
+                    name="reply_body" 
+                    id="reply_body" 
+                    class="form-control" 
+                    rows="6" 
+                    placeholder="Type your message here..." 
+                    required></textarea>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-send"></i> Send Reply
+                </button>
+                <a href="{% url 'dashboard:customer_messages' %}" class="btn btn-outline-secondary">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Business Info -->
+    <div class="card mt-3">
+        <div class="card-body text-center">
+            <h6>Need More Help?</h6>
+            <p class="mb-0 text-muted">
+                <i class="bi bi-envelope"></i> {{ tenant.email|default:'Contact us' }}
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+// Load theme preference
+document.addEventListener('DOMContentLoaded', function() {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+});
+</script>
+{% endblock %}
