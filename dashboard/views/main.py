@@ -153,7 +153,7 @@ def customer_register(request):
     """
     # Redirect if already logged in
     if request.user.is_authenticated:
-        return redirect('dashboard:home')
+     return redirect('dashboard:dashboard')
     
     # Get tenant from middleware
     tenant = get_tenant_from_request(request)
@@ -379,7 +379,7 @@ def customer_login_view(request):
     """
     # Redirect if already logged in
     if request.user.is_authenticated:
-        return redirect('dashboard:home')
+        return redirect('dashboard:dashboard')
     
     # Get tenant from middleware
     tenant = get_tenant_from_request(request)
@@ -446,7 +446,7 @@ def customer_login_view(request):
                 return redirect('/reports/')
 
             # Customers go to customer dashboard
-            return redirect('dashboard:home')
+            return redirect('/dashboard/')
         else:
             messages.error(request, 'Invalid email or password.')
     
@@ -487,7 +487,7 @@ def dashboard_redirect(request):
         return redirect('/reports/')
     
     # Customers go to customer dashboard
-    return redirect('dashboard:home')
+    return redirect('/dashboard/')
 
 @login_required
 def dashboard_home(request):
@@ -870,7 +870,7 @@ def transaction_list(request):
     """
     if not TRANSACTIONS_ENABLED:
         messages.error(request, 'Transaction tracking is not enabled.')
-        return redirect('dashboard:home')
+        return redirect('/dashboard/')
     
     tenant = get_tenant_from_request(request)
     
@@ -920,7 +920,7 @@ def transaction_detail(request, transaction_id):
     """
     if not TRANSACTIONS_ENABLED:
         messages.error(request, 'Transaction tracking is not enabled.')
-        return redirect('dashboard:home')
+        return redirect('/dashboard/')
     
     tenant = get_tenant_from_request(request)
     
@@ -931,7 +931,7 @@ def transaction_detail(request, transaction_id):
     # Get transaction - ensure it belongs to this tenant and customer
     transaction = get_object_or_404(
         Transaction,
-        id=transaction_id,
+        transaction_id=transaction_id,
         tenant=tenant,
         tenant_customer=request.user
     )
