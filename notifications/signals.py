@@ -18,6 +18,10 @@ def send_welcome_message(sender, instance, created, **kwargs):
     Automatically send welcome message when new customer registers.
     Only triggers after email verification.
     """
+    # Skip if no tenant (shouldn't happen in production)
+    if not instance.tenant:
+        return
+    
     if created and instance.role == 'customer' and instance.email_verified:
         # Get or create welcome template
         template, template_created = MessageTemplate.objects.get_or_create(
@@ -67,7 +71,11 @@ def send_loyalty_milestone_message(sender, instance, created, **kwargs):
     Send congratulations message when customer reaches loyalty milestones.
     Milestones: 100, 500, 1000, 2500, 5000 points
     """
-    if not created and instance.role == 'customer':
+    # Skip if no tenant or not a customer
+    if not instance.tenant or instance.role != 'customer':
+        return
+    
+    if not created:
         milestones = [100, 500, 1000, 2500, 5000]
         current_points = instance.loyalty_points
         
@@ -127,6 +135,10 @@ def send_large_purchase_thank_you(sender, instance, created, **kwargs):
     """
     Send thank you message for large purchases (over $100).
     """
+    # Skip if no tenant or customer
+    if not instance.tenant or not instance.tenant_customer:
+        return
+    
     if created and instance.status == 'completed' and instance.total >= 100:
         if instance.tenant_customer:
             customer = instance.tenant_customer
