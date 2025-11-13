@@ -1,185 +1,425 @@
 {% extends 'dashboard/base.html' %}
 
-{% block title %}Transaction Details - {{ tenant.name }}{% endblock %}
+{% block title %}Transaction Receipt - {{ tenant.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Theme Support */
+    :root[data-theme="light"] {
+        --bg-primary: #f8f9fa;
+        --bg-secondary: #ffffff;
+        --text-primary: #2c3e50;
+        --text-secondary: #6c757d;
+        --border-color: #dee2e6;
+    }
+
+    :root[data-theme="dark"] {
+        --bg-primary: #1a1f2e;
+        --bg-secondary: #252b3b;
+        --text-primary: #ffffff;
+        --text-secondary: #94a3b8;
+        --border-color: #334155;
+    }
+
+    body {
+        background-color: var(--bg-primary) !important;
+        color: var(--text-primary) !important;
+    }
+
+    .card {
+        background-color: var(--bg-secondary) !important;
+        color: var(--text-primary) !important;
+        border: 1px solid var(--border-color) !important;
+    }
+
+    .receipt-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .receipt-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 12px 12px 0 0;
+        text-align: center;
+    }
+
+    .receipt-header h2 {
+        margin: 0;
+        font-weight: 700;
+    }
+
+    .receipt-section {
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .receipt-section:last-child {
+        border-bottom: none;
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+    }
+
+    .info-label {
+        color: var(--text-secondary);
+        font-weight: 500;
+    }
+
+    .info-value {
+        color: var(--text-primary);
+        font-weight: 600;
+    }
+
+    /* Itemized Table */
+    .items-table {
+        width: 100%;
+        margin: 1rem 0;
+    }
+
+    .items-table th {
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        padding: 12px;
+        text-align: left;
+        font-weight: 600;
+        border-bottom: 2px solid var(--border-color);
+    }
+
+    .items-table td {
+        padding: 12px;
+        border-bottom: 1px solid var(--border-color);
+        color: var(--text-primary);
+    }
+
+    .items-table tbody tr:hover {
+        background-color: var(--bg-primary);
+    }
+
+    .items-table .text-end {
+        text-align: right;
+    }
+
+    .items-table .item-name {
+        font-weight: 500;
+    }
+
+    .items-table .item-sku {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+    }
+
+    /* Financial Summary */
+    .financial-summary {
+        background-color: var(--bg-primary);
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin-top: 1rem;
+    }
+
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        font-size: 1rem;
+    }
+
+    .summary-row.total {
+        border-top: 2px solid var(--border-color);
+        margin-top: 0.5rem;
+        padding-top: 1rem;
+        font-size: 1.25rem;
+        font-weight: 700;
+    }
+
+    .summary-row.total .amount {
+        color: #10b981;
+    }
+
+    /* Status Badge */
+    .status-badge {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .status-badge.completed {
+        background: #10b981;
+        color: white;
+    }
+
+    .status-badge.pending {
+        background: #f59e0b;
+        color: white;
+    }
+
+    .status-badge.cancelled {
+        background: #ef4444;
+        color: white;
+    }
+
+    /* Print Styles */
+    @media print {
+        body {
+            background: white !important;
+        }
+        
+        .navbar, footer, .btn, .theme-toggle {
+            display: none !important;
+        }
+        
+        .card {
+            box-shadow: none !important;
+            border: 1px solid #ddd !important;
+        }
+        
+        .receipt-header {
+            background: #667eea !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .items-table {
+            font-size: 0.9rem;
+        }
+        
+        .items-table th,
+        .items-table td {
+            padding: 8px;
+        }
+        
+        .receipt-section {
+            padding: 1rem;
+        }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12 mb-3">
-        <!-- FIXED: Changed from 'dashboard:transactions' to 'dashboard:transaction_list' -->
+<div class="receipt-container">
+    <!-- Back Button -->
+    <div class="mb-3">
         <a href="{% url 'dashboard:transaction_list' %}" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left"></i> Back to Transactions
         </a>
     </div>
-</div>
 
-<div class="row">
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h4 class="mb-0">
-                    <i class="bi bi-receipt"></i> Transaction Details
-                </h4>
-            </div>
-            <div class="card-body">
-                <!-- Transaction Header -->
-                <div class="row mb-4">
-                    <div class="col-md-6">
-                        <h5>Transaction ID</h5>
-                        <p><code class="fs-5">{{ transaction.transaction_id }}</code></p>
+    <!-- Receipt Card -->
+    <div class="card">
+        <!-- Receipt Header -->
+        <div class="receipt-header">
+            <h2><i class="bi bi-receipt"></i> Transaction Receipt</h2>
+            <p class="mb-0">{{ tenant.name }}</p>
+        </div>
+
+        <!-- Transaction Info Section -->
+        <div class="receipt-section">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="info-row">
+                        <span class="info-label">Receipt #:</span>
+                        <span class="info-value">{{ transaction.receipt_number|default:transaction.transaction_id|slice:":8" }}</span>
                     </div>
-                    <div class="col-md-6 text-md-end">
-                        <h5>Status</h5>
-                        <p>
+                    <div class="info-row">
+                        <span class="info-label">Transaction ID:</span>
+                        <span class="info-value"><code>{{ transaction.transaction_id }}</code></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Date & Time:</span>
+                        <span class="info-value">{{ transaction.transaction_date|date:"F d, Y \a\t h:i A" }}</span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="info-row">
+                        <span class="info-label">Payment Method:</span>
+                        <span class="info-value">{{ transaction.get_payment_method_display }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Status:</span>
+                        <span class="info-value">
                             {% if transaction.status == 'completed' %}
-                                <span class="badge bg-success fs-6">✓ Completed</span>
+                                <span class="status-badge completed">
+                                    <i class="bi bi-check-circle"></i> Completed
+                                </span>
                             {% elif transaction.status == 'pending' %}
-                                <span class="badge bg-warning fs-6">⏳ Pending</span>
+                                <span class="status-badge pending">
+                                    <i class="bi bi-clock"></i> Pending
+                                </span>
                             {% elif transaction.status == 'cancelled' %}
-                                <span class="badge bg-danger fs-6">✗ Cancelled</span>
-                            {% elif transaction.status == 'refunded' %}
-                                <span class="badge bg-info fs-6">↩ Refunded</span>
+                                <span class="status-badge cancelled">
+                                    <i class="bi bi-x-circle"></i> Cancelled
+                                </span>
                             {% endif %}
-                        </p>
+                        </span>
                     </div>
                 </div>
+            </div>
+        </div>
 
-                <hr>
+        <!-- Itemized Products Section -->
+        <div class="receipt-section">
+            <h5><i class="bi bi-list-ul"></i> Items Purchased</h5>
+            
+            {% if transaction.items_display %}
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th style="width: 45%;">Product</th>
+                        <th style="width: 15%; text-align: center;">Qty</th>
+                        <th style="width: 20%; text-align: right;">Unit Price</th>
+                        <th style="width: 20%; text-align: right;">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in transaction.items_display %}
+                    <tr>
+                        <td>
+                            <div class="item-name">{{ item.productName }}</div>
+                            <div class="item-sku">SKU: {{ item.sku }}</div>
+                        </td>
+                        <td style="text-align: center;">{{ item.quantity }}</td>
+                        <td class="text-end">${{ item.unitPrice|floatformat:2 }}</td>
+                        <td class="text-end"><strong>${{ item.subtotal|floatformat:2 }}</strong></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> No itemized details available for this transaction.
+                <br><small class="text-muted">{{ transaction.items_description|default:"Purchase" }}</small>
+            </div>
+            {% endif %}
+        </div>
 
-                <!-- Transaction Information -->
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <p class="mb-2">
-                            <strong>Date & Time:</strong><br>
-                            {{ transaction.transaction_date|date:"F d, Y \a\t h:i A" }}
-                        </p>
-                    </div>
-                    <div class="col-md-6">
-                        <p class="mb-2">
-                            <strong>Payment Method:</strong><br>
-                            {{ transaction.get_payment_method_display }}
-                        </p>
-                    </div>
+        <!-- Financial Summary Section -->
+        <div class="receipt-section">
+            <h5><i class="bi bi-calculator"></i> Payment Summary</h5>
+            
+            <div class="financial-summary">
+                <div class="summary-row">
+                    <span>Subtotal:</span>
+                    <span class="amount">${{ transaction.amount|floatformat:2 }}</span>
                 </div>
+                
+                {% if transaction.discount > 0 %}
+                <div class="summary-row">
+                    <span>Discount:</span>
+                    <span class="amount text-success">-${{ transaction.discount|floatformat:2 }}</span>
+                </div>
+                {% endif %}
+                
+                <div class="summary-row">
+                    <span>Tax:</span>
+                    <span class="amount">${{ transaction.tax|floatformat:2 }}</span>
+                </div>
+                
+                <div class="summary-row total">
+                    <span>Total Paid:</span>
+                    <span class="amount">${{ transaction.total|floatformat:2 }}</span>
+                </div>
+            </div>
+        </div>
 
-                {% if transaction.receipt_number %}
-                <div class="row mb-3">
-                    <div class="col-12">
-                        <p class="mb-2">
-                            <strong>Receipt Number:</strong><br>
-                            {{ transaction.receipt_number }}
-                        </p>
+        <!-- Loyalty Points Section -->
+        {% if transaction.points_earned > 0 or transaction.points_redeemed > 0 %}
+        <div class="receipt-section">
+            <h5><i class="bi bi-star-fill text-warning"></i> Loyalty Points</h5>
+            
+            <div class="row">
+                {% if transaction.points_earned > 0 %}
+                <div class="col-md-6">
+                    <div class="alert alert-success mb-0">
+                        <h4><i class="bi bi-plus-circle"></i> +{{ transaction.points_earned }} Points</h4>
+                        <p class="mb-0">Points earned from this purchase</p>
                     </div>
                 </div>
                 {% endif %}
-
-                {% if transaction.description %}
-                <div class="row mb-3">
-                    <div class="col-12">
-                        <p class="mb-2">
-                            <strong>Description:</strong><br>
-                            {{ transaction.description }}
-                        </p>
+                
+                {% if transaction.points_redeemed > 0 %}
+                <div class="col-md-6">
+                    <div class="alert alert-warning mb-0">
+                        <h4><i class="bi bi-dash-circle"></i> -{{ transaction.points_redeemed }} Points</h4>
+                        <p class="mb-0">Points redeemed in this transaction</p>
                     </div>
                 </div>
                 {% endif %}
+            </div>
+        </div>
+        {% endif %}
 
-                <hr>
+        <!-- Notes Section -->
+        {% if transaction.notes %}
+        <div class="receipt-section">
+            <h5><i class="bi bi-sticky"></i> Notes</h5>
+            <p class="text-muted mb-0">{{ transaction.notes }}</p>
+        </div>
+        {% endif %}
 
-                <!-- Financial Breakdown -->
-                <div class="row">
-                    <div class="col-12">
-                        <h5 class="mb-3">Financial Breakdown</h5>
-                        <table class="table">
-                            <tbody>
-                                <tr>
-                                    <td><strong>Subtotal:</strong></td>
-                                    <td class="text-end">${{ transaction.amount|floatformat:2 }}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Tax:</strong></td>
-                                    <td class="text-end">${{ transaction.tax|floatformat:2 }}</td>
-                                </tr>
-                                <tr class="table-primary">
-                                    <td><strong>Total:</strong></td>
-                                    <td class="text-end"><strong>${{ transaction.total|floatformat:2 }}</strong></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+        <!-- Actions Section -->
+        <div class="receipt-section">
+            <div class="row">
+                <div class="col-md-6 mb-2 mb-md-0">
+                    <button class="btn btn-primary w-100" onclick="window.print()">
+                        <i class="bi bi-printer"></i> Print Receipt
+                    </button>
                 </div>
-
-                <!-- Loyalty Points -->
-                {% if transaction.points_earned > 0 or transaction.points_redeemed > 0 %}
-                <hr>
-                <div class="row">
-                    <div class="col-12">
-                        <h5 class="mb-3">Loyalty Points</h5>
-                        {% if transaction.points_earned > 0 %}
-                        <p class="mb-2">
-                            <span class="badge bg-success me-2">+{{ transaction.points_earned }}</span>
-                            Points earned from this transaction
-                        </p>
-                        {% endif %}
-                        {% if transaction.points_redeemed > 0 %}
-                        <p class="mb-2">
-                            <span class="badge bg-warning me-2">-{{ transaction.points_redeemed }}</span>
-                            Points redeemed in this transaction
-                        </p>
-                        {% endif %}
-                    </div>
+                <div class="col-md-6">
+                    <a href="mailto:{{ tenant.email|default:'support@business.com' }}?subject=Question about Transaction {{ transaction.transaction_id }}" 
+                       class="btn btn-outline-secondary w-100">
+                        <i class="bi bi-question-circle"></i> Contact Support
+                    </a>
                 </div>
-                {% endif %}
-
-                {% if transaction.notes %}
-                <hr>
-                <div class="row">
-                    <div class="col-12">
-                        <h5 class="mb-3">Notes</h5>
-                        <p class="text-muted">{{ transaction.notes }}</p>
-                    </div>
-                </div>
-                {% endif %}
             </div>
         </div>
     </div>
 
-    <!-- Sidebar -->
-    <div class="col-lg-4">
-        <!-- Quick Actions -->
-        <div class="card mb-3">
-            <div class="card-header">
-                <i class="bi bi-lightning-fill"></i> Quick Actions
-            </div>
-            <div class="card-body">
-                <button class="btn btn-outline-primary w-100 mb-2" onclick="window.print()">
-                    <i class="bi bi-printer"></i> Print Receipt
-                </button>
-                {% if transaction.status == 'completed' %}
-                <button class="btn btn-outline-secondary w-100 mb-2" onclick="alert('Please contact support for refund requests'); return false;">
-                    <i class="bi bi-arrow-repeat"></i> Request Refund
-                </button>
-                {% endif %}
-                <a href="mailto:{{ tenant.email|default:'support@business.com' }}?subject=Question about Transaction {{ transaction.transaction_id }}" 
-                   class="btn btn-outline-info w-100">
-                    <i class="bi bi-question-circle"></i> Contact Support
-                </a>
-            </div>
-        </div>
-
-        <!-- Business Info -->
-        <div class="card">
-            <div class="card-header">
-                <i class="bi bi-shop"></i> {{ tenant.name }}
-            </div>
-            <div class="card-body">
-                <p class="mb-2">
-                    <i class="bi bi-envelope"></i> {{ tenant.email|default:'info@business.com' }}
-                </p>
-                <p class="mb-0">
-                    <i class="bi bi-telephone"></i> {{ tenant.phone|default:'Contact for support' }}
-                </p>
-            </div>
+    <!-- Business Info Footer -->
+    <div class="card mt-3">
+        <div class="card-body text-center">
+            <h6>{{ tenant.name }}</h6>
+            <p class="mb-1 text-muted">
+                <i class="bi bi-envelope"></i> {{ tenant.email|default:'info@business.com' }}
+            </p>
+            <p class="mb-0 text-muted">
+                <i class="bi bi-telephone"></i> {{ tenant.phone|default:'Contact for support' }}
+            </p>
+            <hr>
+            <small class="text-muted">Thank you for your business!</small>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Load theme preference
+document.addEventListener('DOMContentLoaded', function() {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+});
+
+// Format currency values in cents to dollars
+document.addEventListener('DOMContentLoaded', function() {
+    const priceElements = document.querySelectorAll('.items-table td.text-end, .financial-summary .amount');
+    priceElements.forEach(function(element) {
+        let text = element.textContent.trim();
+        // Check if value is in cents (no decimal point and > 100)
+        if (text.startsWith('$') && !text.includes('.') && parseFloat(text.substring(1)) > 100) {
+            let cents = parseFloat(text.substring(1));
+            let dollars = (cents / 100).toFixed(2);
+            element.textContent = '$' + dollars;
+        }
+    });
+});
+</script>
 {% endblock %}

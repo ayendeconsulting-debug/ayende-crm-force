@@ -22,6 +22,10 @@ from django.contrib.auth.views import (
 )
 from django.urls import reverse_lazy
 from django.contrib.auth.forms import PasswordResetForm
+from django.utils import timezone
+from django.db import models
+from notifications.models import Message, NotificationRecipient, Notification
+from customers.authentication import get_tenant_from_request
 
 # Import forms used in views
 from dashboard.forms import (
@@ -487,25 +491,21 @@ def dashboard_redirect(request):
 
 @login_required
 def dashboard_home(request):
-
     """
-    Customer dashboard home page
-    Shows customer's transactions, loyalty points, and profile summary
+    Enhanced customer dashboard home page
+    Shows customer's transactions, loyalty points, profile summary, and unread counts
     """
     tenant = get_tenant_from_request(request)
     
-        # Platform admins should use Django admin
+    # Platform admins should use Django admin
     if getattr(request.user, 'is_platform_admin', False):
         return redirect('/admin/')
-    
-    # Rest of existing code for customers...
-    tenant = get_tenant_from_request(request)
     
     if not tenant:
         messages.error(request, 'Unable to identify business.')
         return redirect('/')
     
-     # Get TenantCustomer for current user
+    # Get TenantCustomer for current user
     tenant_customer = request.user
     
     # Get recent transactions
@@ -520,6 +520,26 @@ def dashboard_home(request):
         tenant_customer=tenant_customer
     ).count()
     
+    # Get unread messages count (customer_to_business + business_to_customer)
+    try:
+        unread_messages = Message.objects.filter(
+            tenant=tenant,
+            status__in=['sent', 'delivered']
+        ).filter(
+            Q(sender=tenant_customer) | Q(receiver=tenant_customer) | Q(receiver__isnull=True, message_type='business_to_customer')
+        ).count()
+    except:
+        unread_messages = 0
+    
+    # Get unread notifications count
+    try:
+        unread_notifications = NotificationRecipient.objects.filter(
+            tenant_customer=tenant_customer,
+            is_read=False
+        ).count()
+    except:
+        unread_notifications = 0
+    
     context = {
         'tenant': tenant,
         'customer': tenant_customer,
@@ -527,6 +547,8 @@ def dashboard_home(request):
         'total_transactions': total_transactions,
         'loyalty_points': tenant_customer.loyalty_points,
         'total_spent': tenant_customer.total_spent,
+        'unread_messages': unread_messages,
+        'unread_notifications': unread_notifications,
     }
     
     return render(request, 'dashboard/home.html', context)
@@ -1006,3 +1028,271 @@ def get_tenant_info(request):
     except Exception as e:
         logger.error(f"Error retrieving tenant info: {str(e)}")
         return JsonResponse({'error': str(e)}, status=500)
+    
+@login_required
+def toggle_theme(request):
+    """
+    Toggle theme preference (light/dark) and save to session.
+    """
+    if request.method == 'POST':
+        import json
+        data = json.loads(request.body)
+        theme = data.get('theme', 'light')
+        
+        # Save theme preference to session
+        request.session['theme'] = theme
+        
+        return JsonResponse({'success': True, 'theme': theme})
+    
+    return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=400)
+
+
+@login_required
+def customer_notifications(request):
+    """
+    Customer notifications inbox - shows notifications received from business.
+    """
+    tenant = get_tenant_from_request(request)
+    
+    if not tenant:
+        messages.error(request, 'Unable to identify business.')
+        return redirect('/')
+    
+    customer = request.user
+    
+    # Get notifications for this customer
+    notifications = NotificationRecipient.objects.filter(
+        tenant_customer=customer
+    ).select_related('notification').order_by('-created_at')
+    
+    # Filter by read status
+    status_filter = request.GET.get('status', '')
+    if status_filter == 'unread':
+        notifications = notifications.filter(is_read=False)
+    elif status_filter == 'read':
+        notifications = notifications.filter(is_read=True)
+    
+    # Pagination
+    paginator = Paginator(notifications, 20)
+    page_number = request.GET.get('page')
+    notifications_page = paginator.get_page(page_number)
+    
+    # Stats
+    unread_count = NotificationRecipient.objects.filter(
+        tenant_customer=customer,
+        is_read=False
+    ).count()
+    
+    total_count = NotificationRecipient.objects.filter(
+        tenant_customer=customer
+    ).count()
+    
+    context = {
+        'tenant': tenant,
+        'notifications': notifications_page,
+        'unread_count': unread_count,
+        'total_count': total_count,
+        'status_filter': status_filter,
+    }
+    
+    return render(request, 'dashboard/customer_notifications.html', context)
+
+
+@login_required
+def customer_notification_detail(request, notification_id):
+    """
+    View single notification and mark as read.
+    """
+    tenant = get_tenant_from_request(request)
+    
+    if not tenant:
+        messages.error(request, 'Unable to identify business.')
+        return redirect('/')
+    
+    customer = request.user
+    
+    # Get notification recipient
+    notification_recipient = get_object_or_404(
+        NotificationRecipient,
+        id=notification_id,
+        tenant_customer=customer
+    )
+    
+    # Mark as read
+    notification_recipient.mark_as_read()
+    
+    context = {
+        'tenant': tenant,
+        'notification_recipient': notification_recipient,
+        'notification': notification_recipient.notification,
+    }
+    
+    return render(request, 'dashboard/customer_notification_detail.html', context)
+
+
+@login_required
+def customer_messages(request):
+    """
+    Customer messages inbox - two-way conversations with business.
+    Shows both messages sent by customer and received from business.
+    """
+    tenant = get_tenant_from_request(request)
+    
+    if not tenant:
+        messages.error(request, 'Unable to identify business.')
+        return redirect('/')
+    
+    customer = request.user
+    
+    # Get messages where customer is sender or receiver
+    # Include messages sent to all staff (receiver=None)
+    message_list = Message.objects.filter(
+        tenant=tenant
+    ).filter(
+        Q(sender=customer) | Q(receiver=customer) | Q(receiver__isnull=True, message_type='business_to_customer')
+    ).select_related('sender', 'receiver').order_by('-created_at')
+    
+    # Filter by status
+    status_filter = request.GET.get('status', '')
+    if status_filter == 'unread':
+        message_list = message_list.filter(status__in=['sent', 'delivered'])
+    elif status_filter == 'read':
+        message_list = message_list.filter(status='read')
+    
+    # Pagination
+    paginator = Paginator(message_list, 20)
+    page_number = request.GET.get('page')
+    messages_page = paginator.get_page(page_number)
+    
+    # Stats
+    unread_count = Message.objects.filter(
+        tenant=tenant,
+        status__in=['sent', 'delivered']
+    ).filter(
+        Q(receiver=customer) | Q(receiver__isnull=True, message_type='business_to_customer')
+    ).count()
+    
+    total_count = Message.objects.filter(
+        tenant=tenant
+    ).filter(
+        Q(sender=customer) | Q(receiver=customer) | Q(receiver__isnull=True)
+    ).count()
+    
+    context = {
+        'tenant': tenant,
+        'messages': messages_page,
+        'unread_count': unread_count,
+        'total_count': total_count,
+        'status_filter': status_filter,
+    }
+    
+    return render(request, 'dashboard/customer_messages.html', context)
+
+
+@login_required
+def customer_message_detail(request, message_id):
+    """
+    View single message thread and handle replies.
+    """
+    tenant = get_tenant_from_request(request)
+    
+    if not tenant:
+        messages.error(request, 'Unable to identify business.')
+        return redirect('/')
+    
+    customer = request.user
+    
+    # Get message
+    message = get_object_or_404(
+        Message,
+        id=message_id,
+        tenant=tenant
+    )
+    
+    # Ensure customer has access to this message
+    if message.sender != customer and message.receiver != customer and not (message.receiver is None and message.message_type == 'business_to_customer'):
+        messages.error(request, 'You do not have access to this message.')
+        return redirect('dashboard:customer_messages')
+    
+    # Mark as read if customer is receiver
+    if message.receiver == customer or (message.receiver is None and message.message_type == 'business_to_customer'):
+        message.mark_as_read()
+    
+    # Get conversation thread
+    conversation = message.get_conversation_thread()
+    
+    # Handle reply submission
+    if request.method == 'POST':
+        reply_body = request.POST.get('reply_body', '').strip()
+        
+        if reply_body:
+            # Create reply
+            reply = Message.objects.create(
+                tenant=tenant,
+                sender=customer,
+                receiver=None,  # Send to all staff
+                message_type='customer_to_business',
+                subject=f"Re: {message.subject}",
+                body=reply_body,
+                status='sent',
+                sent_at=timezone.now(),
+                parent_message=message if not message.parent_message else message.parent_message
+            )
+            
+            messages.success(request, 'Reply sent successfully!')
+            return redirect('dashboard:customer_message_detail', message_id=message.id)
+        else:
+            messages.error(request, 'Please enter a message.')
+    
+    context = {
+        'tenant': tenant,
+        'message': message,
+        'conversation': conversation,
+    }
+    
+    return render(request, 'dashboard/customer_message_detail.html', context)
+
+
+@login_required
+def compose_message_business(request):
+    """
+    Customer composes and sends message to business.
+    """
+    tenant = get_tenant_from_request(request)
+    
+    if not tenant:
+        messages.error(request, 'Unable to identify business.')
+        return redirect('/')
+    
+    customer = request.user
+    
+    if request.method == 'POST':
+        subject = request.POST.get('subject', '').strip()
+        body = request.POST.get('body', '').strip()
+        priority = request.POST.get('priority', 'normal')
+        
+        if not subject or not body:
+            messages.error(request, 'Please fill in all required fields.')
+        else:
+            # Create message
+            message = Message.objects.create(
+                tenant=tenant,
+                sender=customer,
+                receiver=None,  # Send to all staff
+                message_type='customer_to_business',
+                subject=subject,
+                body=body,
+                priority=priority,
+                status='sent',
+                sent_at=timezone.now()
+            )
+            
+            messages.success(request, 'Message sent successfully!')
+            return redirect('dashboard:customer_messages')
+    
+    context = {
+        'tenant': tenant,
+    }
+    
+    return render(request, 'dashboard/compose_message_business.html', context)
+

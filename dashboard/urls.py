@@ -29,6 +29,17 @@ urlpatterns = [
     path('', views.main.dashboard_home, name='home'),  # Root of subdomain
     path('dashboard/', views.main.dashboard_home, name='dashboard'),  # Also at /dashboard/
     path('admin/', views.main.dashboard_home, name='admin'),  # Also at /admin/ for business users
+    # Customer Dashboard Enhancements
+    path('customer/theme/toggle/', views.main.toggle_theme, name='toggle_theme'),
+    
+    # Customer Notifications
+    path('customer/notifications/', views.main.customer_notifications, name='customer_notifications'),
+    path('customer/notifications/<uuid:notification_id>/', views.main.customer_notification_detail, name='customer_notification_detail'),
+    
+    # Customer Messages
+    path('customer/messages/', views.main.customer_messages, name='customer_messages'),
+    path('customer/messages/<uuid:message_id>/', views.main.customer_message_detail, name='customer_message_detail'),
+    path('customer/messages/compose/', views.main.compose_message_business, name='compose_message_business'),
     
     # Password Reset Flow
     path('password-reset/', 
