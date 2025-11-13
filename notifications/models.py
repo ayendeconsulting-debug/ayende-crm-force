@@ -695,13 +695,3 @@ class MessageAttachment(models.Model):
         return f"{self.filename} ({self.file_size} bytes)"
 
 
-# ============================================
-# ADD THESE TO YOUR EXISTING notifications/models.py
-# ============================================
-# 
-# Instructions:
-# 1. Open notifications/models.py
-# 2. Add these three models (Message, MessageTemplate, MessageAttachment) at the end
-# 3. They will work alongside your existing Notification and NotificationRecipient models
-# 4. Run: python manage.py makemigrations notifications
-# 5. Run: python manage.py migrate notifications
