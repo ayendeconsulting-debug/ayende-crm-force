@@ -49,7 +49,7 @@ class Notification(models.Model):
         related_name='notifications'
     )
     created_by = models.ForeignKey(
-        'customers.Customer',
+        'customers.TenantCustomer',
         on_delete=models.SET_NULL,
         null=True,
         related_name='created_notifications',
