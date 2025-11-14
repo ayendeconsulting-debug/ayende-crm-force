@@ -20,6 +20,7 @@ urlpatterns = [
     
     # Staff/Business Messaging URLs
     path('staff/inbox/', views.staff_inbox, name='staff_inbox'),
+    path('staff/messages/<uuid:message_id>/', views.staff_message_detail, name='staff_message_detail'),
     path('messages/compose/', views.compose_message, name='compose_message'),  # ADD THIS
     path('broadcast/', views.compose_broadcast_message, name='compose_broadcast'),
     path('templates/', views.template_library, name='template_library'),        # ADD THIS
