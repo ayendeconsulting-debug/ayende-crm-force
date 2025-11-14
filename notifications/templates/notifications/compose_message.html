@@ -1,415 +1,429 @@
 {% extends 'dashboard/business_base.html' %}
 {% load static %}
 
-{% block title %}Compose Notification - {{ tenant.name }}{% endblock %}
+{% block title %}Compose Message - {{ tenant.name }}{% endblock %}
 
 {% block extra_css %}
 <style>
     .compose-container {
+        background: #1a1f2e;
+        min-height: calc(100vh - 100px);
+        padding: 2rem;
+    }
+
+    .compose-card {
+        background: #252b3b;
+        border-radius: 16px;
+        padding: 2rem;
         max-width: 900px;
         margin: 0 auto;
-        padding: 20px;
     }
-    
-    .compose-card {
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        padding: 30px;
-        margin-bottom: 20px;
-    }
-    
-    .form-section {
-        margin-bottom: 25px;
-    }
-    
-    .form-section-title {
-        font-size: 18px;
-        font-weight: 600;
-        color: #333;
-        margin-bottom: 15px;
-        padding-bottom: 10px;
-        border-bottom: 2px solid #228B22;
-    }
-    
-    .form-group {
-        margin-bottom: 20px;
-    }
-    
-    .form-group label {
-        display: block;
-        font-weight: 500;
-        color: #555;
-        margin-bottom: 8px;
-    }
-    
-    .form-control {
-        width: 100%;
-        padding: 10px 15px;
-        border: 1px solid #ddd;
-        border-radius: 6px;
-        font-size: 14px;
-        transition: border-color 0.3s;
-    }
-    
-    .form-control:focus {
-        outline: none;
-        border-color: #228B22;
-        box-shadow: 0 0 0 3px rgba(34, 139, 34, 0.1);
-    }
-    
-    textarea.form-control {
-        resize: vertical;
-        min-height: 120px;
-        font-family: inherit;
-    }
-    
-    .radio-group, .checkbox-group {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-    }
-    
-    .radio-option, .checkbox-option {
+
+    .compose-header {
         display: flex;
         align-items: center;
-        padding: 12px;
-        border: 2px solid #e0e0e0;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: all 0.3s;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #1a1f2e;
     }
-    
-    .radio-option:hover, .checkbox-option:hover {
-        border-color: #228B22;
-        background: #f8fff8;
+
+    .compose-header h1 {
+        color: white;
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin: 0;
     }
-    
-    .radio-option input[type="radio"],
-    .checkbox-option input[type="checkbox"] {
-        margin-right: 10px;
-        cursor: pointer;
+
+    .form-group {
+        margin-bottom: 1.5rem;
     }
-    
-    .radio-option.selected {
-        border-color: #228B22;
-        background: #f0f8f0;
-    }
-    
-    .conditional-field {
-        display: none;
-        margin-top: 15px;
-        padding: 15px;
-        background: #f9f9f9;
-        border-radius: 6px;
-    }
-    
-    .conditional-field.active {
+
+    .form-label {
+        color: #94a3b8;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
         display: block;
     }
-    
-    .recipient-count {
-        display: inline-block;
-        background: #228B22;
+
+    .form-control, .form-select {
+        background: #1a1f2e;
+        border: 2px solid #334155;
+        border-radius: 12px;
+        padding: 0.75rem 1rem;
         color: white;
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 13px;
-        margin-left: 10px;
+        width: 100%;
+        transition: all 0.3s;
     }
-    
-    .help-text {
-        font-size: 13px;
-        color: #666;
-        margin-top: 5px;
+
+    .form-control:focus, .form-select:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
     }
-    
-    .btn-group {
+
+    .form-select option {
+        background: #1a1f2e;
+        color: white;
+    }
+
+    textarea.form-control {
+        min-height: 200px;
+        resize: vertical;
+        font-family: inherit;
+    }
+
+    .priority-options {
         display: flex;
-        gap: 15px;
-        margin-top: 30px;
+        gap: 1rem;
+        flex-wrap: wrap;
     }
-    
-    .btn {
-        padding: 12px 30px;
-        border: none;
-        border-radius: 6px;
-        font-size: 16px;
+
+    .priority-option {
+        position: relative;
+    }
+
+    .priority-option input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+    }
+
+    .priority-option label {
+        background: #1a1f2e;
+        border: 2px solid #334155;
+        border-radius: 12px;
+        padding: 0.75rem 1.5rem;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: block;
+        color: #94a3b8;
         font-weight: 500;
+    }
+
+    .priority-option input[type="radio"]:checked + label {
+        background: #667eea;
+        border-color: #667eea;
+        color: white;
+    }
+
+    .priority-option label:hover {
+        border-color: #667eea;
+        color: white;
+    }
+
+    .template-selector {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .template-selector label {
+        color: white;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
+    .template-selector select {
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        color: white;
+        backdrop-filter: blur(10px);
+    }
+
+    .template-selector select option {
+        background: #252b3b;
+    }
+
+    .variables-help {
+        background: rgba(102, 126, 234, 0.1);
+        border: 2px solid rgba(102, 126, 234, 0.3);
+        border-radius: 12px;
+        padding: 1rem;
+        margin-top: 0.5rem;
+    }
+
+    .variables-help .title {
+        color: #667eea;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .variable-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .variable-chip {
+        background: #667eea;
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-family: 'Courier New', monospace;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .variable-chip:hover {
+        background: #764ba2;
+        transform: translateY(-2px);
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 2px solid #1a1f2e;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 1rem 2rem;
+        border-radius: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        flex: 1;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-secondary {
+        background: #334155;
+        color: white;
+        border: none;
+        padding: 1rem 2rem;
+        border-radius: 12px;
+        font-weight: 600;
         cursor: pointer;
         transition: all 0.3s;
     }
-    
-    .btn-primary {
-        background: #228B22;
-        color: white;
-    }
-    
-    .btn-primary:hover {
-        background: #1a6b1a;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(34, 139, 34, 0.3);
-    }
-    
-    .btn-secondary {
-        background: #6c757d;
-        color: white;
-    }
-    
+
     .btn-secondary:hover {
-        background: #5a6268;
+        background: #475569;
     }
-    
-    .error-message {
-        color: #dc3545;
-        font-size: 13px;
-        margin-top: 5px;
+
+    .preview-mode {
+        background: #1a1f2e;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-top: 1rem;
     }
-    
-    .customer-list {
-        max-height: 300px;
-        overflow-y: auto;
-        border: 1px solid #ddd;
-        border-radius: 6px;
-        padding: 10px;
+
+    .preview-mode .label {
+        color: #667eea;
+        font-weight: 600;
+        margin-bottom: 1rem;
     }
-    
-    .customer-item {
-        padding: 8px;
-        border-bottom: 1px solid #f0f0f0;
+
+    .preview-content {
+        color: white;
+        line-height: 1.6;
     }
-    
-    .customer-item:last-child {
-        border-bottom: none;
+
+    @media (max-width: 768px) {
+        .compose-container {
+            padding: 1rem;
+        }
+
+        .compose-card {
+            padding: 1rem;
+        }
+
+        .form-actions {
+            flex-direction: column;
+        }
+
+        .priority-options {
+            flex-direction: column;
+        }
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="compose-container">
-    <div style="margin-bottom: 20px;">
-        <a href="{% url 'notifications:notification_list' %}" style="color: #228B22; text-decoration: none;">
-            ← Back to Notifications
-        </a>
-    </div>
-    
     <div class="compose-card">
-        <h1 style="font-size: 28px; margin-bottom: 10px;">Compose Notification</h1>
-        <p style="color: #666; margin-bottom: 30px;">Send targeted notifications to your customers</p>
-        
+        <div class="compose-header">
+            <i class="bi bi-pencil-square" style="color: #667eea; font-size: 2rem;"></i>
+            <h1>Compose New Message</h1>
+        </div>
+
         <form method="post" id="composeForm">
             {% csrf_token %}
-            
-            {% if form.non_field_errors %}
-                <div style="background: #fee; border-left: 4px solid #dc3545; padding: 15px; margin-bottom: 20px; border-radius: 4px;">
-                    {% for error in form.non_field_errors %}
-                        <p style="margin: 0; color: #dc3545;">{{ error }}</p>
+
+            <!-- Template Selector (Optional) -->
+            <div class="template-selector">
+                <label for="template">
+                    <i class="bi bi-file-text"></i> Use a Template (Optional)
+                </label>
+                <select class="form-select" id="template" name="template" onchange="loadTemplate(this.value)">
+                    <option value="">-- No Template --</option>
+                    {% for template in templates %}
+                    <option value="{{ template.id }}" 
+                            data-subject="{{ template.subject }}"
+                            data-body="{{ template.body }}">
+                        {{ template.name }} ({{ template.get_template_type_display }})
+                    </option>
                     {% endfor %}
-                </div>
-            {% endif %}
-            
-            <!-- Basic Information -->
-            <div class="form-section">
-                <div class="form-section-title">Basic Information</div>
-                
-                <div class="form-group">
-                    <label for="{{ form.title.id_for_label }}">{{ form.title.label }}</label>
-                    {{ form.title }}
-                    {% if form.title.errors %}
-                        <div class="error-message">{{ form.title.errors.0 }}</div>
-                    {% endif %}
-                </div>
-                
-                <div class="form-group">
-                    <label for="{{ form.category.id_for_label }}">{{ form.category.label }}</label>
-                    {{ form.category }}
-                    {% if form.category.errors %}
-                        <div class="error-message">{{ form.category.errors.0 }}</div>
-                    {% endif %}
-                </div>
-                
-                <div class="form-group">
-                    <label for="{{ form.priority.id_for_label }}">{{ form.priority.label }}</label>
-                    {{ form.priority }}
-                    {% if form.priority.errors %}
-                        <div class="error-message">{{ form.priority.errors.0 }}</div>
-                    {% endif %}
-                </div>
-                
-                <div class="form-group">
-                    <label for="{{ form.message.id_for_label }}">{{ form.message.label }}</label>
-                    {{ form.message }}
-                    <div class="help-text">Enter your notification message here</div>
-                    {% if form.message.errors %}
-                        <div class="error-message">{{ form.message.errors.0 }}</div>
-                    {% endif %}
-                </div>
+                </select>
             </div>
-            
-            <!-- Target Audience -->
-            <div class="form-section">
-                <div class="form-section-title">Target Audience</div>
-                
-                <div class="radio-group">
-                    {% for choice in form.target_audience %}
-                        <label class="radio-option" data-target="{{ choice.choice_value }}">
-                            {{ choice.tag }}
-                            <span style="flex: 1;">{{ choice.choice_label }}</span>
-                            {% if choice.choice_value == 'all' %}
-                                <span class="recipient-count">{{ all_customers_count }} customers</span>
-                            {% elif choice.choice_value == 'vip' %}
-                                <span class="recipient-count">{{ vip_customers_count }} VIP customers</span>
-                            {% endif %}
-                        </label>
+
+            <!-- Recipient -->
+            <div class="form-group">
+                <label class="form-label" for="receiver">
+                    <i class="bi bi-person-fill"></i> To (Customer) *
+                </label>
+                <select class="form-select" id="receiver" name="receiver" required>
+                    <option value="">-- Select Customer --</option>
+                    {% for customer in customers %}
+                    <option value="{{ customer.id }}">
+                        {{ customer.first_name }} {{ customer.last_name }} ({{ customer.email }})
+                    </option>
                     {% endfor %}
-                </div>
-                
-                <!-- Points Range Fields -->
-                <div id="pointsRangeFields" class="conditional-field">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                        <div class="form-group">
-                            <label for="{{ form.points_min.id_for_label }}">{{ form.points_min.label }}</label>
-                            {{ form.points_min }}
-                            {% if form.points_min.errors %}
-                                <div class="error-message">{{ form.points_min.errors.0 }}</div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="{{ form.points_max.id_for_label }}">{{ form.points_max.label }}</label>
-                            {{ form.points_max }}
-                            {% if form.points_max.errors %}
-                                <div class="error-message">{{ form.points_max.errors.0 }}</div>
-                            {% endif %}
-                        </div>
-                    </div>
-                    <div class="help-text">Target customers within a specific loyalty points range</div>
-                </div>
-                
-                <!-- Specific Customers Fields -->
-                <div id="specificCustomersFields" class="conditional-field">
-                    <div class="customer-list">
-                        {% for choice in form.specific_customers %}
-                            <div class="customer-item">
-                                <label class="checkbox-option">
-                                    {{ choice.tag }}
-                                    {{ choice.choice_label }}
-                                </label>
-                            </div>
-                        {% endfor %}
-                    </div>
-                    <div class="help-text">Select specific customers to receive this notification</div>
-                </div>
+                </select>
             </div>
-            
-            <!-- Scheduling -->
-            <div class="form-section">
-                <div class="form-section-title">Delivery Timing</div>
-                
-                <div class="radio-group">
-                    {% for choice in form.send_option %}
-                        <label class="radio-option" data-send="{{ choice.choice_value }}">
-                            {{ choice.tag }}
-                            <span>{{ choice.choice_label }}</span>
-                        </label>
-                    {% endfor %}
-                </div>
-                
-                <div id="scheduleFields" class="conditional-field">
-                    <div class="form-group">
-                        <label for="{{ form.scheduled_datetime.id_for_label }}">{{ form.scheduled_datetime.label }}</label>
-                        {{ form.scheduled_datetime }}
-                        <div class="help-text">{{ form.scheduled_datetime.help_text }}</div>
-                        {% if form.scheduled_datetime.errors %}
-                            <div class="error-message">{{ form.scheduled_datetime.errors.0 }}</div>
-                        {% endif %}
+
+            <!-- Subject -->
+            <div class="form-group">
+                <label class="form-label" for="subject">
+                    <i class="bi bi-tag-fill"></i> Subject *
+                </label>
+                <input type="text" 
+                       class="form-control" 
+                       id="subject" 
+                       name="subject" 
+                       placeholder="Enter message subject"
+                       required>
+            </div>
+
+            <!-- Priority -->
+            <div class="form-group">
+                <label class="form-label">
+                    <i class="bi bi-flag-fill"></i> Priority
+                </label>
+                <div class="priority-options">
+                    <div class="priority-option">
+                        <input type="radio" id="priority_low" name="priority" value="low">
+                        <label for="priority_low">Low</label>
+                    </div>
+                    <div class="priority-option">
+                        <input type="radio" id="priority_normal" name="priority" value="normal" checked>
+                        <label for="priority_normal">Normal</label>
+                    </div>
+                    <div class="priority-option">
+                        <input type="radio" id="priority_high" name="priority" value="high">
+                        <label for="priority_high">High</label>
+                    </div>
+                    <div class="priority-option">
+                        <input type="radio" id="priority_urgent" name="priority" value="urgent">
+                        <label for="priority_urgent">Urgent</label>
                     </div>
                 </div>
             </div>
-            
-            <!-- Internal Notes -->
-            <div class="form-section">
-                <div class="form-section-title">Internal Notes (Optional)</div>
-                
-                <div class="form-group">
-                    <label for="{{ form.notes.id_for_label }}">{{ form.notes.label }}</label>
-                    {{ form.notes }}
-                    <div class="help-text">These notes are only visible to business staff</div>
+
+            <!-- Message Body -->
+            <div class="form-group">
+                <label class="form-label" for="body">
+                    <i class="bi bi-chat-text-fill"></i> Message *
+                </label>
+                <textarea class="form-control" 
+                          id="body" 
+                          name="body" 
+                          placeholder="Type your message here..."
+                          required></textarea>
+
+                <!-- Variable Helper -->
+                <div class="variables-help">
+                    <div class="title">
+                        <i class="bi bi-magic"></i> Available Variables (click to insert)
+                    </div>
+                    <div class="variable-chips">
+                        <span class="variable-chip" onclick="insertVariable('{{customer_name}}')">
+                            {{customer_name}}
+                        </span>
+                        <span class="variable-chip" onclick="insertVariable('{{first_name}}')">
+                            {{first_name}}
+                        </span>
+                        <span class="variable-chip" onclick="insertVariable('{{last_name}}')">
+                            {{last_name}}
+                        </span>
+                        <span class="variable-chip" onclick="insertVariable('{{email}}')">
+                            {{email}}
+                        </span>
+                        <span class="variable-chip" onclick="insertVariable('{{phone}}')">
+                            {{phone}}
+                        </span>
+                        <span class="variable-chip" onclick="insertVariable('{{points}}')">
+                            {{points}}
+                        </span>
+                        <span class="variable-chip" onclick="insertVariable('{{business_name}}')">
+                            {{business_name}}
+                        </span>
+                    </div>
                 </div>
             </div>
-            
-            <!-- Submit Buttons -->
-            <div class="btn-group">
-                <button type="submit" class="btn btn-primary">
-                    Send Notification
+
+            <!-- Form Actions -->
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" onclick="history.back()">
+                    <i class="bi bi-x-circle"></i> Cancel
                 </button>
-                <a href="{% url 'notifications:notification_list' %}" class="btn btn-secondary">
-                    Cancel
-                </a>
+                <button type="submit" class="btn-primary">
+                    <i class="bi bi-send-fill"></i> Send Message
+                </button>
             </div>
         </form>
     </div>
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Handle target audience selection
-    const targetRadios = document.querySelectorAll('input[name="target_audience"]');
-    const pointsRangeFields = document.getElementById('pointsRangeFields');
-    const specificCustomersFields = document.getElementById('specificCustomersFields');
+// Load template content
+function loadTemplate(templateId) {
+    if (!templateId) {
+        document.getElementById('subject').value = '';
+        document.getElementById('body').value = '';
+        return;
+    }
+
+    const select = document.getElementById('template');
+    const option = select.options[select.selectedIndex];
     
-    targetRadios.forEach(radio => {
-        radio.addEventListener('change', function() {
-            // Update visual selection
-            document.querySelectorAll('.radio-option[data-target]').forEach(opt => {
-                opt.classList.remove('selected');
-            });
-            this.closest('.radio-option').classList.add('selected');
-            
-            // Show/hide conditional fields
-            if (this.value === 'points_range') {
-                pointsRangeFields.classList.add('active');
-                specificCustomersFields.classList.remove('active');
-            } else if (this.value === 'specific') {
-                specificCustomersFields.classList.add('active');
-                pointsRangeFields.classList.remove('active');
-            } else {
-                pointsRangeFields.classList.remove('active');
-                specificCustomersFields.classList.remove('active');
-            }
-        });
-        
-        // Initialize on page load
-        if (radio.checked) {
-            radio.dispatchEvent(new Event('change'));
-        }
-    });
+    document.getElementById('subject').value = option.dataset.subject;
+    document.getElementById('body').value = option.dataset.body;
+}
+
+// Insert variable at cursor position
+function insertVariable(variable) {
+    const textarea = document.getElementById('body');
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
     
-    // Handle send option selection
-    const sendRadios = document.querySelectorAll('input[name="send_option"]');
-    const scheduleFields = document.getElementById('scheduleFields');
-    
-    sendRadios.forEach(radio => {
-        radio.addEventListener('change', function() {
-            // Update visual selection
-            document.querySelectorAll('.radio-option[data-send]').forEach(opt => {
-                opt.classList.remove('selected');
-            });
-            this.closest('.radio-option').classList.add('selected');
-            
-            // Show/hide schedule fields
-            if (this.value === 'schedule') {
-                scheduleFields.classList.add('active');
-            } else {
-                scheduleFields.classList.remove('active');
-            }
-        });
-        
-        // Initialize on page load
-        if (radio.checked) {
-            radio.dispatchEvent(new Event('change'));
-        }
-    });
+    textarea.value = text.substring(0, start) + variable + text.substring(end);
+    textarea.selectionStart = textarea.selectionEnd = start + variable.length;
+    textarea.focus();
+}
+
+// Form validation
+document.getElementById('composeForm').addEventListener('submit', function(e) {
+    const receiver = document.getElementById('receiver').value;
+    const subject = document.getElementById('subject').value;
+    const body = document.getElementById('body').value;
+
+    if (!receiver || !subject || !body) {
+        e.preventDefault();
+        alert('Please fill in all required fields.');
+    }
 });
 </script>
 {% endblock %}
