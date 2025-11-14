@@ -466,9 +466,9 @@
                 <div class="message-preview">{{ message.body|truncatewords:30 }}</div>
 
                 <div class="message-actions">
-                    <a href="{% url 'dashboard:staff_message_detail' message.id %}" class="btn-message-action btn-reply">
-                        <i class="bi bi-reply-fill"></i> View &amp; Reply
-                    </a>
+                    <span class="btn-message-action btn-reply" style="cursor: not-allowed; opacity: 0.6;">
+                        <i class="bi bi-reply-fill"></i> Coming Soon
+                    </span>
                     <button class="btn-message-action btn-archive" onclick="archiveMessage('{{ message.id }}'); event.stopPropagation(); return false;">
                         <i class="bi bi-archive-fill"></i> Archive
                     </button>
