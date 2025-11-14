@@ -21,6 +21,7 @@ urlpatterns = [
     # Staff/Business Messaging URLs
     path('staff/inbox/', views.staff_inbox, name='staff_inbox'),
     path('messages/compose/', views.compose_message, name='compose_message'),  # ADD THIS
+    path('broadcast/', views.compose_broadcast_message, name='compose_broadcast'),
     path('templates/', views.template_library, name='template_library'),        # ADD THIS
     path('templates/create/', views.create_template, name='create_template'),
     
