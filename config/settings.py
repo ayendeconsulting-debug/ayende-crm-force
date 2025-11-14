@@ -8,8 +8,12 @@ from pathlib import Path
 # Load environment variables from .env file
 from dotenv import load_dotenv
 
+
+
+
 # Build paths
 BASE_DIR = Path(__file__).resolve().parent.parent
+
 # Load .env file from project root
 load_dotenv(BASE_DIR / '.env')
 
@@ -333,3 +337,15 @@ WEBHOOK_TIMEOUT = 10  # seconds
 INTEGRATION_SECRET = os.environ.get('INTEGRATION_SECRET', 'your-shared-secret-key-change-this')
 
 # ===== End Phase 2C Configuration =====
+# ============================================
+# INTEGRATION SETTINGS
+# ============================================
+
+# Enable CRM to POS synchronization
+ENABLE_CRM_SYNC = os.environ.get('ENABLE_CRM_SYNC', 'True').lower() in ('true', '1', 'yes')
+
+# Integration secret for webhook authentication
+INTEGRATION_SECRET = os.environ.get('INTEGRATION_SECRET', 'your-secret-key-change-in-production')
+
+# POS Backend URL (Railway deployment URL)
+POS_BASE_URL = os.environ.get('POS_BASE_URL', 'https://your-pos-backend.railway.app')

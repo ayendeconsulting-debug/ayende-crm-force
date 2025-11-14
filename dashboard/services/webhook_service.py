@@ -3,9 +3,10 @@
 Webhook service for sending customer data to POS system.
 Handles webhook signing, retry logic, and error handling.
 
-FIXED:
-- Line 211: Changed MappingService.get_external_id() to MappingService.get_business_id()
-- Removed incorrect import: from .models import Customer
+UPDATED: Fixed to properly handle Customer (global identity) and TenantCustomer (tenant-specific) relationship
+- Customer model only has: id, first_name, last_name, created_at, updated_at
+- TenantCustomer model has all other fields: email, phone, loyalty_points, etc.
+- Properly references TenantCustomer for all tenant-specific data
 """
 
 import requests
@@ -13,6 +14,7 @@ import json
 import hmac
 import hashlib
 import time
+import jwt
 from django.conf import settings
 from typing import Dict, Optional
 import logging
@@ -35,24 +37,23 @@ class WebhookService:
         Returns:
             Full webhook URL or None if not configured
         """
-        base_url = getattr(settings, 'POS_WEBHOOK_URL', None)
+        # Try to get URL from tenant settings first
+        base_url = None
+        if hasattr(tenant, 'settings') and isinstance(tenant.settings, dict):
+            base_url = tenant.settings.get('pos_webhook_url')
+        
+        # Fall back to global setting
         if not base_url:
-            logger.warning("POS_WEBHOOK_URL not configured in settings")
+            base_url = getattr(settings, 'POS_BASE_URL', None)
+            
+        if not base_url:
+            logger.warning("POS_BASE_URL not configured in settings")
             return None
         
-        # Map operations to endpoints
-        endpoint_map = {
-            'created': '/api/v1/webhooks/customer',
-            'updated': '/api/v1/webhooks/customer',
-            'deleted': '/api/v1/webhooks/customer'
-        }
+        # All operations use the same endpoint
+        endpoint = '/api/v1/webhooks/customer'
         
-        endpoint = endpoint_map.get(operation)
-        if not endpoint:
-            logger.error(f"Unknown operation: {operation}")
-            return None
-        
-        return f"{base_url}{endpoint}"
+        return f"{base_url.rstrip('/')}{endpoint}"
     
     @staticmethod
     def _generate_signature(payload: str, secret: str) -> str:
@@ -73,55 +74,74 @@ class WebhookService:
         ).hexdigest()
     
     @staticmethod
-    def _prepare_customer_payload(customer, operation: str) -> Dict:
+    def _prepare_customer_payload(customer, tenant_customer, operation: str, tenant) -> Dict:
         """
         Prepare customer data for webhook payload.
         
         Args:
-            customer: Customer model instance
+            customer: Customer model instance (global identity)
+            tenant_customer: TenantCustomer model instance (tenant-specific data)
             operation: 'created', 'updated', or 'deleted'
+            tenant: Tenant instance
             
         Returns:
             Dictionary with customer data
         """
-        # Get tenant for tenant_id
-        tenant = customer.tenants.first()
-        tenant_uuid = str(tenant.tenant_uuid) if tenant else None
-        
         # For delete operations, send minimal data
         if operation == 'deleted':
+            external_id = None
+            if tenant_customer and tenant_customer.external_id:
+                external_id = str(tenant_customer.external_id)
+                
             return {
                 'operation': operation,
-                'customerId': str(customer.id),
-                'tenantId': tenant_uuid,
+                'customerId': str(customer.id),  # CRM customer ID (global)
+                'externalId': external_id,  # POS customer ID (if exists)
+                'tenantId': str(tenant.id),
                 'timestamp': int(time.time())
             }
         
         # For create/update, send full customer data
+        # Note: tenant_customer might be None for new customers
+        if not tenant_customer:
+            logger.warning(f"No TenantCustomer found for customer {customer.id} in tenant {tenant.id}")
+            
         return {
             'operation': operation,
-            'customerId': str(customer.id),
-            'externalId': str(customer.external_id) if customer.external_id else str(customer.id),  # Use POS ID if available
-            'email': customer.email or '',
+            'customerId': str(customer.id),  # CRM customer ID (global identity)
+            'externalId': str(tenant_customer.external_id) if tenant_customer and tenant_customer.external_id else None,
+            
+            # Personal info from Customer (global)
             'firstName': customer.first_name,
             'lastName': customer.last_name,
-            'phone': customer.phone or '',
-            'dateOfBirth': customer.date_of_birth.isoformat() if customer.date_of_birth else None,
-            'address': customer.address or '',
-            'city': customer.city or '',
-            'state': customer.state or '',
-            'postalCode': customer.postal_code or '',
-            'loyaltyPoints': customer.loyalty_points or 0,
-            'loyaltyTier': customer.loyalty_tier or 'BRONZE',
-            'totalSpent': float(customer.total_spent or 0),
-            'visitCount': customer.visit_count or 0,
-            'marketingOptIn': customer.marketing_opt_in or False,
-            'tenantId': tenant_uuid,
+            
+            # Contact info from TenantCustomer (tenant-specific)
+            'email': tenant_customer.email if tenant_customer else '',
+            'phone': tenant_customer.phone if tenant_customer else '',
+            
+            # Address from TenantCustomer
+            'address': tenant_customer.address if tenant_customer else '',
+            'city': tenant_customer.city if tenant_customer else '',
+            'state': tenant_customer.state if tenant_customer else '',
+            'postalCode': tenant_customer.zip_code if tenant_customer else '',
+            
+            # Personal details from TenantCustomer
+            'dateOfBirth': tenant_customer.date_of_birth.isoformat() if tenant_customer and tenant_customer.date_of_birth else None,
+            'marketingOptIn': tenant_customer.marketing_opt_in if tenant_customer else False,
+            
+            # Loyalty data from TenantCustomer
+            'loyaltyPoints': int(tenant_customer.loyalty_points) if tenant_customer else 0,
+            'loyaltyTier': tenant_customer.loyalty_tier if tenant_customer else 'BRONZE',
+            'totalSpent': float(tenant_customer.total_spent) if tenant_customer else 0.0,
+            'visitCount': tenant_customer.visit_count if tenant_customer else 0,
+            
+            # Tenant identification
+            'tenantId': str(tenant.id),
             'timestamp': int(time.time())
         }
     
     @staticmethod
-    def _send_webhook(url: str, payload: Dict, secret: str, max_retries: int = 3) -> bool:
+    def _send_webhook(url: str, payload: Dict, secret: str, max_retries: int = 3) -> Dict:
         """
         Send webhook with retry logic.
         
@@ -132,17 +152,17 @@ class WebhookService:
             max_retries: Maximum number of retry attempts
             
         Returns:
-            True if successful, False otherwise
+            Dictionary with success status and any POS customer ID returned
         """
         payload_json = json.dumps(payload, separators=(',', ':'))
         
         # Generate JWT token for authentication
-        import jwt
         token_payload = {
             'iss': 'ayende-crm',
             'scope': 'webhook',
+            'tenant_id': payload.get('tenantId'),
             'iat': int(time.time()),
-            'exp': int(time.time()) + 3600  # 1 hour expiry
+            'exp': int(time.time()) + 300  # 5 minute expiry (short-lived)
         }
         token = jwt.encode(token_payload, secret, algorithm='HS256')
         
@@ -155,7 +175,7 @@ class WebhookService:
         
         for attempt in range(max_retries):
             try:
-                logger.info(f"Sending webhook to {url} (attempt {attempt + 1}/{max_retries})")
+                logger.info(f"📤 Sending webhook to {url} (attempt {attempt + 1}/{max_retries})")
                 
                 response = requests.post(
                     url,
@@ -165,30 +185,53 @@ class WebhookService:
                 )
                 
                 if response.status_code in [200, 201, 204]:
-                    logger.info(f"Webhook sent successfully: {response.status_code}")
-                    return True
+                    logger.info(f"✅ Webhook sent successfully: {response.status_code}")
+                    
+                    # Try to extract POS customer ID from response
+                    try:
+                        response_data = response.json()
+                        pos_customer_id = None
+                        
+                        if response_data.get('success') and response_data.get('customer'):
+                            pos_customer_id = response_data['customer'].get('id')
+                            
+                        return {
+                            'success': True,
+                            'status_code': response.status_code,
+                            'pos_customer_id': pos_customer_id
+                        }
+                    except:
+                        return {
+                            'success': True,
+                            'status_code': response.status_code,
+                            'pos_customer_id': None
+                        }
                 else:
                     logger.warning(
-                        f"Webhook failed with status {response.status_code}: {response.text}"
+                        f"⚠️ Webhook failed with status {response.status_code}: {response.text}"
                     )
                     
             except requests.exceptions.Timeout:
-                logger.warning(f"Webhook timeout (attempt {attempt + 1}/{max_retries})")
+                logger.warning(f"⏱️ Webhook timeout (attempt {attempt + 1}/{max_retries})")
                 
             except requests.exceptions.ConnectionError:
-                logger.warning(f"Webhook connection error (attempt {attempt + 1}/{max_retries})")
+                logger.warning(f"🔌 Webhook connection error (attempt {attempt + 1}/{max_retries})")
                 
             except Exception as e:
-                logger.error(f"Webhook error: {str(e)}", exc_info=True)
+                logger.error(f"💥 Webhook error: {str(e)}", exc_info=True)
             
             # Wait before retry (exponential backoff)
             if attempt < max_retries - 1:
                 wait_time = 2 ** attempt  # 1s, 2s, 4s
-                logger.info(f"Waiting {wait_time}s before retry...")
+                logger.info(f"⏳ Waiting {wait_time}s before retry...")
                 time.sleep(wait_time)
         
-        logger.error(f"Webhook failed after {max_retries} attempts")
-        return False
+        logger.error(f"❌ Webhook failed after {max_retries} attempts")
+        return {
+            'success': False,
+            'status_code': None,
+            'pos_customer_id': None
+        }
     
     @classmethod
     def send_customer_webhook(cls, customer, operation: str, tenant) -> bool:
@@ -196,7 +239,7 @@ class WebhookService:
         Send customer webhook to POS system.
         
         Args:
-            customer: Customer model instance
+            customer: Customer model instance (global identity)
             operation: 'created', 'updated', or 'deleted'
             tenant: Tenant object
             
@@ -204,9 +247,15 @@ class WebhookService:
             True if webhook sent successfully, False otherwise
         """
         try:
+            # Check if integration is enabled
+            if not getattr(settings, 'ENABLE_CRM_SYNC', False):
+                logger.debug(f"CRM sync disabled, skipping webhook for customer {customer.id}")
+                return False
+            
             # Get webhook URL
             webhook_url = cls._get_webhook_url(tenant, operation)
             if not webhook_url:
+                logger.error("Webhook URL not configured")
                 return False
             
             # Get secret key
@@ -215,16 +264,39 @@ class WebhookService:
                 logger.error("INTEGRATION_SECRET not configured")
                 return False
             
+            # Get TenantCustomer for this tenant
+            tenant_customer = customer.tenant_accounts.filter(tenant=tenant).first()
+            
+            if not tenant_customer and operation != 'deleted':
+                logger.warning(
+                    f"No TenantCustomer found for customer {customer.id} in tenant {tenant.id}"
+                )
+                # Still send webhook for created operation (might be during registration)
+                if operation != 'created':
+                    return False
+            
             logger.info(
-                f"Sending {operation} webhook for customer {customer.id} "
-                f"({customer.first_name} {customer.last_name})"
+                f"📨 Sending {operation} webhook for customer {customer.id} "
+                f"({customer.first_name} {customer.last_name}) to tenant {tenant.subdomain}"
             )
             
             # Prepare payload
-            payload = cls._prepare_customer_payload(customer, operation)
+            payload = cls._prepare_customer_payload(customer, tenant_customer, operation, tenant)
             
             # Send webhook
-            return cls._send_webhook(webhook_url, payload, secret)
+            result = cls._send_webhook(webhook_url, payload, secret)
+            
+            # If webhook successful and this was a creation, update external_id
+            if result['success'] and operation == 'created' and result['pos_customer_id']:
+                pos_customer_id = result['pos_customer_id']
+                
+                # Update TenantCustomer with POS customer ID
+                if tenant_customer and not tenant_customer.external_id:
+                    tenant_customer.external_id = pos_customer_id
+                    tenant_customer.save(update_fields=['external_id'])
+                    logger.info(f"✅ Updated external_id to: {pos_customer_id}")
+            
+            return result['success']
             
         except Exception as e:
             logger.error(
@@ -245,26 +317,41 @@ class WebhookService:
             Dictionary with test results
         """
         try:
-            base_url = getattr(settings, 'POS_WEBHOOK_URL', None)
+            base_url = getattr(settings, 'POS_BASE_URL', None)
             if not base_url:
                 return {
                     'success': False,
-                    'error': 'POS_WEBHOOK_URL not configured'
+                    'error': 'POS_BASE_URL not configured'
                 }
             
             # Try to ping the health check endpoint
-            health_url = f"{base_url}/api/v1/webhooks/health"
+            health_url = f"{base_url.rstrip('/')}/api/v1/webhooks/health"
+            
+            logger.info(f"Testing webhook connection to: {health_url}")
             
             response = requests.get(health_url, timeout=5)
             
             return {
                 'success': response.status_code == 200,
                 'status_code': response.status_code,
-                'url': base_url
+                'url': base_url,
+                'message': response.json() if response.status_code == 200 else response.text
             }
             
+        except requests.exceptions.Timeout:
+            return {
+                'success': False,
+                'error': 'Connection timeout'
+            }
+        except requests.exceptions.ConnectionError as e:
+            return {
+                'success': False,
+                'error': f'Connection error: {str(e)}'
+            }
         except Exception as e:
             return {
                 'success': False,
                 'error': str(e)
             }
+
+            
