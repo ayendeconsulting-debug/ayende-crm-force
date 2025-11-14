@@ -35,3 +35,4 @@ urlpatterns = [
     path('api/mark-unread/<uuid:recipient_id>/', views.mark_notification_unread, name='mark_unread'),
     path('api/unread-count/', views.get_unread_count, name='unread_count'),
 ]
+# Force redeploy - staff_message_detail URL
