@@ -964,3 +964,170 @@ def archive_message(request, message_id):
         return JsonResponse({'success': True})
     except Message.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Message not found'})
+    
+@login_required
+def compose_broadcast_message(request):
+    """
+    Staff compose broadcast message to multiple customers with segmentation.
+    Supports targeting by: all, VIP, points range, spending tier, purchase history
+    """
+    tenant = getattr(request, 'tenant', None)
+    
+    if not tenant:
+        messages.error(request, 'Unable to compose message.')
+        return redirect('dashboard:home')
+    
+    tenant_customer = request.user
+    if not tenant_customer.is_staff_member:
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard:home')
+    
+    if request.method == 'POST':
+        subject = request.POST.get('subject')
+        body = request.POST.get('body')
+        priority = request.POST.get('priority', 'normal')
+        template_id = request.POST.get('template')
+        
+        # Targeting options
+        target_type = request.POST.get('target_type')
+        points_min = request.POST.get('points_min')
+        points_max = request.POST.get('points_max')
+        spending_tier = request.POST.get('spending_tier')
+        specific_customers = request.POST.getlist('specific_customers')
+        
+        # Validate
+        if not subject or not body:
+            messages.error(request, 'Please fill in subject and message.')
+            return redirect('notifications:compose_broadcast')
+        
+        # Get target customers based on segmentation
+        customers = TenantCustomer.objects.filter(
+            tenant=tenant,
+            role='customer',
+            is_active=True
+        )
+        
+        # Apply filters based on target type
+        if target_type == 'vip':
+            customers = customers.filter(is_vip=True)
+        
+        elif target_type == 'points_range':
+            if points_min:
+                customers = customers.filter(loyalty_points__gte=int(points_min))
+            if points_max:
+                customers = customers.filter(loyalty_points__lte=int(points_max))
+        
+        elif target_type == 'spending_tier':
+            # Calculate total spending per customer
+            customers = customers.annotate(
+                total_spent=Sum('transactions__total')
+            )
+            
+            if spending_tier == 'low':
+                customers = customers.filter(Q(total_spent__lte=100) | Q(total_spent__isnull=True))
+            elif spending_tier == 'medium':
+                customers = customers.filter(total_spent__gt=100, total_spent__lte=500)
+            elif spending_tier == 'high':
+                customers = customers.filter(total_spent__gt=500, total_spent__lte=1000)
+            elif spending_tier == 'vip':
+                customers = customers.filter(total_spent__gt=1000)
+        
+        elif target_type == 'specific':
+            if specific_customers:
+                customers = customers.filter(id__in=specific_customers)
+            else:
+                messages.error(request, 'Please select at least one customer.')
+                return redirect('notifications:compose_broadcast')
+        
+        recipient_count = customers.count()
+        
+        if recipient_count == 0:
+            messages.error(request, 'No customers match the selected criteria.')
+            return redirect('notifications:compose_broadcast')
+        
+        # Get template if used
+        template_obj = None
+        if template_id:
+            try:
+                template_obj = MessageTemplate.objects.get(id=template_id, tenant=tenant)
+            except MessageTemplate.DoesNotExist:
+                pass
+        
+        # Send message to each customer
+        messages_sent = 0
+        for customer in customers:
+            # Render template with customer data if template is used
+            if template_obj:
+                rendered_subject, rendered_body = template_obj.render(customer)
+            else:
+                rendered_subject = subject
+                rendered_body = body
+            
+            # Create message
+            Message.objects.create(
+                tenant=tenant,
+                sender=tenant_customer,
+                receiver=customer,
+                message_type='business_to_customer',
+                subject=rendered_subject,
+                body=rendered_body,
+                priority=priority,
+                status='sent',
+                sent_at=timezone.now(),
+                template_used=template_obj
+            )
+            messages_sent += 1
+        
+        # Increment template usage
+        if template_obj:
+            template_obj.times_used += messages_sent
+            template_obj.last_used_at = timezone.now()
+            template_obj.save()
+        
+        messages.success(
+            request,
+            f'Broadcast message sent successfully to {messages_sent} customer(s)!'
+        )
+        return redirect('notifications:staff_inbox')
+    
+    # GET request - show form
+    customers = TenantCustomer.objects.filter(
+        tenant=tenant,
+        role='customer',
+        is_active=True
+    ).annotate(
+        total_spent=Sum('transactions__total')
+    ).order_by('first_name', 'last_name')
+    
+    # Get statistics for preview
+    all_count = customers.count()
+    vip_count = customers.filter(is_vip=True).count()
+    
+    # Spending tiers
+    low_spenders = customers.filter(Q(total_spent__lte=100) | Q(total_spent__isnull=True)).count()
+    medium_spenders = customers.filter(total_spent__gt=100, total_spent__lte=500).count()
+    high_spenders = customers.filter(total_spent__gt=500, total_spent__lte=1000).count()
+    vip_spenders = customers.filter(total_spent__gt=1000).count()
+    
+    # Get templates
+    templates = MessageTemplate.objects.filter(
+        tenant=tenant,
+        is_active=True
+    ).order_by('name')
+    
+    context = {
+        'tenant': tenant,
+        'tenant_customer': tenant_customer,
+        'is_business_view': True,
+        'customers': customers,
+        'templates': templates,
+        'all_count': all_count,
+        'vip_count': vip_count,
+        'low_spenders': low_spenders,
+        'medium_spenders': medium_spenders,
+        'high_spenders': high_spenders,
+        'vip_spenders': vip_spenders,
+    }
+    
+    return render(request, 'notifications/compose_broadcast.html', context)
+
