@@ -533,21 +533,22 @@ def staff_inbox(request):
         tenant=tenant,
         message_type='customer_to_business'
     ).select_related('sender').order_by('-created_at')
-    
-    # Filter by status
-    status_filter = request.GET.get('status', '')
-    if status_filter == 'unread':
+    # UPDATED STAFF_INBOX VIEW SECTION
+# Replace lines 537-597 in notifications/views.py
+
+    # Filter by status (updated parameter name from 'status' to 'filter')
+    filter_param = request.GET.get('filter', 'all')
+    if filter_param == 'unread':
         messages_list = messages_list.filter(status__in=['sent', 'delivered'])
-    elif status_filter == 'read':
+    elif filter_param == 'read':
         messages_list = messages_list.filter(status='read')
-    elif status_filter == 'archived':
+    elif filter_param == 'archived':
         messages_list = messages_list.filter(status='archived')
-    
-    # Filter by priority
-    priority_filter = request.GET.get('priority', '')
-    if priority_filter:
-        messages_list = messages_list.filter(priority=priority_filter)
-    
+    elif filter_param == 'urgent':
+        messages_list = messages_list.filter(priority='urgent')
+    elif filter_param == 'high':
+        messages_list = messages_list.filter(priority='high')
+
     # Search
     search_query = request.GET.get('search', '')
     if search_query:
@@ -557,13 +558,15 @@ def staff_inbox(request):
             Q(sender__first_name__icontains=search_query) |
             Q(sender__last_name__icontains=search_query)
         )
-    
+
     # Pagination
     paginator = Paginator(messages_list, 20)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
     # Statistics
+    from datetime import date
+    
     unread_count = Message.objects.filter(
         tenant=tenant,
         message_type='customer_to_business',
@@ -582,6 +585,12 @@ def staff_inbox(request):
         status__in=['sent', 'delivered']
     ).count()
     
+    today_count = Message.objects.filter(
+        tenant=tenant,
+        message_type='customer_to_business',
+        created_at__date=date.today()
+    ).count()
+    
     context = {
         'tenant': tenant,
         'tenant_customer': tenant_customer,
@@ -590,8 +599,8 @@ def staff_inbox(request):
         'unread_count': unread_count,
         'total_messages': total_messages,
         'urgent_count': urgent_count,
-        'status_filter': status_filter,
-        'priority_filter': priority_filter,
+        'today_count': today_count,
+        'filter': filter_param,
         'search_query': search_query,
     }
     
