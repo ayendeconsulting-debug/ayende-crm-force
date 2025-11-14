@@ -1,6 +1,8 @@
 """
 Notification URLs for Ayende CX
 URL routing for notification system
+
+UPDATED: Added staff_inbox URL pattern to fix NoReverseMatch error
 """
 
 from django.urls import path
@@ -14,6 +16,10 @@ urlpatterns = [
     path('', views.notification_list, name='notification_list'),
     path('<uuid:notification_id>/', views.notification_detail, name='notification_detail'),
     path('<uuid:notification_id>/resend/', views.resend_notification, name='resend_notification'),
+    
+    # Staff/Business Messaging URLs
+    # FIXED: Added staff_inbox URL pattern that was missing
+    path('staff/inbox/', views.staff_inbox, name='staff_inbox'),
     
     # Customer URLs (Receiving Notifications)
     path('inbox/', views.customer_inbox, name='inbox'),
