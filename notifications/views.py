@@ -1018,10 +1018,7 @@ def compose_broadcast_message(request):
                 customers = customers.filter(loyalty_points__lte=int(points_max))
         
         elif target_type == 'spending_tier':
-            # Calculate total spending per customer
-            customers = customers.annotate(
-                total_spent=Sum('transactions__total')
-            )
+    # Use existing total_spent field on model
             
             if spending_tier == 'low':
                 customers = customers.filter(Q(total_spent__lte=100) | Q(total_spent__isnull=True))
@@ -1092,11 +1089,9 @@ def compose_broadcast_message(request):
     
     # GET request - show form
     customers = TenantCustomer.objects.filter(
-        tenant=tenant,
-        role='customer',
-        is_active=True
-    ).annotate(
-        total_spent=Sum('transactions__total')
+    tenant=tenant,
+    role='customer',
+    is_active=True
     ).order_by('first_name', 'last_name')
     
     # Get statistics for preview
