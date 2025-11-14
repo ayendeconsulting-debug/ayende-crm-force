@@ -1,4 +1,4 @@
-{% extends 'dashboard/base.html' %}
+{% extends 'dashboard/business_base.html' %}  
 {% load static %}
 
 {% block title %}Message Templates - {{ tenant.name }}{% endblock %}
@@ -214,7 +214,7 @@
                 <h1><i class="bi bi-file-text"></i> Message Templates</h1>
                 <p class="mb-0">Create and manage reusable message templates</p>
             </div>
-            <a href="{% url 'notifications:create_template' %}" class="create-btn" style="text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
+            <a href="{% url 'notifications:compose_message' %}" class="create-btn" style="text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
                 <i class="bi bi-plus-circle"></i>
                 Create Template
             </a>
@@ -223,7 +223,7 @@
 
     <div class="templates-content">
         <div class="filter-tabs">
-            <a href="{% url 'notifications:template_library' %}" class="filter-tab {% if not type_filter %}active{% endif %}" style="text-decoration: none;">
+            <a href="{% url 'notifications:create_template' %}" class="filter-tab {% if not type_filter %}active{% endif %}" style="text-decoration: none;">
                 All Templates
             </a>
             <a href="?type=welcome" class="filter-tab {% if type_filter == 'welcome' %}active{% endif %}" style="text-decoration: none;">
