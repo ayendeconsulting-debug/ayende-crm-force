@@ -3,10 +3,8 @@
 Webhook service for sending customer data to POS system.
 Handles webhook signing, retry logic, and error handling.
 
-UPDATED: Fixed to properly handle Customer (global identity) and TenantCustomer (tenant-specific) relationship
-- Customer model only has: id, first_name, last_name, created_at, updated_at
-- TenantCustomer model has all other fields: email, phone, loyalty_points, etc.
-- Properly references TenantCustomer for all tenant-specific data
+UPDATED: Fixed to properly handle Customer/TenantCustomer relationship
+FIXED: Now uses tenant.pk instead of tenant.id for compatibility
 """
 
 import requests
@@ -24,6 +22,28 @@ logger = logging.getLogger(__name__)
 
 class WebhookService:
     """Service for sending webhooks to POS system"""
+    
+    @staticmethod
+    def _get_tenant_id(tenant) -> str:
+        """
+        Get tenant ID in a way that works with any primary key field name.
+        
+        Args:
+            tenant: Tenant instance
+            
+        Returns:
+            String representation of tenant primary key
+        """
+        # Try different possible field names
+        if hasattr(tenant, 'tenant_uuid'):
+            return str(tenant.tenant_uuid)
+        elif hasattr(tenant, 'uuid'):
+            return str(tenant.uuid)
+        elif hasattr(tenant, 'id'):
+            return str(tenant.id)
+        else:
+            # Fall back to pk which always works
+            return str(tenant.pk)
     
     @staticmethod
     def _get_webhook_url(tenant, operation: str) -> Optional[str]:
@@ -87,6 +107,9 @@ class WebhookService:
         Returns:
             Dictionary with customer data
         """
+        # Get tenant ID using helper method
+        tenant_id = WebhookService._get_tenant_id(tenant)
+        
         # For delete operations, send minimal data
         if operation == 'deleted':
             external_id = None
@@ -97,14 +120,14 @@ class WebhookService:
                 'operation': operation,
                 'customerId': str(customer.id),  # CRM customer ID (global)
                 'externalId': external_id,  # POS customer ID (if exists)
-                'tenantId': str(tenant.id),
+                'tenantId': tenant_id,
                 'timestamp': int(time.time())
             }
         
         # For create/update, send full customer data
         # Note: tenant_customer might be None for new customers
         if not tenant_customer:
-            logger.warning(f"No TenantCustomer found for customer {customer.id} in tenant {tenant.id}")
+            logger.warning(f"No TenantCustomer found for customer {customer.id} in tenant {tenant_id}")
             
         return {
             'operation': operation,
@@ -136,7 +159,7 @@ class WebhookService:
             'visitCount': tenant_customer.visit_count if tenant_customer else 0,
             
             # Tenant identification
-            'tenantId': str(tenant.id),
+            'tenantId': tenant_id,
             'timestamp': int(time.time())
         }
     
@@ -264,20 +287,26 @@ class WebhookService:
                 logger.error("INTEGRATION_SECRET not configured")
                 return False
             
+            # Get tenant ID for logging
+            tenant_id = cls._get_tenant_id(tenant)
+            
             # Get TenantCustomer for this tenant
             tenant_customer = customer.tenant_accounts.filter(tenant=tenant).first()
             
             if not tenant_customer and operation != 'deleted':
                 logger.warning(
-                    f"No TenantCustomer found for customer {customer.id} in tenant {tenant.id}"
+                    f"No TenantCustomer found for customer {customer.id} in tenant {tenant_id}"
                 )
                 # Still send webhook for created operation (might be during registration)
                 if operation != 'created':
                     return False
             
+            # Get subdomain for logging if available
+            subdomain = getattr(tenant, 'subdomain', tenant_id)
+            
             logger.info(
                 f"📨 Sending {operation} webhook for customer {customer.id} "
-                f"({customer.first_name} {customer.last_name}) to tenant {tenant.subdomain}"
+                f"({customer.first_name} {customer.last_name}) to tenant {subdomain}"
             )
             
             # Prepare payload
@@ -353,5 +382,3 @@ class WebhookService:
                 'success': False,
                 'error': str(e)
             }
-
-            
