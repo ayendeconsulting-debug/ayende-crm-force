@@ -292,8 +292,9 @@ class BusinessCustomerAddForm(forms.Form):
 class BusinessCustomerEditForm(forms.ModelForm):
     """
     Business owner form to edit existing customer information.
+    UPDATED: Works with refactored TenantCustomer model (no separate Customer object)
     """
-    # Customer model fields
+    # TenantCustomer fields (directly on the model)
     first_name = forms.CharField(
         max_length=150,
         widget=forms.TextInput(attrs={
@@ -322,7 +323,6 @@ class BusinessCustomerEditForm(forms.ModelForm):
         label='Phone Number'
     )
     
-    # TenantCustomer model fields
     loyalty_points = forms.IntegerField(
         min_value=0,
         widget=forms.NumberInput(attrs={
@@ -364,17 +364,16 @@ class BusinessCustomerEditForm(forms.ModelForm):
     
     class Meta:
         model = TenantCustomer
-        fields = ['loyalty_points', 'is_vip', 'is_active', 'notes']
+        fields = ['first_name', 'last_name', 'phone', 'loyalty_points', 'is_vip', 'is_active', 'notes']
     
     def __init__(self, *args, **kwargs):
-        self.customer = kwargs.pop('customer', None)
         super().__init__(*args, **kwargs)
         
-        # Pre-populate customer fields if customer provided
-        if self.customer:
-            self.fields['first_name'].initial = self.customer.first_name
-            self.fields['last_name'].initial = self.customer.last_name
-            self.fields['phone'].initial = self.customer.phone
+        # Pre-populate fields from instance (TenantCustomer)
+        if self.instance and self.instance.pk:
+            self.fields['first_name'].initial = self.instance.first_name
+            self.fields['last_name'].initial = self.instance.last_name
+            self.fields['phone'].initial = self.instance.phone
     
     def clean_phone(self):
         phone = self.cleaned_data.get('phone', '')
@@ -386,16 +385,13 @@ class BusinessCustomerEditForm(forms.ModelForm):
         return phone
     
     def save(self, commit=True):
-        """Save both Customer and TenantCustomer models."""
+        """Save TenantCustomer with updated fields."""
         tenant_customer = super().save(commit=False)
         
-        # Update customer fields
-        if self.customer:
-            self.customer.first_name = self.cleaned_data['first_name']
-            self.customer.last_name = self.cleaned_data['last_name']
-            self.customer.phone = self.cleaned_data.get('phone', '')
-            if commit:
-                self.customer.save()
+        # Update fields from form
+        tenant_customer.first_name = self.cleaned_data['first_name']
+        tenant_customer.last_name = self.cleaned_data['last_name']
+        tenant_customer.phone = self.cleaned_data.get('phone', '')
         
         if commit:
             tenant_customer.save()
