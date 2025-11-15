@@ -453,5 +453,9 @@
     </script>
     
     {% block extra_js %}{% endblock %}
+    
+    <!-- Auto-Refresh Script -->
+    {% load static %}
+    <script src="{% static 'dashboard/js/auto_refresh.js' %}"></script>
 </body>
 </html>
