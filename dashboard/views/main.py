@@ -706,7 +706,7 @@ def edit_customer(request, customer_id):
         form = BusinessCustomerEditForm(
             request.POST,
             instance=tenant_customer,
-            customer=tenant_customer.customer
+          
         )
         if form.is_valid():
             form.save()
@@ -715,7 +715,7 @@ def edit_customer(request, customer_id):
     else:
         form = BusinessCustomerEditForm(
             instance=tenant_customer,
-            customer=tenant_customer.customer
+           
         )
     
     context = {
