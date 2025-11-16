@@ -311,3 +311,12 @@ ENABLE_WEBHOOKS = True
 # Webhook retry configuration
 WEBHOOK_MAX_RETRIES = 3
 WEBHOOK_TIMEOUT = 10  # seconds
+
+# Add at bottom
+DEFAULT_FROM_EMAIL = 'noreply@ayendecx.com'
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.sendgrid.net'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'apikey'
+EMAIL_HOST_PASSWORD = os.environ.get('SENDGRID_API_KEY', '')
