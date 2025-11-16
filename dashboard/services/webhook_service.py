@@ -3,8 +3,9 @@
 Webhook service for sending customer data to POS system.
 Handles webhook signing, retry logic, and error handling.
 
-UPDATED: Fixed to properly handle Customer/TenantCustomer relationship
-FIXED: Now uses tenant.pk instead of tenant.id for compatibility
+UPDATED: Fixed to use TenantCustomer name fields instead of global Customer
+CRITICAL FIX: When editing in CRM UI, TenantCustomer gets updated, not Customer!
+Therefore webhook must send TenantCustomer.first_name/last_name, not Customer.first_name/last_name
 """
 
 import requests
@@ -98,6 +99,9 @@ class WebhookService:
         """
         Prepare customer data for webhook payload.
         
+        CRITICAL FIX: Uses TenantCustomer fields for name (not Customer)
+        because CRM UI edits TenantCustomer, not Customer!
+        
         Args:
             customer: Customer model instance (global identity)
             tenant_customer: TenantCustomer model instance (tenant-specific data)
@@ -134,9 +138,11 @@ class WebhookService:
             'customerId': str(customer.id),  # CRM customer ID (global identity)
             'externalId': str(tenant_customer.external_id) if tenant_customer and tenant_customer.external_id else None,
             
-            # Personal info from Customer (global)
-            'firstName': customer.first_name,
-            'lastName': customer.last_name,
+            # CRITICAL FIX: Use TenantCustomer name fields, NOT Customer fields!
+            # When user edits customer in CRM UI, they're editing TenantCustomer
+            # Global Customer remains unchanged
+            'firstName': tenant_customer.first_name if tenant_customer else customer.first_name,
+            'lastName': tenant_customer.last_name if tenant_customer else customer.last_name,
             
             # Contact info from TenantCustomer (tenant-specific)
             'email': tenant_customer.email if tenant_customer else '',
@@ -198,7 +204,7 @@ class WebhookService:
         
         for attempt in range(max_retries):
             try:
-                logger.info(f"📤 Sending webhook to {url} (attempt {attempt + 1}/{max_retries})")
+                logger.info(f"Sending webhook to {url} (attempt {attempt + 1}/{max_retries})")
                 
                 response = requests.post(
                     url,
@@ -208,7 +214,7 @@ class WebhookService:
                 )
                 
                 if response.status_code in [200, 201, 204]:
-                    logger.info(f"✅ Webhook sent successfully: {response.status_code}")
+                    logger.info(f"Webhook sent successfully: {response.status_code}")
                     
                     # Try to extract POS customer ID from response
                     try:
@@ -231,25 +237,25 @@ class WebhookService:
                         }
                 else:
                     logger.warning(
-                        f"⚠️ Webhook failed with status {response.status_code}: {response.text}"
+                        f"Webhook failed with status {response.status_code}: {response.text}"
                     )
                     
             except requests.exceptions.Timeout:
-                logger.warning(f"⏱️ Webhook timeout (attempt {attempt + 1}/{max_retries})")
+                logger.warning(f"Webhook timeout (attempt {attempt + 1}/{max_retries})")
                 
             except requests.exceptions.ConnectionError:
-                logger.warning(f"🔌 Webhook connection error (attempt {attempt + 1}/{max_retries})")
+                logger.warning(f"Webhook connection error (attempt {attempt + 1}/{max_retries})")
                 
             except Exception as e:
-                logger.error(f"💥 Webhook error: {str(e)}", exc_info=True)
+                logger.error(f"Webhook error: {str(e)}", exc_info=True)
             
             # Wait before retry (exponential backoff)
             if attempt < max_retries - 1:
                 wait_time = 2 ** attempt  # 1s, 2s, 4s
-                logger.info(f"⏳ Waiting {wait_time}s before retry...")
+                logger.info(f"Waiting {wait_time}s before retry...")
                 time.sleep(wait_time)
         
-        logger.error(f"❌ Webhook failed after {max_retries} attempts")
+        logger.error(f"Webhook failed after {max_retries} attempts")
         return {
             'success': False,
             'status_code': None,
@@ -305,7 +311,7 @@ class WebhookService:
             subdomain = getattr(tenant, 'subdomain', tenant_id)
             
             logger.info(
-                f"📨 Sending {operation} webhook for customer {customer.id} "
+                f"Sending {operation} webhook for customer {customer.id} "
                 f"({customer.first_name} {customer.last_name}) to tenant {subdomain}"
             )
             
@@ -323,7 +329,7 @@ class WebhookService:
                 if tenant_customer and not tenant_customer.external_id:
                     tenant_customer.external_id = pos_customer_id
                     tenant_customer.save(update_fields=['external_id'])
-                    logger.info(f"✅ Updated external_id to: {pos_customer_id}")
+                    logger.info(f"Updated external_id to: {pos_customer_id}")
             
             return result['success']
             
