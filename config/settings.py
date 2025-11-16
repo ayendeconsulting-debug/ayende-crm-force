@@ -8,7 +8,6 @@ from pathlib import Path
 # Load environment variables from .env file
 from dotenv import load_dotenv
 from django.urls import reverse_lazy
-from django.templatetags.static import static
 
 
 
@@ -223,156 +222,15 @@ REST_FRAMEWORK = {
 # MODERN ADMIN DASHBOARD (django-unfold)
 # ========================================
 UNFOLD = {
-    # ========================================
-    # BRANDING
-    # ========================================
     "SITE_TITLE": "Ayende CX Platform",
     "SITE_HEADER": "Ayende CX - Platform Administration",
     "SITE_URL": "/",
     "SITE_ICON": None,
     "SITE_LOGO": None,
-    "SITE_SYMBOL": "analytics",  # Google Material icon name
-    
-    # ========================================
-    # DASHBOARD FEATURES
-    # ========================================
+    "SITE_SYMBOL": "analytics",
     "SHOW_HISTORY": True,
     "SHOW_VIEW_ON_SITE": True,
     "ENVIRONMENT": "production" if not DEBUG else "development",
-    
-    # ========================================
-    # CUSTOM NAVIGATION
-    # ========================================
-    "NAVIGATION": [
-        # Platform Dashboards Section
-        {
-            "title": "Platform Dashboards",
-            "separator": True,  # Adds visual separator
-            "collapsible": False,
-            "items": [
-                {
-                    "title": "Platform Overview",
-                    "icon": "dashboard",
-                    "link": lambda request: reverse_lazy("reports:platform_dashboard"),
-                    "permission": lambda request: getattr(request.user, 'is_platform_admin', False),
-                },
-                {
-                    "title": "Revenue Dashboard",
-                    "icon": "trending_up",
-                    "link": lambda request: reverse_lazy("reports:platform_revenue"),
-                    "permission": lambda request: getattr(request.user, 'is_platform_admin', False),
-                },
-            ],
-        },
-        
-        # Tenant Management Section
-        {
-            "title": "Tenant Management",
-            "separator": True,
-            "collapsible": True,
-            "items": [
-                {
-                    "title": "All Tenants",
-                    "icon": "business",
-                    "link": lambda request: reverse_lazy("admin:tenants_tenant_changelist"),
-                },
-                {
-                    "title": "Tenant Settings",
-                    "icon": "settings",
-                    "link": lambda request: reverse_lazy("admin:tenants_tenantsettings_changelist") if hasattr(request, 'user') else "#",
-                },
-            ],
-        },
-        
-        # Customer Management Section
-        {
-            "title": "Customer Management",
-            "separator": True,
-            "collapsible": True,
-            "items": [
-                {
-                    "title": "All Customers",
-                    "icon": "people",
-                    "link": lambda request: reverse_lazy("admin:customers_customer_changelist"),
-                },
-                {
-                    "title": "Tenant Customers",
-                    "icon": "person",
-                    "link": lambda request: reverse_lazy("admin:customers_tenantcustomer_changelist"),
-                },
-                {
-                    "title": "Transactions",
-                    "icon": "receipt",
-                    "link": lambda request: reverse_lazy("admin:customers_transaction_changelist"),
-                },
-            ],
-        },
-        
-        # Communications Section
-        {
-            "title": "Communications",
-            "separator": True,
-            "collapsible": True,
-            "items": [
-                {
-                    "title": "Notifications",
-                    "icon": "notifications",
-                    "link": lambda request: reverse_lazy("admin:notifications_notification_changelist"),
-                },
-                {
-                    "title": "Messages",
-                    "icon": "message",
-                    "link": lambda request: reverse_lazy("admin:notifications_message_changelist"),
-                },
-            ],
-        },
-        
-        # Rewards & Loyalty Section
-        {
-            "title": "Rewards & Loyalty",
-            "separator": True,
-            "collapsible": True,
-            "items": [
-                {
-                    "title": "Rewards",
-                    "icon": "card_giftcard",
-                    "link": lambda request: reverse_lazy("admin:rewards_reward_changelist"),
-                },
-                {
-                    "title": "Redemptions",
-                    "icon": "redeem",
-                    "link": lambda request: reverse_lazy("admin:rewards_redemption_changelist"),
-                },
-            ],
-        },
-        
-        # System Administration Section
-        {
-            "title": "System Administration",
-            "separator": True,
-            "collapsible": True,
-            "items": [
-                {
-                    "title": "Users & Permissions",
-                    "icon": "admin_panel_settings",
-                    "link": lambda request: reverse_lazy("admin:auth_user_changelist") if hasattr(request, 'user') else "#",
-                },
-            ],
-        },
-    ],
-    
-    # ========================================
-    # SIDEBAR CONFIGURATION
-    # ========================================
-    "SIDEBAR": {
-        "show_search": True,  # Show search in sidebar
-        "show_all_applications": False,  # Don't show default app list (we have custom nav)
-        "navigation": "collapsible",  # Make sections collapsible
-    },
-    
-    # ========================================
-    # THEME COLORS
-    # ========================================
     "COLORS": {
         "primary": {
             "50": "240 249 255",
@@ -380,13 +238,17 @@ UNFOLD = {
             "200": "186 230 253",
             "300": "125 211 252",
             "400": "56 189 248",
-            "500": "14 165 233",   # Main primary color
+            "500": "14 165 233",
             "600": "2 132 199",
             "700": "3 105 161",
             "800": "7 89 133",
             "900": "12 74 110",
             "950": "8 47 73",
         },
+    },
+    "SIDEBAR": {
+        "show_search": True,
+        "show_all_applications": True,
     },
 }
 
