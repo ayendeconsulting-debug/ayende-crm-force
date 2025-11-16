@@ -76,6 +76,18 @@
             color: var(--bright-blue);
         }
 
+        .nav-links .access-dashboard {
+            background: var(--bright-blue);
+            padding: 0.5rem 1.5rem;
+            border-radius: 25px;
+            font-weight: 600;
+        }
+
+        .nav-links .access-dashboard:hover {
+            background: var(--light-blue);
+            color: var(--white);
+        }
+
         /* Mobile Menu Toggle Button */
         .mobile-menu-toggle {
             display: none;
@@ -211,9 +223,62 @@
             opacity: 0.9;
         }
 
-        .logo-container {
-            text-decoration: none;
-            display: inline-block;
+        /* Registration Section */
+        .registration {
+            padding: 100px 2rem;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            text-align: center;
+        }
+
+        .registration h2 {
+            color: var(--dark-blue);
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .registration p {
+            font-size: 1.2rem;
+            color: var(--dark-grey);
+            margin-bottom: 2rem;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .registration-cta {
+            background: linear-gradient(135deg, var(--dark-blue) 0%, var(--medium-blue) 100%);
+            color: white;
+            padding: 3rem;
+            border-radius: 15px;
+            max-width: 600px;
+            margin: 0 auto;
+            box-shadow: 0 10px 40px rgba(10, 30, 61, 0.15);
+        }
+
+        .registration-cta h3 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: white;
+        }
+
+        .registration-cta p {
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+            opacity: 0.95;
+            color: white;
+        }
+
+        .registration-cta .btn {
+            background: white;
+            color: var(--dark-blue);
+            font-size: 1.2rem;
+            padding: 1.2rem 3rem;
+        }
+
+        .registration-cta .btn:hover {
+            background: var(--light-grey);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
 
         /* About Section */
@@ -233,29 +298,62 @@
 
         .about-image {
             width: 100%;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
-            position: sticky;
-            top: 100px;
+            height: auto;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(10, 30, 61, 0.3);
+            border: 5px solid var(--light-blue);
         }
 
         .about-text h2 {
+            color: var(--dark-blue);
             font-size: 2.5rem;
             margin-bottom: 1.5rem;
-            color: var(--dark-blue);
+        }
+
+        .about-text .intro {
+            font-size: 1.2rem;
+            color: var(--dark-grey);
+            margin-bottom: 2rem;
+            line-height: 1.8;
         }
 
         .about-text p {
             margin-bottom: 1.5rem;
-            font-size: 1.1rem;
-            color: var(--dark-grey);
             line-height: 1.8;
+        }
+
+        .about-text .philosophy {
+            background: linear-gradient(135deg, rgba(74, 144, 226, 0.1) 0%, rgba(96, 165, 250, 0.1) 100%);
+            padding: 1.5rem;
+            border-left: 4px solid var(--bright-blue);
+            font-style: italic;
+            border-radius: 8px;
+        }
+
+        .credentials {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .credential-item {
+            background: linear-gradient(135deg, rgba(74, 144, 226, 0.05) 0%, rgba(96, 165, 250, 0.05) 100%);
+            padding: 1.5rem;
+            border-radius: 10px;
+            border-left: 3px solid var(--bright-blue);
+        }
+
+        .credential-item h4 {
+            color: var(--dark-blue);
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
         }
 
         /* Services Section */
         .services {
             padding: 100px 2rem;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
         }
 
         .container {
@@ -266,8 +364,8 @@
         .section-title {
             text-align: center;
             font-size: 2.5rem;
-            margin-bottom: 3rem;
             color: var(--dark-blue);
+            margin-bottom: 3rem;
         }
 
         .services-grid {
@@ -277,109 +375,55 @@
         }
 
         .service-card {
-            background: var(--white);
-            padding: 2.5rem;
+            background: white;
+            padding: 2rem;
             border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
             transition: transform 0.3s, box-shadow 0.3s;
-            text-align: center;
         }
 
         .service-card:hover {
             transform: translateY(-10px);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
-        }
-
-        .service-icon {
-            font-size: 3rem;
-            margin-bottom: 1.5rem;
-            color: var(--light-blue);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.2);
         }
 
         .service-card h3 {
-            font-size: 1.5rem;
-            margin-bottom: 1rem;
             color: var(--dark-blue);
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
         }
 
         .service-card p {
             color: var(--dark-grey);
-            line-height: 1.6;
-        }
-
-        /* Features Section */
-        .features {
-            padding: 100px 2rem;
-            background: var(--white);
-        }
-
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 2rem;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .feature-item {
-            text-align: center;
-            padding: 2rem;
-        }
-
-        .feature-icon {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, var(--light-blue), var(--bright-blue));
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 1.5rem;
-            font-size: 2rem;
-            color: var(--white);
-        }
-
-        .feature-item h3 {
-            font-size: 1.3rem;
-            margin-bottom: 1rem;
-            color: var(--dark-blue);
-        }
-
-        .feature-item p {
-            color: var(--dark-grey);
+            line-height: 1.8;
         }
 
         /* Pricing Section */
         .pricing {
             padding: 100px 2rem;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: var(--white);
-        }
-
-        .pricing .section-title {
-            color: var(--white);
+            background: var(--white);
         }
 
         .pricing-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 2rem;
             max-width: 1200px;
             margin: 0 auto 3rem;
         }
 
         .pricing-card {
-            background: var(--white);
-            color: var(--dark-grey);
-            border-radius: 20px;
+            background: white;
+            border-radius: 15px;
             overflow: hidden;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.2);
-            transition: transform 0.3s;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
             position: relative;
         }
 
         .pricing-card:hover {
             transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.2);
         }
 
         .pricing-card.featured {
@@ -389,20 +433,20 @@
 
         .featured-badge {
             background: var(--bright-blue);
-            color: var(--white);
+            color: white;
             padding: 0.5rem 1.5rem;
             position: absolute;
             top: 20px;
             right: -35px;
             transform: rotate(45deg);
             font-weight: 600;
-            font-size: 0.85rem;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+            font-size: 0.9rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
         }
 
         .pricing-header {
-            background: linear-gradient(135deg, var(--dark-blue), var(--medium-blue));
-            color: var(--white);
+            background: linear-gradient(135deg, var(--dark-blue) 0%, var(--medium-blue) 100%);
+            color: white;
             padding: 2rem;
             text-align: center;
         }
@@ -428,43 +472,44 @@
 
         .price-amount {
             font-size: 2.5rem;
-            font-weight: 700;
             color: var(--dark-blue);
+            font-weight: 700;
         }
 
         .price-period {
-            font-size: 1.2rem;
             color: var(--dark-grey);
+            font-size: 1rem;
         }
 
         .price-label {
-            font-size: 1.8rem;
-            font-weight: 600;
+            font-size: 1.5rem;
             color: var(--dark-blue);
+            font-weight: 700;
         }
 
         .pricing-features {
             list-style: none;
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
         }
 
         .pricing-features li {
             padding: 0.75rem 0;
             border-bottom: 1px solid var(--light-grey);
+            display: flex;
+            align-items: center;
         }
 
         .pricing-features li:before {
             content: "✓";
-            color: var(--light-blue);
+            color: var(--bright-blue);
             font-weight: bold;
             margin-right: 10px;
         }
 
         .pricing-note {
-            text-align: center;
-            font-size: 0.9rem;
             color: var(--dark-grey);
             font-style: italic;
+            font-size: 0.9rem;
         }
 
         .pricing-cta {
@@ -475,12 +520,49 @@
         /* Contact Section */
         .contact {
             padding: 100px 2rem;
-            background: var(--white);
+            background: linear-gradient(135deg, var(--dark-blue) 0%, var(--medium-blue) 100%);
         }
 
         .contact-content {
-            max-width: 800px;
+            max-width: 700px;
             margin: 0 auto;
+        }
+
+        .contact .section-title {
+            color: white;
+        }
+
+        .contact-info {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .contact-info h3 {
+            color: white;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .contact-info p {
+            color: white;
+            font-size: 1.1rem;
+            opacity: 0.95;
+        }
+
+        .contact-info a {
+            color: var(--bright-blue);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .contact-info a:hover {
+            text-decoration: underline;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
         }
 
         .form-group {
@@ -490,8 +572,8 @@
         .form-group label {
             display: block;
             margin-bottom: 0.5rem;
+            color: white;
             font-weight: 600;
-            color: var(--dark-blue);
         }
 
         .form-group input,
@@ -499,23 +581,52 @@
         .form-group textarea {
             width: 100%;
             padding: 1rem;
-            border: 2px solid var(--light-grey);
-            border-radius: 10px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
             font-size: 1rem;
-            font-family: inherit;
             transition: border-color 0.3s;
+            font-family: inherit;
+            background: rgba(255, 255, 255, 0.95);
+            color: var(--dark-grey);
         }
 
         .form-group input:focus,
         .form-group select:focus,
         .form-group textarea:focus {
             outline: none;
-            border-color: var(--light-blue);
+            border-color: var(--bright-blue);
+            background: white;
         }
 
         .form-group textarea {
             min-height: 150px;
             resize: vertical;
+        }
+
+        .form-group input::placeholder,
+        .form-group textarea::placeholder {
+            color: #999;
+        }
+
+        .form-success,
+        .form-error {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            display: none;
+            text-align: center;
+        }
+
+        .form-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .form-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
         }
 
         /* Footer */
@@ -524,6 +635,10 @@
             color: var(--white);
             padding: 3rem 2rem;
             text-align: center;
+        }
+
+        footer p {
+            margin: 0.5rem 0;
         }
 
         /* Animations */
@@ -540,25 +655,36 @@
 
         /* Mobile Responsive */
         @media (max-width: 768px) {
+            .mobile-menu-toggle {
+                display: flex;
+            }
+
             .nav-links {
                 position: fixed;
-                right: -100%;
                 top: 60px;
+                left: 0;
+                right: 0;
+                background: linear-gradient(135deg, var(--dark-blue) 0%, var(--medium-blue) 100%);
                 flex-direction: column;
-                background: var(--dark-blue);
-                width: 100%;
-                text-align: center;
-                transition: right 0.3s;
-                padding: 2rem 0;
-                box-shadow: 0 10px 27px rgba(0,0,0,0.3);
+                gap: 0;
+                padding: 1rem 0;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                box-shadow: 0 10px 20px rgba(0,0,0,0.2);
             }
 
             .nav-links.active {
-                right: 0;
+                transform: translateX(0);
             }
 
-            .mobile-menu-toggle {
-                display: flex;
+            .nav-links li {
+                text-align: center;
+                padding: 0.75rem 2rem;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            }
+
+            .nav-links li:last-child {
+                border-bottom: none;
             }
 
             .hero h1 {
@@ -579,8 +705,9 @@
             }
 
             .about-image {
-                position: relative;
-                top: 0;
+                max-width: 350px;
+                margin: 0 auto;
+                display: block;
             }
 
             .pricing-card.featured {
@@ -590,6 +717,19 @@
             .section-title {
                 font-size: 2rem;
             }
+
+            .credentials {
+                grid-template-columns: 1fr;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Smooth Scroll */
+        html {
+            scroll-behavior: smooth;
         }
     </style>
 </head>
@@ -611,35 +751,90 @@
                 <li><a href="#services">Services</a></li>
                 <li><a href="#pricing">Pricing</a></li>
                 <li><a href="#contact">Contact</a></li>
-                <li><a href="/admin/" style="background: var(--bright-blue); padding: 0.5rem 1.5rem; border-radius: 25px;">Access Dashboard</a></li>
+                <li><a href="https://ayendecx.com/admin/" class="access-dashboard">Access Dashboard</a></li>
             </ul>
         </div>
     </nav>
 
     <!-- Hero Section -->
     <section id="home" class="hero">
-        <h1>CRM Software Solutions</h1>
-        <p class="tagline">Certified Solution Architect</p>
-        <p>Transform your business with cutting-edge customer relationship management systems tailored to your unique needs. We specialize in Salesforce implementations, custom CRM development, and comprehensive business solutions.</p>
+        <h1>Transform Your Business with Smart CRM Solutions</h1>
+        <p class="tagline">Built on Real Data. Powered by Technology. Designed for Growth.</p>
+        <p>We design and implement CRM systems that integrate seamlessly with your Point of Sales data, giving you clear visibility into customer behavior, purchase patterns, and growth opportunities.</p>
         <div class="cta-buttons">
-            <a href="/admin/" class="btn btn-primary">Access Dashboard</a>
-            <a href="#contact" class="btn btn-secondary">Learn More</a>
+            <a href="#register" class="btn btn-primary">Get Started Free</a>
+            <a href="#contact" class="btn btn-secondary">Schedule Consultation</a>
         </div>
         <div class="certifications">
-            <h3>Certified Professionals</h3>
-            <p>Delivering enterprise-grade solutions with proven expertise</p>
+            <h3>Salesforce Certified Solution Architect</h3>
+            <p>Expert-level platform design and implementation</p>
+        </div>
+    </section>
+
+    <!-- Registration Section -->
+    <section id="register" class="registration">
+        <div class="container">
+            <h2>Register Your Business</h2>
+            <p>Get instant access to our complete CRM platform with integrated POS data synchronization</p>
+            
+            <div class="registration-cta">
+                <h3>Register Your Business</h3>
+                <p>Get instant access to our complete CRM platform with integrated POS data synchronization</p>
+                <a href="https://pos-app.ayendecx.com/register" class="btn" target="_blank">Create Free Account</a>
+                <p style="font-size: 0.9rem; margin-top: 1.5rem; opacity: 0.9;">No credit card required • Full access • Cancel anytime</p>
+            </div>
         </div>
     </section>
 
     <!-- About Section -->
     <section id="about" class="about">
-        <div class="about-content">
-            <img src="/static/images/hero-background.jpg" alt="Ayende CXTeam" class="about-image">
-            <div class="about-text">
-                <h2>About Us</h2>
-                <p>At Ayende CX, we bridge the gap between technology and business success. As certified Solution Architects and experienced Software Engineers, we understand that every business has unique challenges and opportunities.</p>
-                <p>Our mission is to empower local businesses with enterprise-level CRM solutions that are both powerful and accessible. Whether you're looking to implement Salesforce, need a custom CRM system, or want to optimize your existing Customer Management processes, we bring the expertise and dedication to make it happen.</p>
-                <p>With years of experience in software architecture, business improvement, and customer relationship management, we don't just build software – we build partnerships that drive growth and success.</p>
+        <div class="container">
+            <div class="about-content">
+                <img src="/static/images/hero-background.jpg" alt="Ayende CX Team" class="about-image">
+                <div class="about-text">
+                    <h2>Meet Your Technology Partner</h2>
+                    <p class="intro">At Ayende CX, we built our business after spending years consulting with small and mid-sized businesses across different industries. Many shared the same challenges: scattered customer data, manual processes, limited visibility into sales activity, and no clear connection between their Point of Sales systems and how they engaged customers. We recognized a gap and decided to provide a service that brings clarity, structure, and measurable value to everyday business operations.</p>
+                    
+                    <h3 style="color: var(--bright-blue); font-size: 1.5rem; margin-top: 2rem; margin-bottom: 1rem;">Who We Are</h3>
+                    <p>We help organizations move from guesswork to informed decision-making. As certified Solution Architects and experienced Software Engineers, we focus on practical solutions that strengthen customer relationships and improve how businesses operate. Our approach ensures that each client receives a tailored system built around real needs, real data, and real growth opportunities.</p>
+                    
+                    <p>Our work centres on delivering CRM solutions that are accessible and scalable. We design and implement systems powered by integrated Point of Sales data, giving business owners a clear view of customer behaviour, purchase patterns, and opportunities for deeper engagement. Whether you need a Salesforce implementation, a custom CRM platform, or enhancements to your existing environment, we provide the expertise to guide every step.</p>
+                    
+                    <p>Ayende CX is committed to long-term partnerships. With experience in software architecture, operational improvement, and customer management, we support businesses as they streamline processes, strengthen decision-making, and build sustainable growth. Our goal is simple: help local businesses use technology with confidence and achieve success through a data-driven customer experience.</p>
+                    
+                    <h3 style="color: var(--bright-blue); font-size: 1.5rem; margin-top: 2rem; margin-bottom: 1rem;">Our Promise</h3>
+                    <div class="credentials">
+                        <div class="credential-item">
+                            <div>
+                                <h4>Technical Excellence</h4>
+                                <p>With a foundation in full-stack development and engineering expertise, we apply rigorous standards in code quality, architecture, performance, and security to every project we undertake.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="credential-item">
+                            <div>
+                                <h4>Business Mindset</h4>
+                                <p>Technology should serve clear business outcomes. We blend technical decisions with commercial insight to drive efficiency, growth, and measurable ROI for your organization.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="credential-item">
+                            <div>
+                                <h4>Longevity and Support</h4>
+                                <p>Over 20 years in technology means we've witnessed trends evolve and transform. Our focus is on robust, maintainable solutions designed for long-term value, not fleeting innovations.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="credential-item">
+                            <div>
+                                <h4>Client Partnership</h4>
+                                <p>We believe in transparency, collaboration, and accountability. You'll always understand where we are in a project, what decisions are being made, and how your investment is delivering value.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <p class="philosophy" style="margin-top: 2rem;">Let's build something that lasts. We don't just build software—we design solutions that scale businesses, enhance operations, and drive measurable results.</p>
+                </div>
             </div>
         </div>
     </section>
@@ -650,73 +845,28 @@
             <h2 class="section-title">Our Services</h2>
             <div class="services-grid">
                 <div class="service-card">
-                    <div class="service-icon">☁</div>
-                    <h3>Salesforce Solutions</h3>
-                    <p>Expert Salesforce product suites implementation, customization, and optimization. From initial setup to advanced configurations, we ensure your Salesforce instance works perfectly for your business.</p>
-                </div>
-                <div class="service-card">
-                    <div class="service-icon">⚙</div>
                     <h3>Custom CRM Development</h3>
-                    <p>Tailored customer relationship management systems built from the ground up to match your exact business processes and requirements.</p>
+                    <p>Tailored CRM solutions built to match your exact business processes, workflows, and customer journey requirements.</p>
                 </div>
                 <div class="service-card">
-                    <div class="service-icon">📊</div>
-                    <h3>Business Analysis</h3>
-                    <p>Comprehensive analysis of your business processes to identify opportunities for automation, optimization, and growth through technology.</p>
+                    <h3>Salesforce Architecture</h3>
+                    <p>Enterprise-grade Salesforce implementations designed and architected by a certified Solution Architect.</p>
                 </div>
                 <div class="service-card">
-                    <div class="service-icon">🔄</div>
-                    <h3>System Integration</h3>
-                    <p>Seamlessly connect your CRM with existing business tools, payment systems, and third-party applications for a unified workflow.</p>
+                    <h3>POS Integration</h3>
+                    <p>Seamless integration between your Point of Sale systems and CRM for real-time customer insights.</p>
                 </div>
                 <div class="service-card">
-                    <div class="service-icon">📱</div>
-                    <h3>Mobile Solutions</h3>
-                    <p>Mobile-first CRM applications that keep your team connected and productive, whether in the office or on the go.</p>
+                    <h3>System Modernization</h3>
+                    <p>Transform legacy systems into modern, scalable platforms that grow with your business.</p>
                 </div>
                 <div class="service-card">
-                    <div class="service-icon">🎓</div>
-                    <h3>Training & Support</h3>
-                    <p>Comprehensive training programs and ongoing support to ensure your team gets the most out of your CRM investment.</p>
+                    <h3>Technical Consulting</h3>
+                    <p>Strategic guidance on technology decisions, architecture planning, and digital transformation initiatives.</p>
                 </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Features Section -->
-    <section id="features" class="features">
-        <div class="container">
-            <h2 class="section-title">Why Choose Us</h2>
-            <div class="features-grid">
-                <div class="feature-item">
-                    <div class="feature-icon">🎯</div>
-                    <h3>Tailored Solutions</h3>
-                    <p>Every business is unique. We create customized solutions that fit your specific needs and goals.</p>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon">⚡</div>
-                    <h3>Fast Implementation</h3>
-                    <p>Get up and running quickly with our streamlined development and deployment processes.</p>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon">💼</div>
-                    <h3>Business Focused</h3>
-                    <p>We prioritize business outcomes over technical complexity, delivering solutions that drive ROI.</p>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon">🔒</div>
-                    <h3>Secure & Reliable</h3>
-                    <p>Enterprise-grade security and reliability ensure your data is always protected and accessible.</p>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon">📈</div>
-                    <h3>Scalable Growth</h3>
-                    <p>Solutions that grow with your business, from startup to enterprise scale.</p>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon">🤝</div>
-                    <h3>Dedicated Support</h3>
-                    <p>Ongoing support and consultation to ensure your continued success.</p>
+                <div class="service-card">
+                    <h3>Ongoing Support</h3>
+                    <p>Continuous maintenance, updates, and optimization to ensure your systems deliver maximum value.</p>
                 </div>
             </div>
         </div>
@@ -758,7 +908,7 @@
                     </div>
                     <div class="pricing-body">
                         <div class="price-display">
-                            <span class="price-amount">Starting From $149</span>
+                            <span class="price-amount">Starting at $149</span>
                             <span class="price-period">/month</span>
                         </div>
                         <ul class="pricing-features">
@@ -807,17 +957,44 @@
         <div class="container">
             <div class="contact-content">
                 <h2 class="section-title">Let's Build Something Great</h2>
-                <p style="font-size: 1.2rem; margin-bottom: 2rem; text-align: center;">Ready to scale your business with custom software solutions? Get in touch for consultations, project inquiries, or partnerships.</p>
+                
+                <div class="contact-info">
+                    <h3>Get in Touch</h3>
+                    <p>Ready to scale your business with custom software solutions?</p>
+                    <p>Email us directly at: <a href="mailto:admin@ayendecx.com">admin@ayendecx.com</a></p>
+                    <p style="margin-top: 1rem; font-size: 0.95rem; opacity: 0.9;">Or fill out the form below and we'll get back to you within 24 hours</p>
+                </div>
+
+                <div class="form-success" id="formSuccess">
+                    Thank you for your message! We'll get back to you within 24 hours.
+                </div>
+                <div class="form-error" id="formError">
+                    There was an error sending your message. Please email us directly at admin@ayendecx.com
+                </div>
                 
                 <form id="contactForm">
-                    <div class="form-group">
-                        <label for="name">Name</label>
-                        <input type="text" id="name" name="name" required>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="firstName">First Name *</label>
+                            <input type="text" id="firstName" name="firstName" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="lastName">Last Name *</label>
+                            <input type="text" id="lastName" name="lastName" required>
+                        </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="email">Email</label>
-                        <input type="email" id="email" name="email" required>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="email">Email *</label>
+                            <input type="email" id="email" name="email" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="phone">Phone</label>
+                            <input type="tel" id="phone" name="phone">
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -826,29 +1003,25 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="service">I'm interested in</label>
+                        <label for="service">I'm interested in *</label>
                         <select id="service" name="service" required>
                             <option value="">Select a service</option>
                             <option value="consultation">Consultation</option>
-                            <option value="project">Project Inquiry</option>
-                            <option value="partnership">Partnership</option>
                             <option value="salesforce">Salesforce Solutions</option>
-                            <option value="crm">Custom CRM</option>
+                            <option value="custom-crm">Custom CRM Development</option>
+                            <option value="pos-integration">POS Integration</option>
+                            <option value="support">Technical Support</option>
                             <option value="other">Other</option>
                         </select>
                     </div>
 
                     <div class="form-group">
-                        <label for="message">Tell us about your project</label>
-                        <textarea id="message" name="message" required></textarea>
+                        <label for="message">Tell us about your project *</label>
+                        <textarea id="message" name="message" required placeholder="Please describe your business needs and what you're looking to accomplish..."></textarea>
                     </div>
 
-                    <button type="submit" class="btn btn-primary">Send Message</button>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Send Message</button>
                 </form>
-
-                <p style="margin-top: 2rem; font-size: 1.1rem; text-align: center;">
-                    Or email us directly at <a href="mailto:info@ayendecx.com" style="color: var(--light-blue); font-weight: 600;">info@ayendeconsulting.com</a>
-                </p>
             </div>
         </div>
     </section>
@@ -856,8 +1029,8 @@
     <!-- Footer -->
     <footer>
         <div class="container">
-            <p style="font-size: 1.2rem; font-weight: 600;">Ayende CX</p>
-            <p>CRM Software Solutions | Certified Solution Architect</p>
+            <p style="font-size: 1.2rem; font-weight: 600;">AYENDE CX</p>
+            <p>CRM Software Solutions | Certified Salesforce Architect</p>
             <p>&copy; 2025 Ayende CX. All rights reserved.</p>
         </div>
     </footer>
@@ -891,14 +1064,95 @@
         }
     });
 
-    // Form handling (simplified - will need backend integration)
-    document.getElementById('contactForm').addEventListener('submit', function(e) {
+    // Enhanced form handling with email configuration
+    document.getElementById('contactForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         
-        // Show success message
-        alert('Thank you for your message! We will get back to you soon.');
-        this.reset();
+        const formSuccess = document.getElementById('formSuccess');
+        const formError = document.getElementById('formError');
+        
+        // Hide previous messages
+        formSuccess.style.display = 'none';
+        formError.style.display = 'none';
+        
+        // Get form data
+        const formData = {
+            firstName: document.getElementById('firstName').value,
+            lastName: document.getElementById('lastName').value,
+            email: document.getElementById('email').value,
+            phone: document.getElementById('phone').value,
+            company: document.getElementById('company').value,
+            service: document.getElementById('service').value,
+            message: document.getElementById('message').value,
+            timestamp: new Date().toISOString(),
+            recipient: 'admin@ayendecx.com'
+        };
+        
+        // Show loading state
+        const submitButton = this.querySelector('button[type="submit"]');
+        const originalButtonText = submitButton.textContent;
+        submitButton.textContent = 'Sending...';
+        submitButton.disabled = true;
+        
+        try {
+            // Option 1: If using Django backend (recommended)
+            const response = await fetch('/api/contact/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify(formData)
+            });
+            
+            if (response.ok) {
+                formSuccess.style.display = 'block';
+                this.reset();
+                formSuccess.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+                throw new Error('Form submission failed');
+            }
+        } catch (error) {
+            console.error('Form submission error:', error);
+            
+            // Fallback: Create mailto link
+            const subject = encodeURIComponent(`Contact Form: ${formData.service}`);
+            const body = encodeURIComponent(`
+Name: ${formData.firstName} ${formData.lastName}
+Email: ${formData.email}
+Phone: ${formData.phone}
+Company: ${formData.company}
+Service Interest: ${formData.service}
+
+Message:
+${formData.message}
+            `);
+            
+            window.location.href = `mailto:admin@ayendecx.com?subject=${subject}&body=${body}`;
+            
+            formError.style.display = 'block';
+            formError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } finally {
+            submitButton.textContent = originalButtonText;
+            submitButton.disabled = false;
+        }
     });
+
+    // Get CSRF token for Django
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
 
     // Smooth scrolling for navigation links
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
