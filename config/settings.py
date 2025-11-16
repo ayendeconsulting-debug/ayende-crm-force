@@ -312,11 +312,17 @@ ENABLE_WEBHOOKS = True
 WEBHOOK_MAX_RETRIES = 3
 WEBHOOK_TIMEOUT = 10  # seconds
 
-# Add at bottom
+# Email Configuration
 DEFAULT_FROM_EMAIL = 'noreply@ayendecx.com'
+SERVER_EMAIL = 'noreply@ayendecx.com'
+
+# SendGrid SMTP (recommended for production)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.sendgrid.net'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'apikey'
 EMAIL_HOST_PASSWORD = os.environ.get('SENDGRID_API_KEY', '')
+
+# For testing locally, you can use console backend instead:
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

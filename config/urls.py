@@ -3,14 +3,14 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from dashboard.views.main import landing_page, get_tenant_info  # ← Add get_tenant_info here
-#from dashboard.views.main import landing_page, get_tenant_info, contact_form_view
+from dashboard.views.main import landing_page, get_tenant_info, contact_form_view
 from dashboard.views import sync_views
 
 
 urlpatterns = [
     # Public landing page (homepage)
     path('', landing_page, name='landing'),
-    #path('api/contact/', contact_form_view, name='contact_form'),
+    path('api/contact/', contact_form_view, name='contact_form'),
     
     # Debug endpoint (bypass tenant middleware)
     path('api/debug/tenants', get_tenant_info, name='debug_tenants'),  # ← Add this line
