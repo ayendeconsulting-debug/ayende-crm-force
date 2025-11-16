@@ -7,6 +7,8 @@ import os
 from pathlib import Path
 # Load environment variables from .env file
 from dotenv import load_dotenv
+from django.urls import reverse_lazy
+from django.templatetags.static import static
 
 
 
@@ -53,7 +55,7 @@ INSTALLED_APPS = [
     'rewards',
     'profile',
     'reports',
-    'billing',  # ADD THIS LINE
+    'billing',
     
 ]
 
@@ -149,8 +151,6 @@ LOGIN_REDIRECT_URL = '/customers/'
 LOGOUT_REDIRECT_URL = '/'
 
 # Authentication Backends
-
-# Authentication Backends
 # Order matters: Django tries each backend in order until one succeeds
 # Platform admin backend first to allow cross-tenant admin access
 AUTHENTICATION_BACKENDS = [
@@ -219,17 +219,160 @@ REST_FRAMEWORK = {
     ],
 }
 
-# Modern Admin Dashboard
+# ========================================
+# MODERN ADMIN DASHBOARD (django-unfold)
+# ========================================
 UNFOLD = {
-    "SITE_TITLE": "Ayende CX",
-    "SITE_HEADER": "Ayende CX Admin",
+    # ========================================
+    # BRANDING
+    # ========================================
+    "SITE_TITLE": "Ayende CX Platform",
+    "SITE_HEADER": "Ayende CX - Platform Administration",
     "SITE_URL": "/",
     "SITE_ICON": None,
     "SITE_LOGO": None,
-    "SITE_SYMBOL": "analytics",
+    "SITE_SYMBOL": "analytics",  # Google Material icon name
+    
+    # ========================================
+    # DASHBOARD FEATURES
+    # ========================================
     "SHOW_HISTORY": True,
     "SHOW_VIEW_ON_SITE": True,
     "ENVIRONMENT": "production" if not DEBUG else "development",
+    
+    # ========================================
+    # CUSTOM NAVIGATION
+    # ========================================
+    "NAVIGATION": [
+        # Platform Dashboards Section
+        {
+            "title": "Platform Dashboards",
+            "separator": True,  # Adds visual separator
+            "collapsible": False,
+            "items": [
+                {
+                    "title": "Platform Overview",
+                    "icon": "dashboard",
+                    "link": lambda request: reverse_lazy("reports:platform_dashboard"),
+                    "permission": lambda request: getattr(request.user, 'is_platform_admin', False),
+                },
+                {
+                    "title": "Revenue Dashboard",
+                    "icon": "trending_up",
+                    "link": lambda request: reverse_lazy("reports:platform_revenue"),
+                    "permission": lambda request: getattr(request.user, 'is_platform_admin', False),
+                },
+            ],
+        },
+        
+        # Tenant Management Section
+        {
+            "title": "Tenant Management",
+            "separator": True,
+            "collapsible": True,
+            "items": [
+                {
+                    "title": "All Tenants",
+                    "icon": "business",
+                    "link": lambda request: reverse_lazy("admin:tenants_tenant_changelist"),
+                },
+                {
+                    "title": "Tenant Settings",
+                    "icon": "settings",
+                    "link": lambda request: reverse_lazy("admin:tenants_tenantsettings_changelist") if hasattr(request, 'user') else "#",
+                },
+            ],
+        },
+        
+        # Customer Management Section
+        {
+            "title": "Customer Management",
+            "separator": True,
+            "collapsible": True,
+            "items": [
+                {
+                    "title": "All Customers",
+                    "icon": "people",
+                    "link": lambda request: reverse_lazy("admin:customers_customer_changelist"),
+                },
+                {
+                    "title": "Tenant Customers",
+                    "icon": "person",
+                    "link": lambda request: reverse_lazy("admin:customers_tenantcustomer_changelist"),
+                },
+                {
+                    "title": "Transactions",
+                    "icon": "receipt",
+                    "link": lambda request: reverse_lazy("admin:customers_transaction_changelist"),
+                },
+            ],
+        },
+        
+        # Communications Section
+        {
+            "title": "Communications",
+            "separator": True,
+            "collapsible": True,
+            "items": [
+                {
+                    "title": "Notifications",
+                    "icon": "notifications",
+                    "link": lambda request: reverse_lazy("admin:notifications_notification_changelist"),
+                },
+                {
+                    "title": "Messages",
+                    "icon": "message",
+                    "link": lambda request: reverse_lazy("admin:notifications_message_changelist"),
+                },
+            ],
+        },
+        
+        # Rewards & Loyalty Section
+        {
+            "title": "Rewards & Loyalty",
+            "separator": True,
+            "collapsible": True,
+            "items": [
+                {
+                    "title": "Rewards",
+                    "icon": "card_giftcard",
+                    "link": lambda request: reverse_lazy("admin:rewards_reward_changelist"),
+                },
+                {
+                    "title": "Redemptions",
+                    "icon": "redeem",
+                    "link": lambda request: reverse_lazy("admin:rewards_redemption_changelist"),
+                },
+            ],
+        },
+        
+        # System Administration Section
+        {
+            "title": "System Administration",
+            "separator": True,
+            "collapsible": True,
+            "items": [
+                {
+                    "title": "Users & Permissions",
+                    "icon": "admin_panel_settings",
+                    "link": lambda request: reverse_lazy("admin:auth_user_changelist") if hasattr(request, 'user') else "#",
+                },
+            ],
+        },
+    ],
+    
+    # ========================================
+    # SIDEBAR CONFIGURATION
+    # ========================================
+    "SIDEBAR": {
+        "show_search": True,  # Show search in sidebar
+        "show_all_applications": False,  # Don't show default app list (we have custom nav)
+        "navigation": "collapsible",  # Make sections collapsible
+    },
+    
+    # ========================================
+    # THEME COLORS
+    # ========================================
     "COLORS": {
         "primary": {
             "50": "240 249 255",
@@ -237,17 +380,13 @@ UNFOLD = {
             "200": "186 230 253",
             "300": "125 211 252",
             "400": "56 189 248",
-            "500": "14 165 233",
+            "500": "14 165 233",   # Main primary color
             "600": "2 132 199",
             "700": "3 105 161",
             "800": "7 89 133",
             "900": "12 74 110",
             "950": "8 47 73",
         },
-    },
-    "SIDEBAR": {
-        "show_search": True,
-        "show_all_applications": True,
     },
 }
 
@@ -282,70 +421,31 @@ LOGGING = {
         },
     },
 }
+
 # ============================================
 # POS INTEGRATION SETTINGS
 # ============================================
-INTEGRATION_SECRET = '31YMBwf4R4OetvSJ/nIf+5D1ndnMxruRL1QcJsCM9jM='  # IMPORTANT: Change this!
-POS_API_URL = os.getenv('POS_API_URL', 'https://pos-staging.ayendecx.com')  # POS backend URL
+# Integration secret for webhook authentication (CONSOLIDATED)
+INTEGRATION_SECRET = os.environ.get('INTEGRATION_SECRET', '31YMBwf4R4OetvSJ/nIf+5D1ndnMxruRL1QcJsCM9jM=')
+
+# POS Backend URL
+POS_BASE_URL = os.environ.get('POS_BASE_URL', 'https://pos-staging.ayendecx.com')
+POS_API_URL = os.getenv('POS_API_URL', 'https://pos-staging.ayendecx.com')
 POS_API_TIMEOUT = int(os.getenv('POS_API_TIMEOUT', '30000'))
+
+# POS Webhook URL (for sending webhooks TO POS)
+POS_WEBHOOK_URL = os.getenv('POS_WEBHOOK_URL', 'https://pos-staging.ayendecx.com')
+
+# Sync Configuration
 ENABLE_CUSTOMER_SYNC_TO_POS = os.getenv('ENABLE_CUSTOMER_SYNC_TO_POS', 'True').lower() == 'true'
 CUSTOMER_SYNC_INTERVAL = int(os.getenv('CUSTOMER_SYNC_INTERVAL', '3600'))
 SYNC_BATCH_SIZE = int(os.getenv('SYNC_BATCH_SIZE', '100'))
+
+# Enable CRM sync and webhooks (CONSOLIDATED)
 ENABLE_POS_SYNC = True
-ENABLE_CRM_SYNC = True
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.sendgrid.net'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'apikey'  # Literally the word "apikey"
-EMAIL_HOST_PASSWORD = os.getenv('SENDGRID_API_KEY')
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@ayendecx.com')
-
-#**Railway Variables:**
-
-# ===== PHASE 2C: Webhook Configuration =====
-
-# POS Webhook URL (base URL for POS system)
-POS_WEBHOOK_URL = os.getenv('POS_WEBHOOK_URL', 'https://pos-staging.ayendecx.com')
-
-# Enable/disable webhook sending
+ENABLE_CRM_SYNC = os.environ.get('ENABLE_CRM_SYNC', 'True').lower() in ('true', '1', 'yes')
 ENABLE_WEBHOOKS = True
 
 # Webhook retry configuration
 WEBHOOK_MAX_RETRIES = 3
 WEBHOOK_TIMEOUT = 10  # seconds
-
-# Webhook security
-# IMPORTANT: This must match INTEGRATION_SECRET in POS .env file
-INTEGRATION_SECRET = os.environ.get('INTEGRATION_SECRET', '31YMBwf4R4OetvSJ/nIf+5D1ndnMxruRL1QcJsCM9jM=')
-
-# ===== End Phase 2C Configuration =====
-# ===== PHASE 2C: Webhook Configuration =====
-
-# POS Webhook URL (base URL for POS system)
-POS_WEBHOOK_URL = os.getenv('POS_WEBHOOK_URL', 'https://pos-staging.ayendecx.com')
-
-# Enable CRM sync and webhooks
-ENABLE_CRM_SYNC = True  # This enables webhooks
-ENABLE_WEBHOOKS = True  # Additional toggle
-
-# Webhook retry configuration
-WEBHOOK_MAX_RETRIES = 3
-WEBHOOK_TIMEOUT = 10  # seconds
-
-# Webhook security - must match POS .env
-INTEGRATION_SECRET = os.environ.get('INTEGRATION_SECRET', 'your-shared-secret-key-change-this')
-
-# ===== End Phase 2C Configuration =====
-# ============================================
-# INTEGRATION SETTINGS
-# ============================================
-
-# Enable CRM to POS synchronization
-ENABLE_CRM_SYNC = os.environ.get('ENABLE_CRM_SYNC', 'True').lower() in ('true', '1', 'yes')
-
-# Integration secret for webhook authentication
-INTEGRATION_SECRET = os.environ.get('INTEGRATION_SECRET', 'your-secret-key-change-in-production')
-
-# POS Backend URL (Railway deployment URL)
-POS_BASE_URL = os.environ.get('POS_BASE_URL', 'https://your-pos-backend.railway.app')
