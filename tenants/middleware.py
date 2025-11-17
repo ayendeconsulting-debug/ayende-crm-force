@@ -30,7 +30,7 @@ class TenantMiddleware(MiddlewareMixin):
             '/admin/',
             '/static/',
             '/media/',
-            '/api/v1/sync/',  # Function-based sync endpoints
+            '/api/v1/',       # All API v1 endpoints (use JWT auth instead)
             '/api/sync/',     # REST Framework sync endpoints
             '/api/debug/',    # Debug/diagnostic endpoints
         ]
