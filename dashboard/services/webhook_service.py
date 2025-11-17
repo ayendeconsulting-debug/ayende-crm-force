@@ -263,7 +263,7 @@ class WebhookService:
         }
     
     @classmethod
-    def send_customer_webhook(cls, customer, operation: str, tenant) -> bool:
+    def send_customer_webhook(cls, customer, operation: str, tenant, tenant_customer=None) -> bool:
         """
         Send customer webhook to POS system.
         
@@ -296,8 +296,9 @@ class WebhookService:
             # Get tenant ID for logging
             tenant_id = cls._get_tenant_id(tenant)
             
-            # Get TenantCustomer for this tenant
-            tenant_customer = customer.tenant_accounts.filter(tenant=tenant).first()
+            # Get TenantCustomer for this tenant (use provided one if available)
+            if not tenant_customer:
+                tenant_customer = customer.tenant_accounts.filter(tenant=tenant).first()
             
             if not tenant_customer and operation != 'deleted':
                 logger.warning(

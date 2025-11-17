@@ -96,7 +96,7 @@ def customer_saved(sender, instance, created, **kwargs):
 
         # Send webhook asynchronously
         WebhookService.send_customer_webhook(
-            customer=instance,
+            customer=instance,  # FIXED: Use instance, not undefined 'customer'
             operation=operation,
             tenant=tenant
         )
@@ -222,7 +222,8 @@ def tenant_customer_saved(sender, instance, created, **kwargs):
         WebhookService.send_customer_webhook(
             customer=customer,  # Send global customer
             operation=operation,
-            tenant=tenant
+            tenant=tenant,
+            tenant_customer=instance  # Pass TenantCustomer instance directly!
         )
 
     except Exception as e:
@@ -265,7 +266,8 @@ def tenant_customer_deleted(sender, instance, **kwargs):
         WebhookService.send_customer_webhook(
             customer=customer,
             operation='deleted',
-            tenant=tenant
+            tenant=tenant,
+            tenant_customer=instance  # Pass TenantCustomer instance directly!
         )
 
     except Exception as e:
