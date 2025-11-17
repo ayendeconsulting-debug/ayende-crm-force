@@ -952,6 +952,7 @@ class TenantPasswordResetView(PasswordResetView):
     """Custom password reset view that includes tenant context"""
     template_name = 'dashboard/password_reset.html'
     email_template_name = 'emails/password_reset_email.html'
+    html_email_template_name = 'emails/password_reset_email.html'  # ADD THIS LINE
     success_url = reverse_lazy('dashboard:password_reset_done')
     
     def get_context_data(self, **kwargs):
