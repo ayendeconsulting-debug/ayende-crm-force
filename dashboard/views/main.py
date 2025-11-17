@@ -58,43 +58,61 @@ logger = logging.getLogger(__name__)
 # API ENDPOINT: Check Customer by Phone
 # ============================================
 @require_http_methods(["GET"])
+@require_http_methods(["GET"])
 def check_customer_by_phone(request):
     """
     API endpoint to check if customer exists by phone number
-    Updated for Phase 2/4: Uses TenantCustomer with tenant scoping
+    Updated to use JWT authentication for POS integration
     """
-    tenant = get_tenant_from_request(request)
+    # Import verify_jwt_token function
+    from dashboard.views.sync_views import verify_jwt_token
+    from tenants.models import Tenant
     
-    if not tenant:
-        return JsonResponse({'error': 'Tenant not found'}, status=400)
+    # Verify JWT authentication
+    is_valid, payload_or_error, tenant_id = verify_jwt_token(request)
+    if not is_valid:
+        logger.warning(f"Authentication failed: {payload_or_error}")
+        return JsonResponse({
+            'success': False,
+            'error': f'Authentication failed: {payload_or_error}'
+        }, status=401)
     
+    # Get tenant from JWT token
+    try:
+        tenant = Tenant.objects.get(tenant_uuid=tenant_id)
+    except Tenant.DoesNotExist:
+        logger.error(f"Tenant not found: {tenant_id}")
+        return JsonResponse({
+            'success': False,
+            'error': f'Tenant not found: {tenant_id}'
+        }, status=404)
+    
+    # Get phone from query parameter
     phone = request.GET.get('phone')
-    
     if not phone:
         return JsonResponse({'error': 'Phone number required'}, status=400)
     
     # Search for customer by phone in this tenant
-    tenant_customer = TenantCustomer.objects.filter(
-        tenant=tenant,
-        phone=phone
-    ).first()
-    
-    if tenant_customer:
+    try:
+        customer = TenantCustomer.objects.get(tenant=tenant, phone=phone)
         return JsonResponse({
             'exists': True,
             'customer': {
-                'id': str(tenant_customer.id),
-                'first_name': tenant_customer.first_name,
-                'last_name': tenant_customer.last_name,
-                'email': tenant_customer.email,
-                'phone': tenant_customer.phone,
-                'loyalty_points': tenant_customer.loyalty_points,
-                'total_spent': float(tenant_customer.total_spent or 0),
-                'visit_count': tenant_customer.visit_count or 0,
+                'id': str(customer.id),
+                'email': customer.email,
+                'firstName': customer.first_name,
+                'lastName': customer.last_name,
+                'phone': customer.phone,
+                'loyaltyPoints': customer.loyalty_points
             }
         })
-    
-    return JsonResponse({'exists': False})
+    except TenantCustomer.DoesNotExist:
+        return JsonResponse({
+            'exists': False
+        })
+    except Exception as e:
+        logger.error(f"Error checking customer by phone: {str(e)}")
+        return JsonResponse({'error': 'Internal server error'}, status=500)
 
 
 # ============================================
