@@ -584,7 +584,7 @@ def manage_customers(request):
     Business owner view to manage all customers
     Updated for Phase 4: Uses TenantCustomer with tenant scoping
     """
-    tenant = get_tenant_from_request(request)
+    tenant = getattr(request, 'tenant', None)
     
     if not tenant:
         messages.error(request, 'Unable to identify business.')
