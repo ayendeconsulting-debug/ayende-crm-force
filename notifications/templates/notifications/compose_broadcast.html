@@ -1,0 +1,430 @@
+{% extends 'dashboard/business_base.html' %}
+
+{% block title %}Broadcast Message - {{ tenant.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .broadcast-container {
+        max-width: 1000px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+
+    .broadcast-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 16px;
+        margin-bottom: 2rem;
+    }
+
+    .broadcast-header h1 {
+        margin: 0 0 0.5rem 0;
+        font-size: 2rem;
+        font-weight: 700;
+    }
+
+    .form-section {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid #667eea;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+        display: block;
+        font-weight: 500;
+        color: #555;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control, .form-select {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 0.95rem;
+    }
+
+    .form-control:focus, .form-select:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    textarea.form-control {
+        min-height: 150px;
+        resize: vertical;
+        font-family: inherit;
+    }
+
+    .targeting-options {
+        display: grid;
+        gap: 1rem;
+    }
+
+    .target-option {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .target-option:hover {
+        border-color: #667eea;
+        background: #f8f9ff;
+    }
+
+    .target-option input[type="radio"] {
+        margin-right: 1rem;
+        cursor: pointer;
+    }
+
+    .target-option.selected {
+        border-color: #667eea;
+        background: #f0f2ff;
+    }
+
+    .recipient-count {
+        margin-left: auto;
+        background: #667eea;
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+
+    .conditional-fields {
+        display: none;
+        margin-top: 1rem;
+        padding: 1rem;
+        background: #f9f9f9;
+        border-radius: 8px;
+    }
+
+    .conditional-fields.active {
+        display: block;
+    }
+
+    .customer-list {
+        max-height: 300px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 0.5rem;
+    }
+
+    .customer-item {
+        padding: 0.5rem;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .customer-item:last-child {
+        border-bottom: none;
+    }
+
+    .btn {
+        padding: 0.75rem 2rem;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background: #5a6268;
+    }
+
+    .preview-banner {
+        background: #e3f2fd;
+        border-left: 4px solid #2196f3;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: 4px;
+    }
+
+    .preview-banner strong {
+        color: #1976d2;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="broadcast-container">
+    <!-- Header -->
+    <div class="broadcast-header">
+        <h1><i class="bi bi-broadcast"></i> Broadcast Message</h1>
+        <p class="mb-0">Send targeted messages to multiple customers at once</p>
+    </div>
+
+    <!-- Back Button -->
+    <div class="mb-3">
+        <a href="{% url 'notifications:staff_inbox' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Inbox
+        </a>
+    </div>
+
+    <form method="post" id="broadcastForm">
+        {% csrf_token %}
+
+        <!-- Message Content -->
+        <div class="form-section">
+            <div class="section-title">Message Content</div>
+
+            <div class="form-group">
+                <label for="template">Use Template (Optional)</label>
+                <select name="template" id="template" class="form-select">
+                    <option value="">Write custom message</option>
+                    {% for template in templates %}
+                    <option value="{{ template.id }}" 
+                            data-subject="{{ template.subject }}" 
+                            data-body="{{ template.body }}">
+                        {{ template.name }} ({{ template.get_template_type_display }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="subject">Subject *</label>
+                <input type="text" name="subject" id="subject" class="form-control" 
+                       placeholder="Enter message subject" required>
+            </div>
+
+            <div class="form-group">
+                <label for="body">Message *</label>
+                <textarea name="body" id="body" class="form-control" 
+                          placeholder="Type your message here... You can use variables like {{first_name}}, {{business_name}}, {{points}}" 
+                          required></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="priority">Priority</label>
+                <select name="priority" id="priority" class="form-select">
+                    <option value="normal">Normal</option>
+                    <option value="high">High</option>
+                    <option value="urgent">Urgent</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Target Audience -->
+        <div class="form-section">
+            <div class="section-title">Target Audience</div>
+
+            <div class="preview-banner">
+                <strong>Preview:</strong> You are about to send to <span id="recipientCount">0</span> customer(s)
+            </div>
+
+            <div class="targeting-options">
+                <label class="target-option" data-target="all">
+                    <input type="radio" name="target_type" value="all" checked>
+                    <div>
+                        <strong>All Customers</strong>
+                        <div style="font-size: 0.875rem; color: #666;">Send to everyone</div>
+                    </div>
+                    <span class="recipient-count">{{ all_count }}</span>
+                </label>
+
+                <label class="target-option" data-target="vip">
+                    <input type="radio" name="target_type" value="vip">
+                    <div>
+                        <strong>VIP Customers Only</strong>
+                        <div style="font-size: 0.875rem; color: #666;">Customers marked as VIP</div>
+                    </div>
+                    <span class="recipient-count">{{ vip_count }}</span>
+                </label>
+
+                <label class="target-option" data-target="points_range">
+                    <input type="radio" name="target_type" value="points_range">
+                    <div>
+                        <strong>By Loyalty Points</strong>
+                        <div style="font-size: 0.875rem; color: #666;">Target by points range</div>
+                    </div>
+                </label>
+
+                <label class="target-option" data-target="spending_tier">
+                    <input type="radio" name="target_type" value="spending_tier">
+                    <div>
+                        <strong>By Spending Tier</strong>
+                        <div style="font-size: 0.875rem; color: #666;">Target by total spending</div>
+                    </div>
+                </label>
+
+                <label class="target-option" data-target="specific">
+                    <input type="radio" name="target_type" value="specific">
+                    <div>
+                        <strong>Specific Customers</strong>
+                        <div style="font-size: 0.875rem; color: #666;">Manually select customers</div>
+                    </div>
+                </label>
+            </div>
+
+            <!-- Points Range Fields -->
+            <div id="pointsRangeFields" class="conditional-fields">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label for="points_min">Minimum Points</label>
+                        <input type="number" name="points_min" id="points_min" 
+                               class="form-control" placeholder="0" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="points_max">Maximum Points</label>
+                        <input type="number" name="points_max" id="points_max" 
+                               class="form-control" placeholder="1000" min="0">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Spending Tier Fields -->
+            <div id="spendingTierFields" class="conditional-fields">
+                <div class="form-group">
+                    <label for="spending_tier">Select Tier</label>
+                    <select name="spending_tier" id="spending_tier" class="form-select">
+                        <option value="low">Low Spenders ($0 - $100) - {{ low_spenders }} customers</option>
+                        <option value="medium">Medium Spenders ($100 - $500) - {{ medium_spenders }} customers</option>
+                        <option value="high">High Spenders ($500 - $1,000) - {{ high_spenders }} customers</option>
+                        <option value="vip">VIP Spenders ($1,000+) - {{ vip_spenders }} customers</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Specific Customers Fields -->
+            <div id="specificCustomersFields" class="conditional-fields">
+                <div class="customer-list">
+                    {% for customer in customers %}
+                    <div class="customer-item">
+                        <label>
+                            <input type="checkbox" name="specific_customers" value="{{ customer.id }}">
+                            {{ customer.first_name }} {{ customer.last_name }} 
+                            ({{ customer.email }})
+                            {% if customer.total_spent %}
+                                - ${{ customer.total_spent|floatformat:2 }} spent
+                            {% endif %}
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit -->
+        <div class="d-flex gap-3">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-send"></i> Send Broadcast
+            </button>
+            <a href="{% url 'notifications:staff_inbox' %}" class="btn btn-secondary">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Template selection
+    const templateSelect = document.getElementById('template');
+    const subjectField = document.getElementById('subject');
+    const bodyField = document.getElementById('body');
+
+    templateSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        if (this.value) {
+            subjectField.value = selectedOption.dataset.subject || '';
+            bodyField.value = selectedOption.dataset.body || '';
+        }
+    });
+
+    // Target audience selection
+    const targetRadios = document.querySelectorAll('input[name="target_type"]');
+    const pointsRangeFields = document.getElementById('pointsRangeFields');
+    const spendingTierFields = document.getElementById('spendingTierFields');
+    const specificCustomersFields = document.getElementById('specificCustomersFields');
+    const recipientCount = document.getElementById('recipientCount');
+
+    // Recipient counts
+    const counts = {
+        'all': {{ all_count }},
+        'vip': {{ vip_count }},
+        'points_range': '?',
+        'spending_tier': '?',
+        'specific': 0
+    };
+
+    targetRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            // Update visual selection
+            document.querySelectorAll('.target-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            this.closest('.target-option').classList.add('selected');
+
+            // Show/hide conditional fields
+            pointsRangeFields.classList.remove('active');
+            spendingTierFields.classList.remove('active');
+            specificCustomersFields.classList.remove('active');
+
+            if (this.value === 'points_range') {
+                pointsRangeFields.classList.add('active');
+            } else if (this.value === 'spending_tier') {
+                spendingTierFields.classList.add('active');
+            } else if (this.value === 'specific') {
+                specificCustomersFields.classList.add('active');
+            }
+
+            // Update recipient count
+            recipientCount.textContent = counts[this.value] || '0';
+        });
+
+        // Initialize
+        if (radio.checked) {
+            radio.dispatchEvent(new Event('change'));
+        }
+    });
+
+    // Update count for specific customers
+    const checkboxes = document.querySelectorAll('input[name="specific_customers"]:');
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', function() {
+            const checked = document.querySelectorAll('input[name="specific_customers"]:checked').length;
+            recipientCount.textContent = checked;
+        });
+    });
+});
+</script>
+{% endblock %}
