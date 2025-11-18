@@ -1,4 +1,4 @@
-{% extends 'reports/base.html' %}
+{% extends 'reports/business_base.html' %}
 {% load static %}
 
 {% block title %}Sales Report - {{ tenant.name }}{% endblock %}
@@ -117,22 +117,22 @@
 <div class="stat-grid mb-4">
     <div class="stat-box">
         <div class="stat-label">Total Revenue</div>
-        <div class="stat-value">{{ currency_symbol }}{{ revenue_stats.total_revenue|floatformat:2 }}</div>
+        <div class="stat-value">{{ currency_symbol }}{{ revenue_stats.total_revenue|floatformat:2|default:"0.00" }}</div>
     </div>
     
     <div class="stat-box">
         <div class="stat-label">Total Transactions</div>
-        <div class="stat-value">{{ revenue_stats.total_transactions }}</div>
+        <div class="stat-value">{{ revenue_stats.total_transactions|default:"0" }}</div>
     </div>
     
     <div class="stat-box">
         <div class="stat-label">Avg. Transaction Value</div>
-        <div class="stat-value">{{ currency_symbol }}{{ revenue_stats.avg_transaction|floatformat:2 }}</div>
+        <div class="stat-value">{{ currency_symbol }}{{ revenue_stats.avg_transaction|floatformat:2|default:"0.00" }}</div>
     </div>
     
     <div class="stat-box">
         <div class="stat-label">Completed Sales</div>
-        <div class="stat-value">{{ sales_analytics.total_completed }}</div>
+        <div class="stat-value">{{ sales_analytics.total_completed|default:"0" }}</div>
     </div>
 </div>
 
@@ -169,15 +169,9 @@
             {% for day in daily_sales %}
             <tr>
                 <td><strong>{{ day.day }}</strong></td>
-                <td>{{ day.count }}</td>
-                <td>{{ currency_symbol }}{{ day.revenue|floatformat:2 }}</td>
-                <td>
-                    {% if day.count > 0 %}
-                        {{ currency_symbol }}{% widthratio day.revenue day.count 1 %}
-                    {% else %}
-                        {{ currency_symbol }}0.00
-                    {% endif %}
-                </td>
+                <td>{{ day.count|default:"0" }}</td>
+                <td>{{ currency_symbol }}{{ day.revenue|floatformat:2|default:"0.00" }}</td>
+                <td>{{ currency_symbol }}{{ day.avg_value|floatformat:2|default:"0.00" }}</td>
             </tr>
             {% empty %}
             <tr>
@@ -207,8 +201,8 @@
                     {% for hour in hourly_sales %}
                     <tr>
                         <td><strong>{{ hour.hour|stringformat:"02d" }}:00</strong></td>
-                        <td>{{ hour.count }}</td>
-                        <td>{{ currency_symbol }}{{ hour.revenue|floatformat:2 }}</td>
+                        <td>{{ hour.count|default:"0" }}</td>
+                        <td>{{ currency_symbol }}{{ hour.revenue|floatformat:2|default:"0.00" }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -232,15 +226,15 @@
         <div class="col-md-6">
             <div class="d-flex justify-content-around text-center" style="margin-top: 30px;">
                 <div>
-                    <div class="stat-value text-success">{{ sales_analytics.total_completed }}</div>
+                    <div class="stat-value text-success">{{ sales_analytics.total_completed|default:"0" }}</div>
                     <div class="stat-label">Completed</div>
                 </div>
                 <div>
-                    <div class="stat-value text-warning">{{ sales_analytics.total_pending }}</div>
+                    <div class="stat-value text-warning">{{ sales_analytics.total_pending|default:"0" }}</div>
                     <div class="stat-label">Pending</div>
                 </div>
                 <div>
-                    <div class="stat-value text-danger">{{ sales_analytics.total_cancelled }}</div>
+                    <div class="stat-value text-danger">{{ sales_analytics.total_cancelled|default:"0" }}</div>
                     <div class="stat-label">Cancelled</div>
                 </div>
             </div>
@@ -262,9 +256,9 @@
         <div class="col-md-6">
             <h5>Performance Highlights</h5>
             <ul style="line-height: 2;">
-                <li>Average transaction value: <strong>{{ currency_symbol }}{{ revenue_stats.avg_transaction|floatformat:2 }}</strong></li>
-                <li>Completion rate: <strong>{% widthratio sales_analytics.total_completed revenue_stats.total_transactions 100 %}%</strong></li>
-                <li>Total revenue generated: <strong>{{ currency_symbol }}{{ revenue_stats.total_revenue|floatformat:2 }}</strong></li>
+                <li>Average transaction value: <strong>{{ currency_symbol }}{{ revenue_stats.avg_transaction|floatformat:2|default:"0.00" }}</strong></li>
+                <li>Completion rate: <strong>{{ sales_analytics.completion_rate|floatformat:1|default:"0" }}%</strong></li>
+                <li>Total revenue generated: <strong>{{ currency_symbol }}{{ revenue_stats.total_revenue|floatformat:2|default:"0.00" }}</strong></li>
             </ul>
         </div>
         
@@ -278,175 +272,209 @@
         </div>
     </div>
 </div>
+
+<!-- Chart Data (JSON) -->
+<script id="chartData" type="application/json">
+{
+    "volumeData": {{ volume_data|safe }},
+    "avgValueData": {{ avg_value_data|safe }},
+    "currencySymbol": "{{ currency_symbol }}",
+    "hourlyLabels": [{% for hour in hourly_sales %}"{{ hour.hour|stringformat:'02d' }}:00"{% if not forloop.last %}, {% endif %}{% endfor %}],
+    "hourlyRevenue": [{% for hour in hourly_sales %}{{ hour.revenue|default:0 }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+    "statusData": {
+        "completed": {{ sales_analytics.total_completed|default:0 }},
+        "pending": {{ sales_analytics.total_pending|default:0 }},
+        "cancelled": {{ sales_analytics.total_cancelled|default:0 }}
+    }
+}
+</script>
 {% endblock %}
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-// Transaction Volume Chart
-const volumeData = {{ volume_data|safe }};
-const volLabels = Object.keys(volumeData);
-const volValues = Object.values(volumeData);
-
-const ctx1 = document.getElementById('volumeChart');
-new Chart(ctx1, {
-    type: 'bar',
-    data: {
-        labels: volLabels,
-        datasets: [{
-            label: 'Transactions',
-            data: volValues,
-            backgroundColor: 'rgba(79, 172, 254, 0.7)',
-            borderColor: '#4facfe',
-            borderWidth: 2
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                display: false
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                ticks: {
-                    stepSize: 1
-                }
-            },
-            x: {
-                ticks: {
-                    maxRotation: 45,
-                    minRotation: 45
-                }
-            }
-        }
+(function() {
+    // Parse chart data from JSON
+    var chartDataElement = document.getElementById('chartData');
+    if (!chartDataElement) return;
+    
+    var chartData;
+    try {
+        chartData = JSON.parse(chartDataElement.textContent);
+    } catch (e) {
+        console.error('Failed to parse chart data:', e);
+        return;
     }
-});
-
-// Average Value Chart
-const avgValueData = {{ avg_value_data|safe }};
-const avgLabels = Object.keys(avgValueData);
-const avgValues = Object.values(avgValueData);
-
-const ctx2 = document.getElementById('avgValueChart');
-new Chart(ctx2, {
-    type: 'line',
-    data: {
-        labels: avgLabels,
-        datasets: [{
-            label: 'Avg. Value ({{ currency_symbol }})',
-            data: avgValues,
-            borderColor: '#00f2fe',
-            backgroundColor: 'rgba(0, 242, 254, 0.1)',
-            borderWidth: 3,
-            tension: 0.4,
-            fill: true
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                display: false
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                ticks: {
-                    callback: function(value) {
-                        return '{{ currency_symbol }}' + value.toFixed(2);
+    
+    var currencySymbol = chartData.currencySymbol || '$';
+    
+    // Transaction Volume Chart
+    var volumeData = chartData.volumeData || {};
+    var volLabels = Object.keys(volumeData);
+    var volValues = Object.values(volumeData);
+    
+    var ctx1 = document.getElementById('volumeChart');
+    if (ctx1 && volLabels.length > 0) {
+        new Chart(ctx1, {
+            type: 'bar',
+            data: {
+                labels: volLabels,
+                datasets: [{
+                    label: 'Transactions',
+                    data: volValues,
+                    backgroundColor: 'rgba(79, 172, 254, 0.7)',
+                    borderColor: '#4facfe',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
                     }
-                }
-            },
-            x: {
-                ticks: {
-                    maxRotation: 45,
-                    minRotation: 45
-                }
-            }
-        }
-    }
-});
-
-// Hourly Sales Chart
-{% if hourly_sales %}
-const ctx3 = document.getElementById('hourlyChart');
-new Chart(ctx3, {
-    type: 'bar',
-    data: {
-        labels: [
-            {% for hour in hourly_sales %}
-            '{{ hour.hour|stringformat:"02d" }}:00'{% if not forloop.last %},{% endif %}
-            {% endfor %}
-        ],
-        datasets: [{
-            label: 'Revenue',
-            data: [
-                {% for hour in hourly_sales %}
-                {{ hour.revenue }}{% if not forloop.last %},{% endif %}
-                {% endfor %}
-            ],
-            backgroundColor: 'rgba(79, 172, 254, 0.7)',
-            borderColor: '#4facfe',
-            borderWidth: 2
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                display: false
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                ticks: {
-                    callback: function(value) {
-                        return '{{ currency_symbol }}' + value.toLocaleString();
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
                     }
                 }
             }
-        }
+        });
     }
-});
-{% endif %}
-
-// Status Chart
-const ctx4 = document.getElementById('statusChart');
-new Chart(ctx4, {
-    type: 'doughnut',
-    data: {
-        labels: ['Completed', 'Pending', 'Cancelled'],
-        datasets: [{
-            data: [
-                {{ sales_analytics.total_completed }},
-                {{ sales_analytics.total_pending }},
-                {{ sales_analytics.total_cancelled }}
-            ],
-            backgroundColor: [
-                '#28a745',
-                '#ffc107',
-                '#dc3545'
-            ],
-            borderWidth: 0
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                position: 'bottom'
+    
+    // Average Value Chart
+    var avgValueData = chartData.avgValueData || {};
+    var avgLabels = Object.keys(avgValueData);
+    var avgValues = Object.values(avgValueData);
+    
+    var ctx2 = document.getElementById('avgValueChart');
+    if (ctx2 && avgLabels.length > 0) {
+        new Chart(ctx2, {
+            type: 'line',
+            data: {
+                labels: avgLabels,
+                datasets: [{
+                    label: 'Avg. Value (' + currencySymbol + ')',
+                    data: avgValues,
+                    borderColor: '#00f2fe',
+                    backgroundColor: 'rgba(0, 242, 254, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return currencySymbol + value.toFixed(2);
+                            }
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    }
+                }
             }
-        }
+        });
     }
-});
+    
+    // Hourly Sales Chart
+    var hourlyLabels = chartData.hourlyLabels || [];
+    var hourlyRevenue = chartData.hourlyRevenue || [];
+    
+    var ctx3 = document.getElementById('hourlyChart');
+    if (ctx3 && hourlyLabels.length > 0) {
+        new Chart(ctx3, {
+            type: 'bar',
+            data: {
+                labels: hourlyLabels,
+                datasets: [{
+                    label: 'Revenue',
+                    data: hourlyRevenue,
+                    backgroundColor: 'rgba(79, 172, 254, 0.7)',
+                    borderColor: '#4facfe',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return currencySymbol + value.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Status Chart
+    var statusData = chartData.statusData || {};
+    var ctx4 = document.getElementById('statusChart');
+    if (ctx4) {
+        new Chart(ctx4, {
+            type: 'doughnut',
+            data: {
+                labels: ['Completed', 'Pending', 'Cancelled'],
+                datasets: [{
+                    data: [
+                        statusData.completed || 0,
+                        statusData.pending || 0,
+                        statusData.cancelled || 0
+                    ],
+                    backgroundColor: [
+                        '#28a745',
+                        '#ffc107',
+                        '#dc3545'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+})();
 </script>
 {% endblock %}
