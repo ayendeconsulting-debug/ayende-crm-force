@@ -591,7 +591,7 @@ def manage_customers(request):
         return redirect('/')
     
     # Check if user has permission (admin, owner, or staff)
-    if request.user.role not in ['admin', 'owner', 'staff']:
+    if request.user.role not in ['admin', 'owner', 'manager', 'staff']:
         messages.error(request, 'You do not have permission to access this page.')
         return redirect('dashboard:home')
     
