@@ -23,7 +23,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.db import transaction as db_transaction
 from django.conf import settings
-from customers.models import Customer, TenantCustomer, Transaction
+from customers.models import Customer, TenantCustomer, Transaction, RentalContract, RentalContractItem
 from tenants.models import Tenant
 from dashboard.authentication import IntegrationJWTAuthentication
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
@@ -569,6 +569,7 @@ def sync_health(request):
                 'customer_sync': True,
                 'transaction_sync': True,
                 'anonymous_transactions': True,
+                'rental_sync': True,
             },
             'timestamp': datetime.now().isoformat(),
         })
@@ -579,4 +580,200 @@ def sync_health(request):
             'status': 'error',
             'error': str(e),
             'timestamp': datetime.now().isoformat(),
+        }, status=500)
+
+
+# ============================================================================
+# RENTAL SYNC ENDPOINT (Added for POS-CRM Rental Sync)
+# ============================================================================
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def receive_rental(request):
+    """
+    Receive rental contract data from POS system.
+    
+    POST /api/v1/sync/rental
+    
+    Expected payload:
+    {
+        "rentalId": "uuid",
+        "contractNumber": "RNT-001",
+        "tenantId": "uuid",
+        "operation": "create",
+        "tenantCustomerId": "pos_customer_id",
+        "customerName": "John Doe",
+        "startDate": "2025-11-28T10:00:00Z",
+        "expectedReturnDate": "2025-12-05T10:00:00Z",
+        "status": "ACTIVE",
+        "items": [...],
+        ...
+    }
+    
+    Returns:
+        JSON response with success/error status
+    """
+    try:
+        # Verify JWT authentication
+        is_valid, payload_or_error, tenant_id = verify_jwt_token(request)
+        
+        if not is_valid:
+            logger.warning(f"Authentication failed: {payload_or_error}")
+            return JsonResponse({
+                'success': False,
+                'error': f'Authentication failed: {payload_or_error}'
+            }, status=401)
+        
+        # Parse request body
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in request body: {str(e)}")
+            return JsonResponse({
+                'success': False,
+                'error': 'Invalid JSON in request body'
+            }, status=400)
+        
+        # Validate required fields
+        required_fields = ['rentalId', 'contractNumber', 'startDate', 'expectedReturnDate']
+        missing_fields = [field for field in required_fields if field not in data]
+        
+        if missing_fields:
+            logger.error(f"Missing required fields: {missing_fields}")
+            return JsonResponse({
+                'success': False,
+                'error': f'Missing required fields: {", ".join(missing_fields)}'
+            }, status=400)
+        
+        # Get tenant
+        try:
+            tenant = Tenant.objects.get(tenant_uuid=tenant_id)
+        except Tenant.DoesNotExist:
+            logger.error(f"Tenant not found: {tenant_id}")
+            return JsonResponse({
+                'success': False,
+                'error': f'Tenant not found: {tenant_id}'
+            }, status=404)
+        
+        # Get operation type
+        operation = data.get('operation', 'create').lower()
+        
+        # Find customer if provided
+        tenant_customer = None
+        if data.get('tenantCustomerId'):
+            try:
+                tenant_customer = TenantCustomer.objects.get(
+                    tenant=tenant,
+                    external_id=data['tenantCustomerId']
+                )
+            except TenantCustomer.DoesNotExist:
+                logger.warning(f"TenantCustomer not found for rental: {data['tenantCustomerId']}")
+        
+        # Use database transaction to ensure atomicity
+        with db_transaction.atomic(), skip_webhooks():
+            rental_id = data['rentalId']
+            
+            # Parse dates helper
+            def parse_datetime(dt_str):
+                if not dt_str:
+                    return None
+                try:
+                    if dt_str.endswith('Z'):
+                        dt_str = dt_str[:-1] + '+00:00'
+                    return datetime.fromisoformat(dt_str)
+                except Exception as e:
+                    logger.warning(f"Could not parse datetime: {dt_str}, error: {e}")
+                    return None
+            
+            # Prepare rental defaults
+            rental_defaults = {
+                'tenant': tenant,
+                'contract_number': data.get('contractNumber', ''),
+                'tenant_customer': tenant_customer,
+                'customer_name': data.get('customerName', ''),
+                'contact_phone': data.get('contactPhone', ''),
+                'contact_email': data.get('contactEmail', ''),
+                'delivery_address': data.get('deliveryAddress', ''),
+                'start_date': parse_datetime(data['startDate']),
+                'expected_return_date': parse_datetime(data['expectedReturnDate']),
+                'actual_return_date': parse_datetime(data.get('actualReturnDate')),
+                'rental_days': data.get('rentalDays', 1),
+                'subtotal': Decimal(str(data.get('subtotal', 0))),
+                'tax_amount': Decimal(str(data.get('taxAmount', 0))),
+                'deposit_amount': Decimal(str(data.get('depositAmount', 0))),
+                'deposit_returned': Decimal(str(data['depositReturned'])) if data.get('depositReturned') else None,
+                'penalty_amount': Decimal(str(data.get('penaltyAmount', 0))),
+                'damage_charges': Decimal(str(data.get('damageCharges', 0))),
+                'total_due': Decimal(str(data.get('totalDue', 0))),
+                'total_paid': Decimal(str(data.get('totalPaid', 0))),
+                'balance_due': Decimal(str(data.get('balanceDue', 0))),
+                'currency': data.get('currency', '$'),
+                'currency_code': data.get('currencyCode', 'CAD'),
+                'status': data.get('status', 'active').lower(),
+                'return_notes': data.get('returnNotes', ''),
+                'damage_notes': data.get('damageNotes', ''),
+                'overdue_notified': data.get('overdueNotified', False),
+                'overdue_notified_at': parse_datetime(data.get('overdueNotifiedAt')),
+                'reminder_sent': data.get('reminderSent', False),
+                'reminder_sent_at': parse_datetime(data.get('reminderSentAt')),
+                'transaction_id': data.get('transactionId'),
+                'closed_at': parse_datetime(data.get('closedAt')),
+                'external_source': 'POS',
+            }
+            
+            # Create or update rental contract
+            rental_obj, created = RentalContract.objects.update_or_create(
+                external_id=rental_id,
+                tenant=tenant,
+                defaults=rental_defaults
+            )
+            
+            # Process rental items
+            items_data = data.get('items', [])
+            if items_data:
+                # Delete existing items and recreate
+                rental_obj.items.all().delete()
+                
+                for item_data in items_data:
+                    RentalContractItem.objects.create(
+                        contract=rental_obj,
+                        product_id=item_data.get('productId', ''),
+                        product_name=item_data.get('productName', ''),
+                        sku=item_data.get('sku', ''),
+                        quantity=item_data.get('quantity', 1),
+                        daily_rate=Decimal(str(item_data.get('dailyRate', 0))),
+                        subtotal=Decimal(str(item_data.get('subtotal', 0))),
+                        returned_quantity=item_data.get('returnedQuantity', 0),
+                        damaged_quantity=item_data.get('damagedQuantity', 0),
+                        missing_quantity=item_data.get('missingQuantity', 0),
+                        damage_description=item_data.get('damageDescription', ''),
+                        damage_charge=Decimal(str(item_data.get('damageCharge', 0))),
+                        returned_at=parse_datetime(item_data.get('returnedAt')),
+                    )
+            
+            action = "created" if created else "updated"
+            customer_info = f"TenantCustomer {tenant_customer.external_id}" if tenant_customer else data.get('customerName', 'Unknown')
+            
+            logger.info(
+                f"Rental {action}: {rental_id} ({data.get('contractNumber')}) for {customer_info}, "
+                f"status: {data.get('status')}, operation: {operation}"
+            )
+            
+            return JsonResponse({
+                'success': True,
+                'message': f'Rental {action} successfully',
+                'rental': {
+                    'id': str(rental_obj.id),
+                    'external_id': rental_obj.external_id,
+                    'contract_number': rental_obj.contract_number,
+                    'status': rental_obj.status,
+                },
+                'created': created
+            }, status=201 if created else 200)
+    
+    except Exception as e:
+        logger.error(f"Error processing rental sync: {str(e)}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': f'Internal server error: {str(e)}'
         }, status=500)

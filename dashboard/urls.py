@@ -85,8 +85,14 @@ urlpatterns = [
          integration_views.CustomerSyncView.as_view(), 
          name='sync_customer'),
     
-    path('api/sync/customer-batch/', 
+   path('api/sync/customer-batch/', 
          integration_views.CustomerBatchSyncView.as_view(), 
          name='sync_customer_batch'),
+    
+    # Rental sync from POS
+    path('api/v1/sync/rental',
+         sync_views.receive_rental,
+         name='sync_rental'),
+    
     
 ]
