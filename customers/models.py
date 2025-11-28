@@ -1039,8 +1039,8 @@ class RentalContract(models.Model):
     )
     
     # Return details
-    return_notes = models.TextField(blank=True)
-    damage_notes = models.TextField(blank=True)
+    return_notes = models.TextField(blank=True, default='')
+    damage_notes = models.TextField(blank=True, default='')
     
     # Notification tracking
     overdue_notified = models.BooleanField(default=False)
