@@ -1,0 +1,414 @@
+{% extends 'dashboard/business_base.html' %}
+{% load static %}
+
+{% block title %}Rental {{ rental.contract_number }} - {{ tenant.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 25px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    .status-active { background-color: #10b981; color: white; }
+    .status-overdue { background-color: #ef4444; color: white; }
+    .status-returned { background-color: #3b82f6; color: white; }
+    .status-closed { background-color: #6b7280; color: white; }
+    .status-cancelled { background-color: #f59e0b; color: white; }
+    .status-draft { background-color: #8b5cf6; color: white; }
+    .status-partially_returned { background-color: #06b6d4; color: white; }
+    
+    .detail-card {
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    .detail-card .card-header {
+        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+        color: white;
+        font-weight: 600;
+    }
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .info-row:last-child {
+        border-bottom: none;
+    }
+    .info-label {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+    .info-value {
+        font-weight: 500;
+        text-align: right;
+    }
+    .timeline {
+        position: relative;
+        padding-left: 2rem;
+    }
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 0.5rem;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: var(--border-color);
+    }
+    .timeline-item {
+        position: relative;
+        padding-bottom: 1.5rem;
+    }
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -1.5rem;
+        top: 0.25rem;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--primary-color);
+        border: 2px solid white;
+        box-shadow: 0 0 0 2px var(--primary-color);
+    }
+    .item-card {
+        transition: all 0.2s ease;
+    }
+    .item-card:hover {
+        background-color: var(--bg-primary);
+    }
+    .overdue-alert {
+        background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+        border-left: 4px solid #ef4444;
+        border-radius: 8px;
+    }
+    .financial-summary {
+        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        border-radius: 12px;
+        padding: 1.5rem;
+    }
+    .financial-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+    }
+    .financial-total {
+        font-size: 1.25rem;
+        font-weight: 700;
+        border-top: 2px solid #10b981;
+        padding-top: 0.75rem;
+        margin-top: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'dashboard:rentals' %}">Rentals</a>
+            </li>
+            <li class="breadcrumb-item active">{{ rental.contract_number }}</li>
+        </ol>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="d-flex align-items-center">
+                <h2 class="mb-0 me-3">
+                    <i class="bi bi-box-seam me-2"></i>{{ rental.contract_number }}
+                </h2>
+                <span class="status-badge status-{{ rental.status }}">
+                    {{ rental.status|title }}
+                </span>
+            </div>
+            <p class="text-muted mt-2 mb-0">
+                Created {{ rental.created_at|date:"M d, Y \a\t H:i" }}
+            </p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a href="{% url 'dashboard:rentals' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Back to Rentals
+            </a>
+        </div>
+    </div>
+
+    <!-- Overdue Alert -->
+    {% if rental.is_overdue %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="overdue-alert p-3">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-exclamation-triangle-fill text-danger me-3" style="font-size: 1.5rem;"></i>
+                    <div>
+                        <strong class="text-danger">This rental is overdue!</strong>
+                        <p class="mb-0 text-muted">
+                            Expected return was {{ rental.expected_return_date|date:"M d, Y" }} - 
+                            <strong class="text-danger">{{ rental.days_overdue }} days overdue</strong>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <!-- Left Column -->
+        <div class="col-lg-8">
+            <!-- Customer Information -->
+            <div class="card detail-card mb-4">
+                <div class="card-header">
+                    <i class="bi bi-person me-2"></i>Customer Information
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="info-row">
+                                <span class="info-label">Name</span>
+                                <span class="info-value">
+                                    {% if rental.tenant_customer %}
+                                    <a href="{% url 'dashboard:customer_detail' rental.tenant_customer.id %}">
+                                        {{ rental.customer_name }}
+                                    </a>
+                                    {% else %}
+                                    {{ rental.customer_name|default:"Not provided" }}
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Phone</span>
+                                <span class="info-value">{{ rental.contact_phone|default:"Not provided" }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-row">
+                                <span class="info-label">Email</span>
+                                <span class="info-value">{{ rental.contact_email|default:"Not provided" }}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Delivery Address</span>
+                                <span class="info-value">{{ rental.delivery_address|default:"Not provided" }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rental Items -->
+            <div class="card detail-card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-list-ul me-2"></i>Rental Items</span>
+                    <span class="badge bg-light text-dark">{{ rental.items.count }} item{{ rental.items.count|pluralize }}</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Product</th>
+                                    <th>SKU</th>
+                                    <th class="text-center">Qty</th>
+                                    <th class="text-end">Daily Rate</th>
+                                    <th class="text-end">Subtotal</th>
+                                    <th class="text-center">Returned</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in rental.items.all %}
+                                <tr class="item-card">
+                                    <td>
+                                        <strong>{{ item.product_name }}</strong>
+                                        {% if item.damage_description %}
+                                        <br><small class="text-danger">
+                                            <i class="bi bi-exclamation-circle"></i> {{ item.damage_description }}
+                                        </small>
+                                        {% endif %}
+                                    </td>
+                                    <td><code>{{ item.sku }}</code></td>
+                                    <td class="text-center">{{ item.quantity }}</td>
+                                    <td class="text-end">{{ rental.currency }}{{ item.daily_rate|floatformat:2 }}</td>
+                                    <td class="text-end"><strong>{{ rental.currency }}{{ item.subtotal|floatformat:2 }}</strong></td>
+                                    <td class="text-center">
+                                        {% if item.is_fully_returned %}
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check"></i> {{ item.returned_quantity }}/{{ item.quantity }}
+                                        </span>
+                                        {% elif item.returned_quantity > 0 %}
+                                        <span class="badge bg-warning text-dark">
+                                            {{ item.returned_quantity }}/{{ item.quantity }}
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">
+                                            0/{{ item.quantity }}
+                                        </span>
+                                        {% endif %}
+                                        {% if item.damaged_quantity > 0 %}
+                                        <br><small class="text-danger">{{ item.damaged_quantity }} damaged</small>
+                                        {% endif %}
+                                        {% if item.missing_quantity > 0 %}
+                                        <br><small class="text-warning">{{ item.missing_quantity }} missing</small>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-4">
+                                        No items in this rental
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notes -->
+            {% if rental.return_notes or rental.damage_notes %}
+            <div class="card detail-card mb-4">
+                <div class="card-header">
+                    <i class="bi bi-sticky me-2"></i>Notes
+                </div>
+                <div class="card-body">
+                    {% if rental.return_notes %}
+                    <div class="mb-3">
+                        <h6 class="text-muted mb-2">Return Notes</h6>
+                        <p class="mb-0">{{ rental.return_notes }}</p>
+                    </div>
+                    {% endif %}
+                    {% if rental.damage_notes %}
+                    <div>
+                        <h6 class="text-danger mb-2">Damage Notes</h6>
+                        <p class="mb-0">{{ rental.damage_notes }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Right Column -->
+        <div class="col-lg-4">
+            <!-- Rental Dates -->
+            <div class="card detail-card mb-4">
+                <div class="card-header">
+                    <i class="bi bi-calendar3 me-2"></i>Rental Period
+                </div>
+                <div class="card-body">
+                    <div class="info-row">
+                        <span class="info-label">Start Date</span>
+                        <span class="info-value">{{ rental.start_date|date:"M d, Y" }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Expected Return</span>
+                        <span class="info-value {% if rental.is_overdue %}text-danger{% endif %}">
+                            {{ rental.expected_return_date|date:"M d, Y" }}
+                        </span>
+                    </div>
+                    {% if rental.actual_return_date %}
+                    <div class="info-row">
+                        <span class="info-label">Actual Return</span>
+                        <span class="info-value text-success">{{ rental.actual_return_date|date:"M d, Y" }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="info-row">
+                        <span class="info-label">Duration</span>
+                        <span class="info-value">{{ rental.rental_days }} day{{ rental.rental_days|pluralize }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Financial Summary -->
+            <div class="card detail-card mb-4">
+                <div class="card-header">
+                    <i class="bi bi-cash-stack me-2"></i>Financial Summary
+                </div>
+                <div class="card-body">
+                    <div class="financial-summary">
+                        <div class="financial-row">
+                            <span>Subtotal</span>
+                            <span>{{ rental.currency }}{{ rental.subtotal|floatformat:2 }}</span>
+                        </div>
+                        {% if rental.tax_amount > 0 %}
+                        <div class="financial-row">
+                            <span>Tax</span>
+                            <span>{{ rental.currency }}{{ rental.tax_amount|floatformat:2 }}</span>
+                        </div>
+                        {% endif %}
+                        {% if rental.penalty_amount > 0 %}
+                        <div class="financial-row text-danger">
+                            <span>Late Penalty</span>
+                            <span>{{ rental.currency }}{{ rental.penalty_amount|floatformat:2 }}</span>
+                        </div>
+                        {% endif %}
+                        {% if rental.damage_charges > 0 %}
+                        <div class="financial-row text-danger">
+                            <span>Damage Charges</span>
+                            <span>{{ rental.currency }}{{ rental.damage_charges|floatformat:2 }}</span>
+                        </div>
+                        {% endif %}
+                        <div class="financial-row financial-total">
+                            <span>Total Due</span>
+                            <span>{{ rental.currency }}{{ rental.total_due|floatformat:2 }}</span>
+                        </div>
+                    </div>
+
+                    <hr class="my-3">
+
+                    <div class="info-row">
+                        <span class="info-label">Deposit Paid</span>
+                        <span class="info-value">{{ rental.currency }}{{ rental.deposit_amount|floatformat:2 }}</span>
+                    </div>
+                    {% if rental.deposit_returned %}
+                    <div class="info-row">
+                        <span class="info-label">Deposit Returned</span>
+                        <span class="info-value text-success">{{ rental.currency }}{{ rental.deposit_returned|floatformat:2 }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="info-row">
+                        <span class="info-label">Total Paid</span>
+                        <span class="info-value">{{ rental.currency }}{{ rental.total_paid|floatformat:2 }}</span>
+                    </div>
+                    {% if rental.balance_due > 0 %}
+                    <div class="info-row">
+                        <span class="info-label">Balance Due</span>
+                        <span class="info-value text-danger fw-bold">{{ rental.currency }}{{ rental.balance_due|floatformat:2 }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Sync Info -->
+            <div class="card detail-card">
+                <div class="card-header">
+                    <i class="bi bi-arrow-repeat me-2"></i>Sync Information
+                </div>
+                <div class="card-body">
+                    <div class="info-row">
+                        <span class="info-label">Source</span>
+                        <span class="info-value">
+                            <span class="badge bg-primary">{{ rental.external_source }}</span>
+                        </span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">External ID</span>
+                        <span class="info-value"><code>{{ rental.external_id|truncatechars:12 }}</code></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Last Synced</span>
+                        <span class="info-value">{{ rental.last_synced_at|date:"M d, Y H:i" }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

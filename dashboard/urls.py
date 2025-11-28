@@ -69,6 +69,9 @@ urlpatterns = [
     path('api/v1/customers/check-phone', check_customer_by_phone, name='check-customer-phone'),
     path('api/sync/customers', sync_views.get_updated_customers, name='sync_customers'),
     path('customers/export/', views.main.export_customers, name='export_customers'),
+    # Rental Contracts
+    path('rentals/', views.main.rental_list, name='rentals'),
+    path('rentals/<uuid:rental_id>/', views.main.rental_detail, name='rental_detail'),
   
     # ============================================
     # INTEGRATION: Sync endpoints from POS

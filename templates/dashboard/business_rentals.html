@@ -1,0 +1,347 @@
+{% extends 'dashboard/business_base.html' %}
+{% load static %}
+
+{% block title %}Rental Contracts - {{ tenant.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .status-badge {
+        padding: 0.35rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    .status-active {
+        background-color: #10b981;
+        color: white;
+    }
+    .status-overdue {
+        background-color: #ef4444;
+        color: white;
+    }
+    .status-returned {
+        background-color: #3b82f6;
+        color: white;
+    }
+    .status-closed {
+        background-color: #6b7280;
+        color: white;
+    }
+    .status-cancelled {
+        background-color: #f59e0b;
+        color: white;
+    }
+    .status-draft {
+        background-color: #8b5cf6;
+        color: white;
+    }
+    .status-partially_returned {
+        background-color: #06b6d4;
+        color: white;
+    }
+    .rental-card {
+        transition: all 0.3s ease;
+        border-left: 4px solid transparent;
+    }
+    .rental-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+    .rental-card.overdue {
+        border-left-color: #ef4444;
+    }
+    .rental-card.active {
+        border-left-color: #10b981;
+    }
+    .stat-card {
+        border-radius: 12px;
+        padding: 1.5rem;
+        color: white;
+        position: relative;
+        overflow: hidden;
+    }
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 100%;
+        height: 100%;
+        background: rgba(255,255,255,0.1);
+        border-radius: 50%;
+    }
+    .stat-card i {
+        font-size: 2.5rem;
+        opacity: 0.8;
+    }
+    .table th {
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+        color: var(--text-secondary);
+    }
+    .customer-link {
+        color: var(--primary-color);
+        text-decoration: none;
+        font-weight: 500;
+    }
+    .customer-link:hover {
+        text-decoration: underline;
+    }
+    .days-overdue {
+        color: #ef4444;
+        font-weight: 600;
+    }
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: var(--text-secondary);
+    }
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="mb-1">
+                <i class="bi bi-box-seam me-2"></i>Rental Contracts
+            </h2>
+            <p class="text-muted mb-0">Track and manage equipment rentals synced from POS</p>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="stat-card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1 opacity-75">Active Rentals</h6>
+                        <h2 class="mb-0">{{ stats.active_count }}</h2>
+                    </div>
+                    <i class="bi bi-check-circle"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="stat-card" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1 opacity-75">Overdue</h6>
+                        <h2 class="mb-0">{{ stats.overdue_count }}</h2>
+                    </div>
+                    <i class="bi bi-exclamation-triangle"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="stat-card" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1 opacity-75">Returned</h6>
+                        <h2 class="mb-0">{{ stats.returned_count }}</h2>
+                    </div>
+                    <i class="bi bi-arrow-return-left"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="stat-card" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1 opacity-75">Total Revenue</h6>
+                        <h2 class="mb-0">{{ stats.total_revenue|floatformat:0 }}</h2>
+                    </div>
+                    <i class="bi bi-currency-dollar"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body py-3">
+                    <form method="get" class="row g-3 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label small text-muted">Status</label>
+                            <select name="status" class="form-select">
+                                <option value="">All Statuses</option>
+                                <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                                <option value="overdue" {% if status_filter == 'overdue' %}selected{% endif %}>Overdue</option>
+                                <option value="returned" {% if status_filter == 'returned' %}selected{% endif %}>Returned</option>
+                                <option value="closed" {% if status_filter == 'closed' %}selected{% endif %}>Closed</option>
+                                <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small text-muted">From Date</label>
+                            <input type="date" name="date_from" class="form-control" value="{{ request.GET.date_from }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small text-muted">To Date</label>
+                            <input type="date" name="date_to" class="form-control" value="{{ request.GET.date_to }}">
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-funnel me-1"></i> Filter
+                            </button>
+                        </div>
+                        <div class="col-md-1">
+                            <a href="{% url 'dashboard:rentals' %}" class="btn btn-outline-secondary w-100">
+                                <i class="bi bi-x-lg"></i>
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rentals Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-box-seam me-2"></i>Rental Contracts</span>
+                    <span class="badge bg-secondary">{{ rentals.count }} total</span>
+                </div>
+                <div class="card-body p-0">
+                    {% if rentals %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Contract #</th>
+                                    <th>Customer</th>
+                                    <th>Start Date</th>
+                                    <th>Return Date</th>
+                                    <th>Items</th>
+                                    <th>Total</th>
+                                    <th>Deposit</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for rental in rentals %}
+                                <tr class="rental-card {% if rental.status == 'overdue' %}overdue{% elif rental.status == 'active' %}active{% endif %}">
+                                    <td>
+                                        <strong>{{ rental.contract_number }}</strong>
+                                    </td>
+                                    <td>
+                                        {% if rental.tenant_customer %}
+                                        <a href="{% url 'dashboard:customer_detail' rental.tenant_customer.id %}" class="customer-link">
+                                            {{ rental.customer_name }}
+                                        </a>
+                                        {% else %}
+                                        {{ rental.customer_name|default:"Walk-in" }}
+                                        {% endif %}
+                                        {% if rental.contact_phone %}
+                                        <br><small class="text-muted">{{ rental.contact_phone }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ rental.start_date|date:"M d, Y" }}</td>
+                                    <td>
+                                        {{ rental.expected_return_date|date:"M d, Y" }}
+                                        {% if rental.is_overdue %}
+                                        <br><span class="days-overdue">{{ rental.days_overdue }} days overdue</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark">{{ rental.items.count }} item{{ rental.items.count|pluralize }}</span>
+                                    </td>
+                                    <td>
+                                        <strong>{{ rental.currency }}{{ rental.total_due|floatformat:2 }}</strong>
+                                        {% if rental.balance_due > 0 %}
+                                        <br><small class="text-danger">Balance: {{ rental.currency }}{{ rental.balance_due|floatformat:2 }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {{ rental.currency }}{{ rental.deposit_amount|floatformat:2 }}
+                                        {% if rental.deposit_returned %}
+                                        <br><small class="text-success">Returned: {{ rental.currency }}{{ rental.deposit_returned|floatformat:2 }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="status-badge status-{{ rental.status }}">
+                                            {{ rental.status|title }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'dashboard:rental_detail' rental.id %}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <i class="bi bi-box-seam"></i>
+                        <h5>No Rental Contracts Found</h5>
+                        <p class="text-muted">
+                            {% if status_filter or request.GET.date_from %}
+                            No rentals match your filter criteria. Try adjusting your filters.
+                            {% else %}
+                            Rental contracts from POS will appear here once synced.
+                            {% endif %}
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if rentals.has_other_pages %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <nav aria-label="Rental pagination">
+                <ul class="pagination justify-content-center">
+                    {% if rentals.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ rentals.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in rentals.paginator.page_range %}
+                        {% if rentals.number == num %}
+                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                        {% elif num > rentals.number|add:'-3' and num < rentals.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if status_filter %}&status={{ status_filter }}{% endif %}">{{ num }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if rentals.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ rentals.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

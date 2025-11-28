@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Sum, Q, Count, Avg
 from django.http import JsonResponse
-from customers.models import Transaction, Customer, TenantCustomer
+from customers.models import Transaction, Customer, TenantCustomer, RentalContract
 from customers.authentication import get_tenant_from_request  # PHASE 4: Added import
 from tenants.models import Tenant
 from datetime import datetime, timedelta
@@ -1404,3 +1404,89 @@ This email was automatically generated from the contact form at ayendecx.com
             'success': False,
             'error': 'An error occurred processing your request'
         }, status=500)
+# Add these imports at the top of dashboard/views/main.py:
+# from customers.models import RentalContract, RentalContractItem
+# from django.db.models import Sum, Count, Q
+
+# Add these view functions to dashboard/views/main.py:
+
+@login_required
+def rental_list(request):
+    """
+    Display list of rental contracts for the business.
+    Accessible to business owners and staff.
+    """
+    tenant = getattr(request, 'tenant', None)
+    
+    if not tenant:
+        messages.error(request, "Unable to determine your business.")
+        return redirect('dashboard:home')
+    
+    # Get all rentals for this tenant
+    rentals = RentalContract.objects.filter(tenant=tenant).select_related(
+        'tenant_customer'
+    ).prefetch_related('items').order_by('-created_at')
+    
+    # Apply filters
+    status_filter = request.GET.get('status', '')
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+    
+    if status_filter:
+        rentals = rentals.filter(status=status_filter)
+    
+    if date_from:
+        rentals = rentals.filter(start_date__gte=date_from)
+    
+    if date_to:
+        rentals = rentals.filter(start_date__lte=date_to)
+    
+    # Calculate stats
+    all_rentals = RentalContract.objects.filter(tenant=tenant)
+    stats = {
+        'active_count': all_rentals.filter(status='active').count(),
+        'overdue_count': all_rentals.filter(status='overdue').count(),
+        'returned_count': all_rentals.filter(status='returned').count(),
+        'total_revenue': all_rentals.filter(
+            status__in=['returned', 'closed']
+        ).aggregate(total=Sum('total_paid'))['total'] or 0,
+    }
+    
+    # Pagination
+    paginator = Paginator(rentals, 20)
+    page_number = request.GET.get('page')
+    rentals = paginator.get_page(page_number)
+    
+    context = {
+        'rentals': rentals,
+        'stats': stats,
+        'status_filter': status_filter,
+        'tenant': tenant,
+    }
+    
+    return render(request, 'dashboard/business_rentals.html', context)
+
+
+@login_required
+def rental_detail(request, rental_id):
+    """
+    Display detailed view of a single rental contract.
+    """
+    tenant = getattr(request, 'tenant', None)
+    
+    if not tenant:
+        messages.error(request, "Unable to determine your business.")
+        return redirect('dashboard:home')
+    
+    rental = get_object_or_404(
+        RentalContract.objects.select_related('tenant_customer').prefetch_related('items'),
+        id=rental_id,
+        tenant=tenant
+    )
+    
+    context = {
+        'rental': rental,
+        'tenant': tenant,
+    }
+    
+    return render(request, 'dashboard/business_rental_detail.html', context)
