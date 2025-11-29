@@ -10,25 +10,9 @@ urlpatterns = [
     # Command Center (Main Dashboard)
     path('', views.reports_dashboard, name='dashboard'),
     
-    # Platform Admin Dashboard (ADD THIS LINE)
-    path('platform/', views.platform_dashboard, name='platform_dashboard'),
-    # Command Center (Main Dashboard)
-    path('', views.reports_dashboard, name='dashboard'),
-    
     # Platform Dashboards
     path('platform/', views.platform_dashboard, name='platform_dashboard'),
     path('platform-revenue/', views.platform_revenue_dashboard, name='platform_revenue'),
-    
-    # Detailed reports
-    path('revenue/', views.revenue_report, name='revenue'),
-    
-    # Detailed reports
-    path('revenue/', views.revenue_report, name='revenue'),
-    path('customers/', views.customer_report, name='customers'),
-    path('sales/', views.sales_report, name='sales'),
-    path('loyalty/', views.loyalty_report, name='loyalty'),
-    # Command Center (Main Dashboard)
-    path('', views.reports_dashboard, name='dashboard'),
     
     # Detailed reports
     path('revenue/', views.revenue_report, name='revenue'),
@@ -40,7 +24,6 @@ urlpatterns = [
     # Export functionality
     path('export/revenue/', views.export_revenue_csv, name='export_revenue'),
     path('export/customers/', views.export_customers_csv, name='export_customers'),
-    path('export/revenue/', views.export_revenue, name='export_revenue'),
     path('export/rentals/', views.export_rentals, name='export_rentals'),
     
     # Print reports
