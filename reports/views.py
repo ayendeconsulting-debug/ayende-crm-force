@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 import csv
 import json
 
-from customers.models import Customer, TenantCustomer, Transaction
+from customers.models import Customer, TenantCustomer, Transaction, RentalContract, RentalContractItem
 from tenants.models import Tenant
 from decimal import Decimal
 from .utils import (
@@ -85,6 +85,76 @@ def calculate_anonymous_metrics(transactions):
         'avg_anonymous_value': avg_anonymous,
         'avg_customer_value': avg_customer,
     }
+
+def calculate_rental_revenue(tenant, start_date=None, end_date=None):
+    """
+    Calculate rental revenue for a tenant within a date range.
+    """
+    rentals = RentalContract.objects.filter(
+        tenant=tenant,
+        status__in=['returned', 'closed']
+    )
+    
+    if start_date:
+        rentals = rentals.filter(created_at__gte=start_date)
+    if end_date:
+        rentals = rentals.filter(created_at__lte=end_date)
+    
+    aggregates = rentals.aggregate(
+        total_revenue=Sum('subtotal'),
+        total_tax=Sum('tax_amount'),
+        total_deposits=Sum('deposit_amount'),
+        total_penalties=Sum('penalty_amount'),
+        total_damage_charges=Sum('damage_charges'),
+        total_collected=Sum('total_paid'),
+        count=Count('id')
+    )
+    
+    active_rentals = RentalContract.objects.filter(
+        tenant=tenant,
+        status__in=['active', 'overdue', 'partially_returned']
+    )
+    
+    active_aggregates = active_rentals.aggregate(
+        active_value=Sum('total_due'),
+        deposits_held=Sum('deposit_amount'),
+        active_count=Count('id')
+    )
+    
+    return {
+        'rental_revenue': aggregates['total_revenue'] or Decimal('0'),
+        'rental_tax': aggregates['total_tax'] or Decimal('0'),
+        'rental_deposits': aggregates['total_deposits'] or Decimal('0'),
+        'rental_penalties': aggregates['total_penalties'] or Decimal('0'),
+        'rental_damage_charges': aggregates['total_damage_charges'] or Decimal('0'),
+        'rental_collected': aggregates['total_collected'] or Decimal('0'),
+        'rental_count': aggregates['count'] or 0,
+        'active_rental_value': active_aggregates['active_value'] or Decimal('0'),
+        'deposits_held': active_aggregates['deposits_held'] or Decimal('0'),
+        'active_rental_count': active_aggregates['active_count'] or 0,
+    }
+
+
+def get_rental_revenue_by_period(tenant, start_date, end_date, period='day'):
+    """Get rental revenue grouped by time period for charts."""
+    rentals = RentalContract.objects.filter(
+        tenant=tenant,
+        status__in=['returned', 'closed'],
+        created_at__gte=start_date,
+        created_at__lte=end_date
+    )
+    
+    grouped = rentals.annotate(
+        period=TruncDate('created_at')
+    ).values('period').annotate(
+        revenue=Sum('subtotal')
+    ).order_by('period')
+    
+    return {
+        item['period'].strftime('%Y-%m-%d'): float(item['revenue'] or 0)
+        for item in grouped if item['period']
+    }
+
 
 
 def check_staff_permission(request):
@@ -527,6 +597,80 @@ def loyalty_report(request):
     
     return render(request, 'reports/loyalty_report.html', context)
 
+@login_required(login_url='dashboard:login')
+def rental_report(request):
+    """Dedicated rental analytics report."""
+    tenant, tenant_customer = check_staff_permission(request)
+    
+    if not tenant:
+        messages.error(request, 'You do not have permission to access reports.')
+        return redirect('dashboard:home')
+    
+    period = request.GET.get('period', 'month')
+    start_date, end_date = get_date_range(period)
+    
+    rental_metrics = calculate_rental_revenue(tenant, start_date, end_date)
+    
+    period_rentals = RentalContract.objects.filter(
+        tenant=tenant,
+        created_at__gte=start_date,
+        created_at__lte=end_date
+    )
+    
+    status_breakdown = period_rentals.values('status').annotate(
+        count=Count('id'),
+        revenue=Sum('subtotal')
+    ).order_by('-count')
+    
+    most_rented = RentalContractItem.objects.filter(
+        contract__tenant=tenant,
+        contract__created_at__gte=start_date,
+        contract__created_at__lte=end_date
+    ).values('product_name', 'sku').annotate(
+        total_qty=Sum('quantity'),
+        total_revenue=Sum('subtotal'),
+        rental_count=Count('contract', distinct=True)
+    ).order_by('-total_qty')[:10]
+    
+    rental_by_day = get_rental_revenue_by_period(tenant, start_date, end_date, 'day')
+    
+    completed_rentals = period_rentals.filter(status__in=['returned', 'closed'])
+    avg_duration = completed_rentals.aggregate(avg_days=Avg('rental_days'))['avg_days'] or 0
+    avg_value = completed_rentals.aggregate(avg_value=Avg('subtotal'))['avg_value'] or Decimal('0')
+    
+    overdue_rentals = RentalContract.objects.filter(tenant=tenant, status='overdue')
+    overdue_count = overdue_rentals.count()
+    overdue_value = overdue_rentals.aggregate(total=Sum('total_due'))['total'] or Decimal('0')
+    
+    top_customers = TenantCustomer.objects.filter(
+        tenant=tenant,
+        rental_contracts__created_at__gte=start_date,
+        rental_contracts__created_at__lte=end_date
+    ).annotate(
+        rental_count=Count('rental_contracts'),
+        rental_total=Sum('rental_contracts__subtotal')
+    ).order_by('-rental_total')[:10]
+    
+    context = {
+        'tenant': tenant,
+        'tenant_customer': tenant_customer,
+        'is_business_view': True,
+        'period': period,
+        'start_date': start_date,
+        'end_date': end_date,
+        'rental_metrics': rental_metrics,
+        'status_breakdown': status_breakdown,
+        'most_rented': most_rented,
+        'rental_by_day': json.dumps(rental_by_day),
+        'avg_duration': round(avg_duration, 1),
+        'avg_value': avg_value,
+        'overdue_count': overdue_count,
+        'overdue_value': overdue_value,
+        'top_customers': top_customers,
+        'currency_symbol': getattr(tenant, 'currency_symbol', '$'),
+    }
+    
+    return render(request, 'reports/rental_report.html', context)
 
 @login_required(login_url='dashboard:login')
 def export_revenue_csv(request):
@@ -618,6 +762,53 @@ def export_customers_csv(request):
             'Yes' if tc.is_vip else 'No',
             tc.joined_at.strftime('%Y-%m-%d'),
             tc.last_purchase_at.strftime('%Y-%m-%d') if tc.last_purchase_at else 'Never',
+        ])
+    
+    return response
+
+@login_required(login_url='dashboard:login')
+def export_rentals(request):
+    """Export rental data to CSV"""
+    tenant, tenant_customer = check_staff_permission(request)
+    
+    if not tenant:
+        return redirect('dashboard:home')
+    
+    period = request.GET.get('period', 'month')
+    start_date, end_date = get_date_range(period)
+    
+    rentals = RentalContract.objects.filter(
+        tenant=tenant,
+        created_at__gte=start_date,
+        created_at__lte=end_date
+    ).select_related('tenant_customer')
+    
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="rentals_{start_date.date()}_{end_date.date()}.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow([
+        'Contract #', 'Customer', 'Start Date', 'Return Date', 'Status',
+        'Subtotal', 'Tax', 'Deposit', 'Total Due', 'Total Paid', 'Balance'
+    ])
+    
+    for rental in rentals:
+        customer_name = rental.customer_name or (
+            f"{rental.tenant_customer.first_name} {rental.tenant_customer.last_name}"
+            if rental.tenant_customer else "Unknown"
+        )
+        writer.writerow([
+            rental.contract_number,
+            customer_name,
+            rental.start_date.strftime('%Y-%m-%d'),
+            rental.expected_return_date.strftime('%Y-%m-%d'),
+            rental.status,
+            rental.subtotal,
+            rental.tax_amount,
+            rental.deposit_amount,
+            rental.total_due,
+            rental.total_paid,
+            rental.balance_due
         ])
     
     return response

@@ -35,10 +35,13 @@ urlpatterns = [
     path('customers/', views.customer_report, name='customers'),
     path('sales/', views.sales_report, name='sales'),
     path('loyalty/', views.loyalty_report, name='loyalty'),
+    path('rental/', views.rental_report, name='rental_report'),
     
     # Export functionality
     path('export/revenue/', views.export_revenue_csv, name='export_revenue'),
     path('export/customers/', views.export_customers_csv, name='export_customers'),
+    path('export/revenue/', views.export_revenue, name='export_revenue'),
+    path('export/rentals/', views.export_rentals, name='export_rentals'),
     
     # Print reports
     path('print/<str:report_type>/', views.print_report, name='print_report'),

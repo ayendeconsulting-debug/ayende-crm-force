@@ -1,0 +1,285 @@
+{% extends 'reports/base_report.html' %}
+{% load humanize %}
+
+{% block title %}Rental Report - {{ tenant.name }}{% endblock %}
+
+{% block report_title %}Rental Analytics{% endblock %}
+{% block report_subtitle %}Equipment rental performance and insights{% endblock %}
+
+{% block report_content %}
+<!-- Summary Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <!-- Total Rental Revenue -->
+    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-500">Rental Revenue</p>
+                <p class="text-2xl font-bold text-gray-900 mt-1">
+                    {{ currency_symbol }}{{ rental_metrics.rental_revenue|floatformat:2|intcomma }}
+                </p>
+                <p class="text-xs text-gray-400 mt-1">{{ rental_metrics.rental_count }} contracts</p>
+            </div>
+            <div class="p-3 bg-green-100 rounded-lg">
+                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Rentals -->
+    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-500">Active Rentals</p>
+                <p class="text-2xl font-bold text-blue-600 mt-1">
+                    {{ rental_metrics.active_rental_count }}
+                </p>
+                <p class="text-xs text-gray-400 mt-1">{{ currency_symbol }}{{ rental_metrics.active_rental_value|floatformat:2|intcomma }} value</p>
+            </div>
+            <div class="p-3 bg-blue-100 rounded-lg">
+                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Average Rental Value -->
+    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-500">Avg. Rental Value</p>
+                <p class="text-2xl font-bold text-gray-900 mt-1">
+                    {{ currency_symbol }}{{ avg_value|floatformat:2|intcomma }}
+                </p>
+                <p class="text-xs text-gray-400 mt-1">{{ avg_duration }} days avg. duration</p>
+            </div>
+            <div class="p-3 bg-purple-100 rounded-lg">
+                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overdue Rentals -->
+    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-500">Overdue</p>
+                <p class="text-2xl font-bold {% if overdue_count > 0 %}text-red-600{% else %}text-gray-900{% endif %} mt-1">
+                    {{ overdue_count }}
+                </p>
+                <p class="text-xs text-gray-400 mt-1">{{ currency_symbol }}{{ overdue_value|floatformat:2|intcomma }} at risk</p>
+            </div>
+            <div class="p-3 {% if overdue_count > 0 %}bg-red-100{% else %}bg-gray-100{% endif %} rounded-lg">
+                <svg class="w-6 h-6 {% if overdue_count > 0 %}text-red-600{% else %}text-gray-600{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Deposits Held Banner -->
+<div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl p-6 mb-8 text-white">
+    <div class="flex items-center justify-between">
+        <div>
+            <h3 class="text-lg font-semibold">Security Deposits Held</h3>
+            <p class="text-indigo-100 text-sm mt-1">Total deposits currently held from active rentals</p>
+        </div>
+        <div class="text-right">
+            <p class="text-3xl font-bold">{{ currency_symbol }}{{ rental_metrics.deposits_held|floatformat:2|intcomma }}</p>
+            <p class="text-indigo-200 text-sm">from {{ rental_metrics.active_rental_count }} rentals</p>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+    <!-- Revenue Chart -->
+    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Rental Revenue Trend</h3>
+        <canvas id="rentalRevenueChart" height="250"></canvas>
+    </div>
+
+    <!-- Status Breakdown -->
+    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Status Breakdown</h3>
+        <div class="space-y-4">
+            {% for status in status_breakdown %}
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                        {% if status.status == 'active' %}bg-blue-100 text-blue-800
+                        {% elif status.status == 'returned' %}bg-green-100 text-green-800
+                        {% elif status.status == 'overdue' %}bg-red-100 text-red-800
+                        {% elif status.status == 'closed' %}bg-purple-100 text-purple-800
+                        {% elif status.status == 'cancelled' %}bg-gray-100 text-gray-800
+                        {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                        {{ status.status|title }}
+                    </span>
+                </div>
+                <div class="text-right">
+                    <span class="font-semibold text-gray-900">{{ status.count }}</span>
+                    <span class="text-gray-500 text-sm ml-2">({{ currency_symbol }}{{ status.revenue|floatformat:2|intcomma }})</span>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-gray-500 text-center py-4">No rental data for this period</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Most Rented Items -->
+<div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-8">
+    <h3 class="text-lg font-semibold text-gray-800 mb-4">Most Rented Items</h3>
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU</th>
+                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Times Rented</th>
+                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Total Qty</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for item in most_rented %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="font-medium text-gray-900">{{ item.product_name }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.sku }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">{{ item.rental_count }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">{{ item.total_qty }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-gray-900">
+                        {{ currency_symbol }}{{ item.total_revenue|floatformat:2|intcomma }}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-6 py-4 text-center text-gray-500">No rental items in this period</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Top Rental Customers -->
+<div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+    <h3 class="text-lg font-semibold text-gray-800 mb-4">Top Rental Customers</h3>
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Rentals</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total Spent</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for customer in top_customers %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center">
+                                <span class="text-indigo-600 font-medium">{{ customer.first_name|slice:":1" }}{{ customer.last_name|slice:":1" }}</span>
+                            </div>
+                            <div class="ml-4">
+                                <div class="text-sm font-medium text-gray-900">{{ customer.first_name }} {{ customer.last_name }}</div>
+                                <div class="text-sm text-gray-500">{{ customer.email }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">{{ customer.rental_count }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-gray-900">
+                        {{ currency_symbol }}{{ customer.rental_total|floatformat:2|intcomma }}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="px-6 py-4 text-center text-gray-500">No customer data available</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Export Button -->
+<div class="mt-8 flex justify-end">
+    <a href="{% url 'reports:export_rentals' %}?period={{ period }}" 
+       class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+        </svg>
+        Export to CSV
+    </a>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+(function() {
+    // Rental Revenue Chart
+    var rentalDataRaw = '{{ rental_by_day|escapejs }}';
+    var rentalData = {};
+    
+    try {
+        rentalData = JSON.parse(rentalDataRaw);
+    } catch(e) {
+        console.log('No rental data available for chart');
+        rentalData = {};
+    }
+    
+    var labels = Object.keys(rentalData).sort();
+    var values = labels.map(function(label) { return rentalData[label]; });
+    
+    var ctx = document.getElementById('rentalRevenueChart');
+    if (ctx && labels.length > 0) {
+        new Chart(ctx.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: labels.map(function(d) {
+                    var date = new Date(d);
+                    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                }),
+                datasets: [{
+                    label: 'Rental Revenue',
+                    data: values,
+                    borderColor: 'rgb(99, 102, 241)',
+                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '{{ currency_symbol }}' + value.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    } else if (ctx) {
+        ctx.parentElement.innerHTML = '<p class="text-gray-500 text-center py-8">No rental data available for the selected period</p>';
+    }
+})();
+</script>
+{% endblock %}
