@@ -1,5 +1,4 @@
 {% extends 'reports/base_report.html' %}
-{% load humanize %}
 
 {% block title %}Rental Report - {{ tenant.name }}{% endblock %}
 
@@ -15,7 +14,7 @@
             <div>
                 <p class="text-sm font-medium text-gray-500">Rental Revenue</p>
                 <p class="text-2xl font-bold text-gray-900 mt-1">
-                    {{ currency_symbol }}{{ rental_metrics.rental_revenue|floatformat:2|intcomma }}
+                    {{ currency_symbol }}{{ rental_metrics.rental_revenue|floatformat:2 }}
                 </p>
                 <p class="text-xs text-gray-400 mt-1">{{ rental_metrics.rental_count }} contracts</p>
             </div>
@@ -35,7 +34,7 @@
                 <p class="text-2xl font-bold text-blue-600 mt-1">
                     {{ rental_metrics.active_rental_count }}
                 </p>
-                <p class="text-xs text-gray-400 mt-1">{{ currency_symbol }}{{ rental_metrics.active_rental_value|floatformat:2|intcomma }} value</p>
+                <p class="text-xs text-gray-400 mt-1">{{ currency_symbol }}{{ rental_metrics.active_rental_value|floatformat:2 }} value</p>
             </div>
             <div class="p-3 bg-blue-100 rounded-lg">
                 <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -51,7 +50,7 @@
             <div>
                 <p class="text-sm font-medium text-gray-500">Avg. Rental Value</p>
                 <p class="text-2xl font-bold text-gray-900 mt-1">
-                    {{ currency_symbol }}{{ avg_value|floatformat:2|intcomma }}
+                    {{ currency_symbol }}{{ avg_value|floatformat:2 }}
                 </p>
                 <p class="text-xs text-gray-400 mt-1">{{ avg_duration }} days avg. duration</p>
             </div>
@@ -71,7 +70,7 @@
                 <p class="text-2xl font-bold {% if overdue_count > 0 %}text-red-600{% else %}text-gray-900{% endif %} mt-1">
                     {{ overdue_count }}
                 </p>
-                <p class="text-xs text-gray-400 mt-1">{{ currency_symbol }}{{ overdue_value|floatformat:2|intcomma }} at risk</p>
+                <p class="text-xs text-gray-400 mt-1">{{ currency_symbol }}{{ overdue_value|floatformat:2 }} at risk</p>
             </div>
             <div class="p-3 {% if overdue_count > 0 %}bg-red-100{% else %}bg-gray-100{% endif %} rounded-lg">
                 <svg class="w-6 h-6 {% if overdue_count > 0 %}text-red-600{% else %}text-gray-600{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -90,7 +89,7 @@
             <p class="text-indigo-100 text-sm mt-1">Total deposits currently held from active rentals</p>
         </div>
         <div class="text-right">
-            <p class="text-3xl font-bold">{{ currency_symbol }}{{ rental_metrics.deposits_held|floatformat:2|intcomma }}</p>
+            <p class="text-3xl font-bold">{{ currency_symbol }}{{ rental_metrics.deposits_held|floatformat:2 }}</p>
             <p class="text-indigo-200 text-sm">from {{ rental_metrics.active_rental_count }} rentals</p>
         </div>
     </div>
@@ -122,7 +121,7 @@
                 </div>
                 <div class="text-right">
                     <span class="font-semibold text-gray-900">{{ status.count }}</span>
-                    <span class="text-gray-500 text-sm ml-2">({{ currency_symbol }}{{ status.revenue|floatformat:2|intcomma }})</span>
+                    <span class="text-gray-500 text-sm ml-2">({{ currency_symbol }}{{ status.revenue|floatformat:2 }})</span>
                 </div>
             </div>
             {% empty %}
@@ -156,7 +155,7 @@
                     <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">{{ item.rental_count }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">{{ item.total_qty }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-gray-900">
-                        {{ currency_symbol }}{{ item.total_revenue|floatformat:2|intcomma }}
+                        {{ currency_symbol }}{{ item.total_revenue|floatformat:2 }}
                     </td>
                 </tr>
                 {% empty %}
@@ -197,7 +196,7 @@
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">{{ customer.rental_count }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-gray-900">
-                        {{ currency_symbol }}{{ customer.rental_total|floatformat:2|intcomma }}
+                        {{ currency_symbol }}{{ customer.rental_total|floatformat:2 }}
                     </td>
                 </tr>
                 {% empty %}
@@ -220,21 +219,26 @@
         Export to CSV
     </a>
 </div>
+
+<!-- Hidden data for chart -->
+<div id="rentalChartData" data-rental="{{ rental_by_day }}" data-currency="{{ currency_symbol }}" style="display:none;"></div>
 {% endblock %}
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-(function() {
-    // Rental Revenue Chart
-    var rentalDataRaw = '{{ rental_by_day|escapejs }}';
-    var rentalData = {};
+document.addEventListener('DOMContentLoaded', function() {
+    var chartDataEl = document.getElementById('rentalChartData');
+    if (!chartDataEl) return;
     
+    var currencySymbol = chartDataEl.getAttribute('data-currency') || '$';
+    var rentalDataRaw = chartDataEl.getAttribute('data-rental') || '{}';
+    
+    var rentalData = {};
     try {
-        rentalData = JSON.parse(rentalDataRaw);
+        rentalData = JSON.parse(rentalDataRaw.replace(/'/g, '"'));
     } catch(e) {
         console.log('No rental data available for chart');
-        rentalData = {};
     }
     
     var labels = Object.keys(rentalData).sort();
@@ -261,16 +265,14 @@
             options: {
                 responsive: true,
                 plugins: {
-                    legend: {
-                        display: false
-                    }
+                    legend: { display: false }
                 },
                 scales: {
                     y: {
                         beginAtZero: true,
                         ticks: {
                             callback: function(value) {
-                                return '{{ currency_symbol }}' + value.toLocaleString();
+                                return currencySymbol + value.toLocaleString();
                             }
                         }
                     }
@@ -280,6 +282,6 @@
     } else if (ctx) {
         ctx.parentElement.innerHTML = '<p class="text-gray-500 text-center py-8">No rental data available for the selected period</p>';
     }
-})();
+});
 </script>
 {% endblock %}
