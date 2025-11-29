@@ -737,8 +737,20 @@
     <!-- Navigation -->
     <nav>
         <div class="nav-container">
-            <a href="#" class="logo-container">
-                <div class="logo">AYENDE<span> CX</span></div>
+            <a href="#" class="logo" style="display: flex; align-items: center; gap: 10px;">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="40" height="40">
+                  <defs>
+                    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" style="stop-color:#38ef7d"/>
+                      <stop offset="100%" style="stop-color:#11998e"/>
+                    </linearGradient>
+                  </defs>
+                  <rect x="5" y="5" width="90" height="90" rx="20" fill="#1a1a4e"/>
+                  <polygon points="50,18 75,72 62,72 50,50 38,72 25,72" fill="white"/>
+                  <rect x="20" y="76" width="60" height="14" rx="7" fill="url(#accentGrad)"/>
+                  <text x="50" y="87" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="white" text-anchor="middle">CX</text>
+                </svg>
+                Ayende<span>CX</span>
             </a>
             <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle menu">
                 <span></span>
