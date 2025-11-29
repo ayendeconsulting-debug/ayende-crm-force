@@ -258,6 +258,7 @@ def reports_dashboard(request):
 def revenue_report(request):
     """
     Detailed revenue report with charts and breakdowns.
+    UPDATED: Now includes rental revenue.
     """
     tenant, tenant_customer = check_staff_permission(request)
     
@@ -277,11 +278,33 @@ def revenue_report(request):
         transaction_date__lte=end_date
     )
     
-    # Calculate stats
+    # Calculate transaction stats
     revenue_stats = calculate_revenue_stats(transactions)
     
-    # Revenue by day/week/month
+    # RENTAL REVENUE INTEGRATION
+    rental_metrics = calculate_rental_revenue(tenant, start_date, end_date)
+    
+    # Combined totals
+    transaction_revenue = revenue_stats.get('total_revenue', Decimal('0'))
+    combined_revenue = transaction_revenue + rental_metrics['rental_revenue']
+    
+    # Add rental info to revenue_stats for template
+    revenue_stats['transaction_revenue'] = transaction_revenue
+    revenue_stats['rental_revenue'] = rental_metrics['rental_revenue']
+    revenue_stats['combined_revenue'] = combined_revenue
+    revenue_stats['rental_count'] = rental_metrics['rental_count']
+    
+    # Revenue by day/week/month (transactions)
     revenue_by_day = get_revenue_by_period(transactions, 'day')
+    
+    # Rental revenue by day
+    rental_by_day = get_rental_revenue_by_period(tenant, start_date, end_date, 'day')
+    
+    # Merge for combined chart
+    combined_revenue_by_day = {}
+    all_dates = set(revenue_by_day.keys()) | set(rental_by_day.keys())
+    for date in sorted(all_dates):
+        combined_revenue_by_day[date] = revenue_by_day.get(date, 0) + rental_by_day.get(date, 0)
     
     # Revenue by payment method
     payment_breakdown = transactions.values('payment_method').annotate(
@@ -306,10 +329,15 @@ def revenue_report(request):
         'start_date': start_date,
         'end_date': end_date,
         'revenue_stats': revenue_stats,
-        'revenue_by_day': json.dumps(revenue_by_day),
+        'rental_metrics': rental_metrics,
+        'combined_revenue': combined_revenue,
+        'revenue_by_day': json.dumps(combined_revenue_by_day),
+        'transaction_revenue_by_day': json.dumps(revenue_by_day),
+        'rental_revenue_by_day': json.dumps(rental_by_day),
         'payment_breakdown': payment_breakdown,
         'top_days': top_days,
         'comparison': comparison,
+        'currency_symbol': getattr(tenant, 'currency_symbol', '$'),
     }
     
     return render(request, 'reports/revenue_report.html', context)
