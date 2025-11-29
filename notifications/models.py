@@ -319,7 +319,7 @@ class NotificationRecipient(models.Model):
         ]
     
     def __str__(self):
-        return f"{self.notification.title} → {self.tenant_customer.customer.get_full_name()}"
+        return f"{self.notification.title} → {self.tenant_customer.get_full_name() if self.tenant_customer else "Unknown"}"
     
     def mark_as_read(self):
         """Mark this notification as read"""
