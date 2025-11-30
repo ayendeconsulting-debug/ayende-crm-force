@@ -10,6 +10,8 @@ from django.core.paginator import Paginator
 from django.db.models import Q, Sum, Count
 from django.http import JsonResponse
 from django.utils import timezone
+from datetime import timedelta
+from customers.models import Transaction
 from django.contrib import messages as django_messages
 
 from .models import Notification, NotificationRecipient
@@ -1037,7 +1039,27 @@ def compose_broadcast_message(request):
                 customers = customers.filter(total_spent__gt=500, total_spent__lte=1000)
             elif spending_tier == 'vip':
                 customers = customers.filter(total_spent__gt=1000)
-        
+
+        elif target_type == 'inactive_3m':
+            # Customers with no transactions in last 3 months
+            three_months_ago = timezone.now() - timedelta(days=90)
+            active_customer_ids = Transaction.objects.filter(
+                tenant=tenant,
+                tenant_customer__in=customers,
+                transaction_date__gte=three_months_ago
+            ).values_list('tenant_customer_id', flat=True).distinct()
+            customers = customers.exclude(id__in=active_customer_ids)
+
+        elif target_type == 'inactive_6m':
+            # Customers with no transactions in last 6 months
+            six_months_ago = timezone.now() - timedelta(days=180)
+            active_customer_ids = Transaction.objects.filter(
+                tenant=tenant,
+                tenant_customer__in=customers,
+                transaction_date__gte=six_months_ago
+            ).values_list('tenant_customer_id', flat=True).distinct()
+            customers = customers.exclude(id__in=active_customer_ids)
+
         elif target_type == 'specific':
             if specific_customers:
                 customers = customers.filter(id__in=specific_customers)
@@ -1112,7 +1134,32 @@ def compose_broadcast_message(request):
     medium_spenders = customers.filter(total_spent__gt=100, total_spent__lte=500).count()
     high_spenders = customers.filter(total_spent__gt=500, total_spent__lte=1000).count()
     vip_spenders = customers.filter(total_spent__gt=1000).count()
+
+    # Inactive customer segments (based on last transaction date)
+    now = timezone.now()
+    three_months_ago = now - timedelta(days=90)
+    six_months_ago = now - timedelta(days=180)
     
+    # Get customer IDs who have transacted in last 3 months
+    active_3m_ids = Transaction.objects.filter(
+        tenant=tenant,
+        tenant_customer__in=customers,
+        transaction_date__gte=three_months_ago
+    ).values_list('tenant_customer_id', flat=True).distinct()
+    
+    # Get customer IDs who have transacted in last 6 months
+    active_6m_ids = Transaction.objects.filter(
+        tenant=tenant,
+        tenant_customer__in=customers,
+        transaction_date__gte=six_months_ago
+    ).values_list('tenant_customer_id', flat=True).distinct()
+    
+    # Inactive 3+ months: not in active_3m_ids
+    inactive_3m_count = customers.exclude(id__in=active_3m_ids).count()
+    
+    # Inactive 6+ months: not in active_6m_ids
+    inactive_6m_count = customers.exclude(id__in=active_6m_ids).count()
+
     # Get templates
     templates = MessageTemplate.objects.filter(
         tenant=tenant,
@@ -1131,7 +1178,9 @@ def compose_broadcast_message(request):
         'medium_spenders': medium_spenders,
         'high_spenders': high_spenders,
         'vip_spenders': vip_spenders,
+        'inactive_3m_count': inactive_3m_count,
+        'inactive_6m_count': inactive_6m_count,
     }
-    
+
     return render(request, 'notifications/compose_broadcast.html', context)
 

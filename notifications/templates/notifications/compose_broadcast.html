@@ -418,7 +418,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Update count for specific customers
-    const checkboxes = document.querySelectorAll('input[name="specific_customers"]:');
+    const checkboxes = document.querySelectorAll('input[name="specific_customers"]');
     checkboxes.forEach(cb => {
         cb.addEventListener('change', function() {
             const checked = document.querySelectorAll('input[name="specific_customers"]:checked').length;
