@@ -102,6 +102,22 @@
         background: #f0f2ff;
     }
 
+    /* Inactive customer segment styling */
+    .target-option.inactive-segment {
+        border-color: #ffc107;
+        background: #fffbf0;
+    }
+
+    .target-option.inactive-segment:hover {
+        border-color: #ff9800;
+        background: #fff8e1;
+    }
+
+    .target-option.inactive-segment.selected {
+        border-color: #ff9800;
+        background: #fff3e0;
+    }
+
     .recipient-count {
         margin-left: auto;
         background: #667eea;
@@ -110,6 +126,30 @@
         border-radius: 20px;
         font-size: 0.875rem;
         font-weight: 600;
+    }
+
+    .recipient-count.warning {
+        background: #ff9800;
+    }
+
+    .segment-category {
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #666;
+        margin: 1.5rem 0 0.75rem 0;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .segment-category:first-of-type {
+        margin-top: 0;
+    }
+
+    .segment-category.reengagement {
+        color: #ff9800;
+        border-bottom-color: #ffc107;
     }
 
     .conditional-fields {
@@ -181,6 +221,13 @@
     .preview-banner strong {
         color: #1976d2;
     }
+
+    .info-tooltip {
+        display: inline-block;
+        margin-left: 0.5rem;
+        color: #999;
+        cursor: help;
+    }
 </style>
 {% endblock %}
 
@@ -211,8 +258,8 @@
                 <select name="template" id="template" class="form-select">
                     <option value="">Write custom message</option>
                     {% for template in templates %}
-                    <option value="{{ template.id }}" 
-                            data-subject="{{ template.subject }}" 
+                    <option value="{{ template.id }}"
+                            data-subject="{{ template.subject }}"
                             data-body="{{ template.body }}">
                         {{ template.name }} ({{ template.get_template_type_display }})
                     </option>
@@ -222,14 +269,14 @@
 
             <div class="form-group">
                 <label for="subject">Subject *</label>
-                <input type="text" name="subject" id="subject" class="form-control" 
+                <input type="text" name="subject" id="subject" class="form-control"
                        placeholder="Enter message subject" required>
             </div>
 
             <div class="form-group">
                 <label for="body">Message *</label>
-                <textarea name="body" id="body" class="form-control" 
-                          placeholder="Type your message here... You can use variables like {{first_name}}, {{business_name}}, {{points}}" 
+                <textarea name="body" id="body" class="form-control"
+                          placeholder="Type your message here... You can use variables like {{first_name}}, {{business_name}}, {{points}}"
                           required></textarea>
             </div>
 
@@ -252,6 +299,9 @@
             </div>
 
             <div class="targeting-options">
+                <!-- Standard Segments -->
+                <div class="segment-category">Standard Segments</div>
+
                 <label class="target-option" data-target="all">
                     <input type="radio" name="target_type" value="all" checked>
                     <div>
@@ -286,6 +336,30 @@
                     </div>
                 </label>
 
+                <!-- Re-engagement Segments -->
+                <div class="segment-category reengagement">Re-engagement Segments</div>
+
+                <label class="target-option inactive-segment" data-target="inactive_3m">
+                    <input type="radio" name="target_type" value="inactive_3m">
+                    <div>
+                        <strong>Inactive 3+ Months</strong>
+                        <div style="font-size: 0.875rem; color: #666;">No purchases in the last 90 days</div>
+                    </div>
+                    <span class="recipient-count warning">{{ inactive_3m_count }}</span>
+                </label>
+
+                <label class="target-option inactive-segment" data-target="inactive_6m">
+                    <input type="radio" name="target_type" value="inactive_6m">
+                    <div>
+                        <strong>Inactive 6+ Months</strong>
+                        <div style="font-size: 0.875rem; color: #666;">No purchases in the last 180 days</div>
+                    </div>
+                    <span class="recipient-count warning">{{ inactive_6m_count }}</span>
+                </label>
+
+                <!-- Manual Selection -->
+                <div class="segment-category">Manual Selection</div>
+
                 <label class="target-option" data-target="specific">
                     <input type="radio" name="target_type" value="specific">
                     <div>
@@ -300,7 +374,7 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                     <div class="form-group">
                         <label for="points_min">Minimum Points</label>
-                        <input type="number" name="points_min" id="points_min" 
+                        <input type="number" name="points_min" id="points_min"
                                class="form-control" placeholder="0" min="0">
                     </div>
                     <div class="form-group">
@@ -331,7 +405,7 @@
                     <div class="customer-item">
                         <label>
                             <input type="checkbox" name="specific_customers" value="{{ customer.id }}">
-                            {{ customer.first_name }} {{ customer.last_name }} 
+                            {{ customer.first_name }} {{ customer.last_name }}
                             ({{ customer.email }})
                             {% if customer.total_spent %}
                                 - ${{ customer.total_spent|floatformat:2 }} spent
@@ -379,10 +453,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Recipient counts
     const counts = {
-        'all': {{ all_count }},
-        'vip': {{ vip_count }},
+        'all': {{ all_count|default:0 }},
+        'vip': {{ vip_count|default:0 }},
         'points_range': '?',
         'spending_tier': '?',
+        'inactive_3m': {{ inactive_3m_count|default:0 }},
+        'inactive_6m': {{ inactive_6m_count|default:0 }},
         'specific': 0
     };
 
