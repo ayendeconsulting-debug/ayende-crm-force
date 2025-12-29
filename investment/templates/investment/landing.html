@@ -27,10 +27,10 @@
     <nav class="fixed w-full z-50 bg-white/90 backdrop-blur-md border-b border-slate-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16 items-center">
-                <div class="flex items-center gap-2">
+                <a href="#top" class="flex items-center gap-2 cursor-pointer">
                     <span class="material-symbols-outlined text-blue-900 text-3xl">point_of_sale</span>
                     <span class="font-bold text-xl text-blue-900 tracking-tight">AyendeCX</span>
-                </div>
+                </a>
                 <div class="hidden md:flex space-x-8 text-sm font-medium text-slate-600">
                     <a href="#opportunity" class="hover:text-blue-600 transition">Opportunity</a>
                     <a href="#product" class="hover:text-blue-600 transition">Product</a>
@@ -45,7 +45,7 @@
     </nav>
 
     <!-- Hero Section -->
-    <header class="relative pt-24 pb-16 md:pt-32 md:pb-24 overflow-hidden">
+    <header id="top" class="relative pt-24 pb-16 md:pt-32 md:pb-24 overflow-hidden">
         <div class="absolute inset-0 z-0">
             <img src="{% static 'investment/images/city_bkgd.jpg' %}" alt="African City Skyline" class="w-full h-full object-cover">
             <div class="absolute inset-0 hero-overlay"></div>
@@ -90,6 +90,228 @@
             </div>
         </div>
     </header>
+
+    <!-- Market Opportunity -->
+    <section id="opportunity" class="py-20 bg-white">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold text-center text-slate-900 mb-16">Market Opportunity</h2>
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div>
+                    <h3 class="text-2xl font-bold mb-6">$4.2B TAM in African SMB Market</h3>
+                    <p class="text-slate-600 mb-6 leading-relaxed">
+                        Over 40 million small and medium businesses across Nigeria, Ghana, Kenya, and South Africa are underserved by existing POS systems that don't account for currency volatility, connectivity issues, or hybrid business models.
+                    </p>
+                    <ul class="space-y-4">
+                        <li class="flex items-start gap-3">
+                            <span class="material-symbols-outlined text-blue-600 flex-shrink-0">check_circle</span>
+                            <span class="text-slate-700"><strong>TAM:</strong> $4.2B total addressable market</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="material-symbols-outlined text-blue-600 flex-shrink-0">check_circle</span>
+                            <span class="text-slate-700"><strong>SAM:</strong> $800M serviceable market (Nigeria, Ghana)</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="material-symbols-outlined text-blue-600 flex-shrink-0">check_circle</span>
+                            <span class="text-slate-700"><strong>SOM:</strong> $80M obtainable (2.5% year 3)</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="bg-blue-900 p-8 rounded-2xl">
+                    <canvas id="marketChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Product Showcase -->
+    <section id="product" class="py-20 bg-slate-50">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold text-center text-slate-900 mb-16">The Platform</h2>
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="bg-white p-8 rounded-2xl shadow-lg">
+                    <img src="{% static 'investment/images/POS_Dashboard.jpg' %}" alt="POS Dashboard" class="w-full rounded-lg mb-6">
+                    <h3 class="text-xl font-bold mb-3">Offline-First POS</h3>
+                    <p class="text-slate-600">Multi-currency support, works without internet, syncs when connected. Perfect for African retail.</p>
+                </div>
+                <div class="bg-white p-8 rounded-2xl shadow-lg">
+                    <img src="{% static 'investment/images/dashboard.jpg' %}" alt="CRM Dashboard" class="w-full rounded-lg mb-6">
+                    <h3 class="text-xl font-bold mb-3">Integrated CRM</h3>
+                    <p class="text-slate-600">Customer tracking, loyalty programs, and targeted messaging - all in one platform.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Returns Calculator -->
+    <section id="calculator" class="py-20 bg-white">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold text-center text-slate-900 mb-16">Calculate Your Returns</h2>
+            <div class="bg-slate-50 p-8 rounded-2xl">
+                <div class="mb-8">
+                    <label class="block text-sm font-bold text-slate-700 mb-4">Investment Amount</label>
+                    <div class="text-3xl font-bold text-blue-900 mb-4">$<span id="invest-val">12000</span></div>
+                    <input type="range" id="investment-range" min="5000" max="50000" value="12000" step="1000" class="w-full">
+                    <div class="flex justify-between text-sm text-slate-500 mt-2">
+                        <span>$5k (Min)</span>
+                        <span>$50k (Max)</span>
+                    </div>
+                </div>
+
+                <div class="mb-8">
+                    <label class="block text-sm font-bold text-slate-700 mb-4">Exit Scenario (Year 5)</label>
+                    <div class="space-y-3">
+                        <button class="scenario-btn w-full text-left p-4 border-2 rounded-lg hover:border-blue-500 transition" data-scenario="0">
+                            <div class="font-bold">Moderate Success</div>
+                            <div class="text-sm text-slate-600">Acquisition at $25M Valuation</div>
+                        </button>
+                        <button class="scenario-btn w-full text-left p-4 border-2 rounded-lg hover:border-blue-500 transition" data-scenario="1">
+                            <div class="font-bold">High Growth</div>
+                            <div class="text-sm text-slate-600">Acquisition at $50M Valuation</div>
+                        </button>
+                        <button class="scenario-btn w-full text-left p-4 border-2 rounded-lg hover:border-blue-500 transition" data-scenario="2">
+                            <div class="font-bold">Home Run</div>
+                            <div class="text-sm text-slate-600">IPO/Exit at $300M Valuation</div>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <div class="text-center mb-4">
+                        <div class="text-sm text-slate-500 uppercase mb-1">Potential Future Value</div>
+                        <div class="text-4xl font-bold text-green-600" id="result-value">$500,000</div>
+                        <div class="text-lg text-slate-600 mt-2"><span id="result-roi">41.7</span>x ROI</div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 pt-4 border-t">
+                        <div class="text-center">
+                            <div class="text-sm text-slate-500">Your Equity</div>
+                            <div class="font-bold text-blue-900" id="result-equity">2.00%</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-sm text-slate-500">Conversion Cap</div>
+                            <div class="font-bold text-blue-900">$600k</div>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-xs text-slate-500 italic text-center">
+                        *Projections based on hypothetical Series A and Exit scenarios. Not guaranteed.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Use of Funds -->
+    <section class="py-20 bg-slate-50">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold text-center text-slate-900 mb-16">Strategic Capital Allocation</h2>
+            <div class="flex flex-col md:flex-row items-center gap-16">
+                <div class="md:w-1/2 relative">
+                    <canvas id="fundsChart" width="512" height="512"></canvas>
+                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div class="text-center">
+                            <div class="text-3xl font-bold text-blue-900">$75k</div>
+                            <div class="text-sm text-slate-500">Total Raise</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="md:w-1/2 space-y-6">
+                    <div class="flex items-start gap-4">
+                        <div class="w-4 h-4 rounded-full bg-blue-900 mt-1 flex-shrink-0"></div>
+                        <div>
+                            <h4 class="font-bold text-lg">Product Development (40%)</h4>
+                            <p class="text-slate-600 text-sm">Enhanced mobile app, API integrations, and feature completion.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-4">
+                        <div class="w-4 h-4 rounded-full bg-blue-600 mt-1 flex-shrink-0"></div>
+                        <div>
+                            <h4 class="font-bold text-lg">Sales & Marketing (27%)</h4>
+                            <p class="text-slate-600 text-sm">Direct sales in Lagos, partnerships, digital campaigns.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-4">
+                        <div class="w-4 h-4 rounded-full bg-yellow-500 mt-1 flex-shrink-0"></div>
+                        <div>
+                            <h4 class="font-bold text-lg">Operations (20%)</h4>
+                            <p class="text-slate-600 text-sm">Legal compliance, infrastructure, and insurance.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-4">
+                        <div class="w-4 h-4 rounded-full bg-slate-400 mt-1 flex-shrink-0"></div>
+                        <div>
+                            <h4 class="font-bold text-lg">Founder Runway (13%)</h4>
+                            <p class="text-slate-600 text-sm">Minimal draw for full-time focus on scaling.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Team -->
+    <section id="team" class="py-20 bg-white">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-3xl font-bold text-slate-900 mb-12">Built by Enterprise Experts</h2>
+            <div class="bg-white p-8 rounded-2xl shadow-lg border border-slate-100 flex flex-col md:flex-row items-center gap-8 text-left">
+                <div class="relative w-40 h-40 flex-shrink-0">
+                    <img src="{% static 'investment/images/Team_Image_placeholder.jpg' %}" alt="Adesanya Ehinmidu" class="w-full h-full rounded-full object-cover border-4 border-blue-50 shadow-md">
+                    <div class="absolute bottom-2 right-2 bg-blue-600 text-white p-2 rounded-full shadow-lg">
+                        <span class="material-symbols-outlined text-sm">code</span>
+                    </div>
+                </div>
+                <div class="flex-1">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="text-2xl font-bold text-slate-900">Adesanya Ehinmidu</h3>
+                            <div class="text-blue-600 font-medium mb-4">Founder & CEO</div>
+                        </div>
+                        <a href="mailto:adesanya@ayendecx.com" class="text-slate-400 hover:text-blue-600 transition">
+                            <span class="material-symbols-outlined">mail</span>
+                        </a>
+                    </div>
+                    <p class="text-slate-600 mb-6">
+                        Solution Designer at TD Bank with 8+ years in enterprise systems and Salesforce ecosystems. Expert in security compliance, SSO integrations, and scalable architecture.
+                    </p>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-bold">TD Bank Alumni</span>
+                        <span class="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-bold">Salesforce Architect</span>
+                        <span class="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-bold">Security Compliance</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Final CTA -->
+    <section class="py-20 bg-blue-900 text-white relative overflow-hidden">
+        <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+        <div class="max-w-4xl mx-auto px-4 text-center relative z-10">
+            <h2 class="text-4xl font-bold mb-6">Join the Future of African Commerce</h2>
+            <p class="text-xl text-blue-200 mb-10">
+                The best investments are made when risk is highest and valuations are lowest. That's today.
+            </p>
+            <div class="flex flex-col sm:flex-row justify-center gap-4">
+                <button onclick="document.getElementById('invest-modal').classList.remove('hidden')" class="bg-yellow-500 text-blue-900 px-10 py-4 rounded-lg font-bold hover:bg-yellow-400 transition shadow-lg transform hover:scale-105">
+                    Start Investment Process
+                </button>
+                <a href="mailto:adesanya@ayendecx.com" class="bg-transparent border border-white/30 text-white px-10 py-4 rounded-lg font-bold hover:bg-white/10 transition">
+                    Contact Founder
+                </a>
+            </div>
+            <p class="mt-8 text-sm text-blue-400">
+                Closing Date: Rolling close over 10 weeks (Q1 2025)
+            </p>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-slate-500 py-12 text-sm border-t border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <p class="mb-4">© 2025 AyendeCX Inc. All Rights Reserved. Toronto, Ontario.</p>
+            <p class="max-w-2xl mx-auto leading-relaxed">
+                This document is confidential and intended solely for qualified investors. It is not an offer to sell securities and should not be relied upon without independent legal, tax, and financial advice.
+            </p>
+        </div>
+    </footer>
 
     <!-- Investment Modal -->
     <div id="invest-modal" class="fixed inset-0 z-[60] hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
@@ -138,59 +360,55 @@
         </div>
     </div>
 
-    <!-- Opportunity Section -->
-    <section id="opportunity" class="py-20 bg-white">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 class="text-3xl font-bold text-center text-slate-900 mb-16">Market Opportunity</h2>
-            <div class="grid md:grid-cols-2 gap-12 items-center">
-                <div>
-                    <h3 class="text-2xl font-bold mb-6">$4.2B TAM in African SMB Market</h3>
-                    <p class="text-slate-600 mb-6 leading-relaxed">
-                        Over 40 million small and medium businesses across Nigeria, Ghana, Kenya, and South Africa are underserved by existing POS systems that don't account for currency volatility, connectivity issues, or hybrid business models.
-                    </p>
-                    <ul class="space-y-4">
-                        <li class="flex items-start gap-3">
-                            <span class="material-symbols-outlined text-blue-600 flex-shrink-0">check_circle</span>
-                            <span class="text-slate-700"><strong>TAM:</strong> $4.2B total addressable market</span>
-                        </li>
-                        <li class="flex items-start gap-3">
-                            <span class="material-symbols-outlined text-blue-600 flex-shrink-0">check_circle</span>
-                            <span class="text-slate-700"><strong>SAM:</strong> $800M serviceable market (Nigeria, Ghana)</span>
-                        </li>
-                        <li class="flex items-start gap-3">
-                            <span class="material-symbols-outlined text-blue-600 flex-shrink-0">check_circle</span>
-                            <span class="text-slate-700"><strong>SOM:</strong> $80M obtainable (2.5% year 3)</span>
-                        </li>
+    <!-- Document Modal -->
+    <div id="deck-modal" class="fixed inset-0 z-[60] hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col overflow-hidden">
+            <div class="flex justify-between items-center p-4 border-b">
+                <h3 class="font-bold text-lg">Investment Memorandum</h3>
+                <button onclick="document.getElementById('deck-modal').classList.add('hidden')" class="text-slate-500 hover:text-red-500">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-8 bg-slate-50 font-serif leading-relaxed text-slate-800">
+                <div class="max-w-3xl mx-auto bg-white p-12 shadow-sm border">
+                    <h1 class="text-3xl font-bold text-blue-900 mb-4">AyendeCX SAFE Investment Opportunity</h1>
+                    <div class="text-sm text-slate-500 mb-8 border-b pb-4">CONFIDENTIAL - Q1 2025</div>
+                    
+                    <h4 class="font-bold text-lg mt-6 mb-2">Executive Summary</h4>
+                    <p class="mb-4">AyendeCX is building the first multi-tenant POS-CRM platform designed specifically for African businesses, addressing a $4.2B market opportunity.</p>
+
+                    <h4 class="font-bold text-lg mt-6 mb-2">The Problem</h4>
+                    <ul class="list-disc pl-5 space-y-2 mb-4">
+                        <li><strong>Currency Volatility:</strong> Existing systems lock businesses into USD/EUR.</li>
+                        <li><strong>Unreliable Connectivity:</strong> 60% of locations have intermittent internet.</li>
+                        <li><strong>Informal Commerce:</strong> 80% of transactions are cash-based.</li>
                     </ul>
-                </div>
-                <div class="bg-blue-900 p-8 rounded-2xl">
-                    <canvas id="marketChart" height="300"></canvas>
+
+                    <h4 class="font-bold text-lg mt-6 mb-2">The Solution</h4>
+                    <p class="mb-4">An offline-first, multi-currency platform priced for the African SMB market ($50-200/mo).</p>
+
+                    <div class="bg-blue-50 p-4 rounded mt-8 text-center">
+                        <p class="font-bold text-blue-900">Full detailed document available upon interest.</p>
+                    </div>
                 </div>
             </div>
         </div>
-    </section>
-
-    <!-- Continue with remaining sections from the infographic... -->
-    <!-- For brevity, I'll include the critical parts. The full template would include all sections -->
+    </div>
 
     <script>
-        // Form submission with AJAX
+        // Form submission
         document.getElementById('investment-form').addEventListener('submit', function(e) {
             e.preventDefault();
-            
             const formData = new FormData(this);
             const errorDiv = document.getElementById('form-errors');
             const successDiv = document.getElementById('form-success');
-            
             errorDiv.classList.add('hidden');
             successDiv.classList.add('hidden');
             
             fetch('{% url "investment:landing" %}', {
                 method: 'POST',
                 body: formData,
-                headers: {
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                }
+                headers: {'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value}
             })
             .then(response => response.json())
             .then(data => {
@@ -205,41 +423,117 @@
                     errorDiv.innerHTML = Object.values(data.errors).join('<br>');
                     errorDiv.classList.remove('hidden');
                 }
-            })
-            .catch(error => {
-                errorDiv.textContent = 'An error occurred. Please try again.';
-                errorDiv.classList.remove('hidden');
             });
         });
 
-        // Chart.js for market visualization
-        document.addEventListener('DOMContentLoaded', function() {
+        // Calculator
+        const CAP = 600000;
+        const scenarios = [
+            { val: 25000000, label: "Moderate Success ($25M Exit)" },
+            { val: 50000000, label: "High Growth ($50M Exit)" },
+            { val: 300000000, label: "Unicorn ($300M IPO)" }
+        ];
+        let currentScenarioIdx = 0;
+
+        const slider = document.getElementById('investment-range');
+        const investValDisplay = document.getElementById('invest-val');
+        const resultValue = document.getElementById('result-value');
+        const resultRoi = document.getElementById('result-roi');
+        const resultEquity = document.getElementById('result-equity');
+        const scenarioBtns = document.querySelectorAll('.scenario-btn');
+
+        function updateCalculator() {
+            const investment = parseInt(slider.value);
+            investValDisplay.innerText = investment.toLocaleString();
+            const exitVal = scenarios[currentScenarioIdx].val;
+            const ownership = investment / CAP;
+            const futureValue = ownership * exitVal;
+            const roi = futureValue / investment;
+            resultValue.innerText = "$" + Math.round(futureValue).toLocaleString();
+            resultRoi.innerText = roi.toFixed(1);
+            resultEquity.innerText = (ownership * 100).toFixed(2) + "%";
+        }
+
+        function setScenario(idx) {
+            currentScenarioIdx = idx;
+            scenarioBtns.forEach((btn, i) => {
+                if(i === idx) {
+                    btn.classList.add('ring-2', 'ring-blue-500', 'bg-blue-50', 'border-blue-500');
+                } else {
+                    btn.classList.remove('ring-2', 'ring-blue-500', 'bg-blue-50', 'border-blue-500');
+                }
+            });
+            updateCalculator();
+        }
+
+        slider.addEventListener('input', updateCalculator);
+        scenarioBtns.forEach((btn, idx) => {
+            btn.addEventListener('click', () => setScenario(idx));
+        });
+        setScenario(0);
+        updateCalculator();
+
+        // Charts
+        document.addEventListener("DOMContentLoaded", function() {
+            // Market Chart
             const ctxMarket = document.getElementById('marketChart').getContext('2d');
             new Chart(ctxMarket, {
                 type: 'bar',
                 data: {
-                    labels: ['TAM', 'SAM', 'SOM', 'Diaspora'],
+                    labels: ['TAM (Total)', 'SAM (Serviceable)', 'SOM (Obtainable)', 'Diaspora'],
                     datasets: [{
-                        label: 'Market Size ($M USD)',
+                        label: 'Market Size ($USD)',
                         data: [4200, 800, 80, 850],
-                        backgroundColor: ['rgba(255,255,255,0.2)', 'rgba(255,255,255,0.5)', '#FBBF24', 'rgba(255,255,255,0.3)'],
-                        borderWidth: 0
+                        backgroundColor: ['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.5)', '#FBBF24', 'rgba(255, 255, 255, 0.3)'],
+                        borderWidth: 0,
+                        borderRadius: 4
                     }]
                 },
                 options: {
                     responsive: true,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { 
-                            beginAtZero: true,
-                            grid: { color: 'rgba(255,255,255,0.1)' },
-                            ticks: { color: 'rgba(255,255,255,0.7)' }
-                        },
-                        x: { 
-                            grid: { display: false },
-                            ticks: { color: 'rgba(255,255,255,0.9)' }
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) { return '$' + context.raw + ' Million'; }
+                            }
                         }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: 'rgba(255, 255, 255, 0.7)' } },
+                        x: { grid: { display: false }, ticks: { color: 'rgba(255, 255, 255, 0.9)' } }
                     }
+                }
+            });
+
+            // Funds Chart
+            const ctxFunds = document.getElementById('fundsChart').getContext('2d');
+            new Chart(ctxFunds, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Product Dev', 'Sales & Marketing', 'Operations', 'Founder Runway', 'Contingency'],
+                    datasets: [{
+                        data: [40, 27, 20, 11, 2],
+                        backgroundColor: ['#1e3a8a', '#2563eb', '#eab308', '#94a3b8', '#cbd5e1'],
+                        borderWidth: 0,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    cutout: '70%',
+                    plugins: { legend: { display: false } }
+                }
+            });
+        });
+
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
             });
         });
