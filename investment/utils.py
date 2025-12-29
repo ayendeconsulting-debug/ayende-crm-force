@@ -1,7 +1,5 @@
-from django.core.mail import send_mail, EmailMultiAlternatives
-from django.template.loader import render_to_string
+from django.core.mail import EmailMultiAlternatives
 from django.conf import settings
-from django.utils import timezone
 
 
 def send_lead_notification_email(lead):
@@ -50,19 +48,19 @@ Automated Notification - Do Not Reply
     
     from_email = settings.DEFAULT_FROM_EMAIL
     recipient_list = ['admin@ayendecx.com']
-    reply_to = ['admin@ayendecx.com'] 
     
     try:
-        send_mail(
-            subject,
-            message,
-            from_email,
-            recipient_list,
-            fail_silently=False,
-            reply_to=reply_to,
+        email = EmailMultiAlternatives(
+            subject=subject,
+            body=message,
+            from_email=from_email,
+            to=recipient_list,
+            reply_to=['admin@ayendecx.com']
         )
+        email.send(fail_silently=False)
+        print(f"✅ Lead notification email sent to admin@ayendecx.com")
     except Exception as e:
-        print(f"Error sending lead notification email: {e}")
+        print(f"❌ Error sending lead notification email: {e}")
 
 
 def send_investor_welcome_email(lead):
@@ -104,19 +102,19 @@ For inquiries, contact us at admin@ayendecx.com
     
     from_email = settings.DEFAULT_FROM_EMAIL
     recipient_list = [lead.email]
-    reply_to = ['admin@ayendecx.com'] 
     
     try:
-        send_mail(
-            subject,
-            message,
-            from_email,
-            recipient_list,
-            fail_silently=False,
-            reply_to=reply_to,
+        email = EmailMultiAlternatives(
+            subject=subject,
+            body=message,
+            from_email=from_email,
+            to=recipient_list,
+            reply_to=['admin@ayendecx.com']
         )
+        email.send(fail_silently=False)
+        print(f"✅ Welcome email sent to {lead.email}")
     except Exception as e:
-        print(f"Error sending investor welcome email: {e}")
+        print(f"❌ Error sending investor welcome email: {e}")
 
 
 def get_client_ip(request):
