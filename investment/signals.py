@@ -23,7 +23,6 @@ def handle_new_lead(sender, instance, created, **kwargs):
             instance.assigned_to = founder
             instance.save(update_fields=['assigned_to'])
         except User.DoesNotExist:
-            # If founder account doesn't exist, try to get first superuser
             try:
                 founder = User.objects.filter(is_superuser=True).first()
                 if founder:
@@ -32,11 +31,17 @@ def handle_new_lead(sender, instance, created, **kwargs):
             except Exception:
                 pass
         
-        # Send notification email to admin@ayendecx.com
-        send_lead_notification_email(instance)
+        # Send notification email to admin@ayendecx.com (non-blocking)
+        try:
+            send_lead_notification_email(instance)
+        except Exception as e:
+            print(f"Email notification failed (non-critical): {e}")
         
-        # Send welcome email to investor
-        send_investor_welcome_email(instance)
+        # Send welcome email to investor (non-blocking)
+        try:
+            send_investor_welcome_email(instance)
+        except Exception as e:
+            print(f"Welcome email failed (non-critical): {e}")
         
         # Log initial activity
         LeadActivity.objects.create(
