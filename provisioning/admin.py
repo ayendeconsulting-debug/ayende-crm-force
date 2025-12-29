@@ -145,3 +145,17 @@ class SetupWizardProgressAdmin(admin.ModelAdmin):
                 '<span style="background: #10b981; color: white; padding: 4px 8px; '
                 'border-radius: 4px; font-size: 11px;">COMPLETED</span>'
             )
+        elif not obj.is_token_valid:
+            return format_html(
+                '<span style="background: #ef4444; color: white; padding: 4px 8px; '
+                'border-radius: 4px; font-size: 11px;">EXPIRED</span>'
+            )
+        else:
+            return format_html(
+                '<span style="background: #f59e0b; color: white; padding: 4px 8px; '
+                'border-radius: 4px; font-size: 11px;">IN PROGRESS</span>'
+            )
+    status_badge.short_description = 'Status'
+    
+    def has_add_permission(self, request):
+        return False
