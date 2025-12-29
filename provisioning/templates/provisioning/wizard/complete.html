@@ -1,0 +1,66 @@
+{% extends "provisioning/wizard/base.html" %}
+
+{% block title %}Setup Complete!{% endblock %}
+
+{% block content %}
+<div class="wizard-card">
+    <div class="card-header" style="background: linear-gradient(135deg, #059669 0%, #047857 100%);">
+        <div style="font-size: 60px; margin-bottom: 15px;">🎉</div>
+        <h2>Setup Complete!</h2>
+        <p>Your CRM is ready to use</p>
+    </div>
+    
+    <div class="card-body" style="text-align: center;">
+        <div class="info-box" style="text-align: left;">
+            <strong>What's next?</strong>
+            <ul style="margin: 10px 0 0 20px;">
+                <li>Log in to your CRM dashboard to explore features</li>
+                <li>Transactions from your POS will automatically sync</li>
+                <li>Customers will be created when they make purchases</li>
+                <li>Use broadcast messaging to engage with customers</li>
+            </ul>
+        </div>
+        
+        {% if tenant %}
+        <div style="background: #f0fdf4; padding: 25px; border-radius: 8px; margin: 25px 0;">
+            <h3 style="margin: 0 0 15px 0; color: #065f46;">Your CRM Dashboard</h3>
+            <a href="https://{{ tenant.subdomain }}.ayendecx.com/dashboard/" 
+               class="btn btn-primary" 
+               style="font-size: 16px; padding: 15px 40px; text-decoration: none;">
+                Go to Dashboard →
+            </a>
+        </div>
+        
+        <div style="display: flex; gap: 20px; margin-top: 30px;">
+            <div style="flex: 1; background: #f9fafb; padding: 20px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 32px; margin-bottom: 10px;">👥</div>
+                <h4 style="margin: 0 0 5px 0;">Customers</h4>
+                <p style="margin: 0; color: #6b7280; font-size: 14px;">
+                    View and manage customers
+                </p>
+            </div>
+            <div style="flex: 1; background: #f9fafb; padding: 20px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 32px; margin-bottom: 10px;">📊</div>
+                <h4 style="margin: 0 0 5px 0;">Reports</h4>
+                <p style="margin: 0; color: #6b7280; font-size: 14px;">
+                    Sales and customer analytics
+                </p>
+            </div>
+            <div style="flex: 1; background: #f9fafb; padding: 20px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 32px; margin-bottom: 10px;">📧</div>
+                <h4 style="margin: 0 0 5px 0;">Messaging</h4>
+                <p style="margin: 0; color: #6b7280; font-size: 14px;">
+                    Send broadcasts to customers
+                </p>
+            </div>
+        </div>
+        {% endif %}
+        
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+            <p style="color: #6b7280; font-size: 14px;">
+                Need help? Contact <a href="mailto:support@ayendecx.com">support@ayendecx.com</a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

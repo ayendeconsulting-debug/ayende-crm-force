@@ -23,6 +23,7 @@ urlpatterns = [
     path('profile/', include('profile.urls')),
     path('reports/', include('reports.urls')),
     path('investment/', include('investment.urls')),
+    path('provisioning/', include('provisioning.urls')),
     
     # ===== PHASE 2D: POS-to-CRM Sync Endpoints =====
     path('api/v1/sync/transaction', sync_views.receive_transaction, name='sync_transaction'),

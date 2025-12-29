@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'reports',
     'billing',
     'investment',
+    'provisioning',
     
 ]
 
@@ -327,3 +328,6 @@ EMAIL_HOST_PASSWORD = os.environ.get('SENDGRID_API_KEY', '')
 
 # For testing locally, you can use console backend instead:
 # EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# CRM Provisioning Settings
+PROVISIONING_SECRET_KEY = os.environ.get('PROVISIONING_SECRET_KEY', '')

@@ -1,0 +1,87 @@
+{% extends "provisioning/wizard/base.html" %}
+
+{% block title %}Step 4: Import Customers{% endblock %}
+
+{% block content %}
+<div class="wizard-card">
+    <div class="card-header">
+        <h2>Step 4: Import Existing Customers</h2>
+        <p>Upload your customer list or skip to add customers later</p>
+    </div>
+    
+    <div class="card-body">
+        <div class="info-box">
+            <strong>This step is optional</strong><br>
+            If you have an existing customer list, you can import it now. Otherwise, customers will be 
+            automatically synced from your POS system as they make purchases.
+        </div>
+        
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <div style="background: #f9fafb; border: 2px dashed #d1d5db; border-radius: 8px; padding: 40px; text-align: center; margin-bottom: 20px;">
+                <div style="font-size: 48px; margin-bottom: 15px;">📁</div>
+                <h3 style="margin: 0 0 10px 0; color: #374151;">Upload Customer CSV</h3>
+                <p style="color: #6b7280; margin-bottom: 15px;">
+                    Select a CSV file to import
+                </p>
+                <input type="file" 
+                       id="customer_csv" 
+                       name="customer_csv" 
+                       accept=".csv"
+                       style="margin: 0 auto;">
+            </div>
+            
+            <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                <h4 style="margin: 0 0 10px 0; color: #374151;">CSV Format Requirements</h4>
+                <p style="margin: 0 0 10px 0; color: #6b7280; font-size: 14px;">
+                    Your CSV file should have the following columns (first row as headers):
+                </p>
+                <table style="width: 100%; font-size: 14px;">
+                    <tr style="background: #e5e7eb;">
+                        <th style="padding: 8px; text-align: left;">Column</th>
+                        <th style="padding: 8px; text-align: left;">Required</th>
+                        <th style="padding: 8px; text-align: left;">Example</th>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">email</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">Yes</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">john@example.com</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">first_name</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">No</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">John</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">last_name</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">No</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">Doe</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px;">phone</td>
+                        <td style="padding: 8px;">No</td>
+                        <td style="padding: 8px;">+234 801 234 5678</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div class="info-box warning">
+                <strong>Note:</strong> Duplicate emails will be skipped. Customers synced from POS 
+                will automatically be matched by email address.
+            </div>
+            
+            <div class="button-group">
+                <a href="{% url 'provisioning:wizard_step' step=3 %}" class="btn btn-secondary">
+                    ← Back
+                </a>
+                <div>
+                    <button type="submit" class="btn btn-primary">
+                        Continue →
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

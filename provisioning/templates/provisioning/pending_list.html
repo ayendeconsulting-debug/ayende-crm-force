@@ -1,0 +1,144 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block title %}Pending CRM Provisions{% endblock %}
+
+{% block content %}
+<style>
+    .pending-container {
+        padding: 20px;
+    }
+    .pending-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    .pending-header h1 {
+        margin: 0;
+        color: #1f2937;
+    }
+    .pending-count {
+        background: #fef3c7;
+        color: #92400e;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-weight: 600;
+    }
+    .pending-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .pending-table th {
+        background: #f3f4f6;
+        padding: 15px;
+        text-align: left;
+        font-weight: 600;
+        color: #374151;
+        border-bottom: 2px solid #e5e7eb;
+    }
+    .pending-table td {
+        padding: 15px;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    .pending-table tr:hover {
+        background: #f9fafb;
+    }
+    .btn-provision {
+        background: #10B981;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 13px;
+        display: inline-block;
+    }
+    .btn-provision:hover {
+        background: #059669;
+        color: white;
+    }
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .empty-state h2 {
+        margin: 0 0 10px 0;
+        color: #374151;
+    }
+    .empty-state p {
+        color: #6b7280;
+        margin: 0;
+    }
+</style>
+
+<div class="pending-container">
+    <div class="pending-header">
+        <h1>Pending CRM Provisions</h1>
+        <span class="pending-count">{{ pending_tokens|length }} pending</span>
+    </div>
+    
+    {% if pending_tokens %}
+    <table class="pending-table">
+        <thead>
+            <tr>
+                <th>Business Name</th>
+                <th>Subdomain</th>
+                <th>Owner</th>
+                <th>Created</th>
+                <th>Expires</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for token in pending_tokens %}
+            <tr>
+                <td>
+                    <strong>{{ token.business_name }}</strong><br>
+                    <small style="color: #6b7280;">{{ token.business_email }}</small>
+                </td>
+                <td>{{ token.subdomain }}.ayendecx.com</td>
+                <td>
+                    {{ token.owner_first_name }} {{ token.owner_last_name }}<br>
+                    <small style="color: #6b7280;">{{ token.owner_email }}</small>
+                </td>
+                <td>{{ token.created_at|date:"M d, Y" }}<br>
+                    <small style="color: #6b7280;">{{ token.created_at|time:"H:i" }}</small>
+                </td>
+                <td>
+                    {% if token.is_expired %}
+                    <span style="color: #ef4444;">Expired</span>
+                    {% else %}
+                    {{ token.expires_at|date:"M d, Y" }}<br>
+                    <small style="color: #6b7280;">{{ token.expires_at|time:"H:i" }}</small>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if not token.is_expired %}
+                    <a href="{% url 'provisioning:provision_crm' %}?token={{ token.token }}&sig={{ token.signature }}" 
+                       class="btn-provision">
+                        Provision Now
+                    </a>
+                    {% else %}
+                    <span style="color: #6b7280;">Expired</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <h2>No Pending Provisions</h2>
+        <p>All business registrations have been processed. New registrations will appear here.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

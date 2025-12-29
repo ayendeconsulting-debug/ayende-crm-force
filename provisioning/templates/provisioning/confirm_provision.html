@@ -1,0 +1,178 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block title %}Provision CRM: {{ token.business_name }}{% endblock %}
+
+{% block content %}
+<style>
+    .provision-container {
+        max-width: 800px;
+        margin: 20px auto;
+        padding: 20px;
+    }
+    .provision-card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    .provision-header {
+        background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+        color: white;
+        padding: 30px;
+        text-align: center;
+    }
+    .provision-header h1 {
+        margin: 0 0 10px 0;
+        font-size: 24px;
+    }
+    .provision-body {
+        padding: 30px;
+    }
+    .info-section {
+        background: #f8fafc;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .info-section h3 {
+        margin: 0 0 15px 0;
+        color: #1e3a5f;
+        font-size: 16px;
+        border-bottom: 2px solid #10B981;
+        padding-bottom: 10px;
+    }
+    .info-row {
+        display: flex;
+        padding: 8px 0;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    .info-row:last-child {
+        border-bottom: none;
+    }
+    .info-label {
+        font-weight: 600;
+        color: #374151;
+        width: 150px;
+        flex-shrink: 0;
+    }
+    .info-value {
+        color: #1f2937;
+    }
+    .color-preview {
+        display: inline-block;
+        width: 60px;
+        height: 24px;
+        border-radius: 4px;
+        vertical-align: middle;
+        margin-right: 10px;
+    }
+    .warning-box {
+        background: #fef3c7;
+        border-left: 4px solid #f59e0b;
+        padding: 15px;
+        margin: 20px 0;
+        border-radius: 0 8px 8px 0;
+    }
+    .action-buttons {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        padding: 20px 0;
+    }
+    .btn {
+        padding: 12px 30px;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        border: none;
+    }
+    .btn-primary {
+        background: #10B981;
+        color: white;
+    }
+    .btn-secondary {
+        background: #6b7280;
+        color: white;
+    }
+</style>
+
+<div class="provision-container">
+    <div class="provision-card">
+        <div class="provision-header">
+            <h1>Provision CRM Tenant</h1>
+            <p>Review the details below and confirm to create the CRM tenant</p>
+        </div>
+        
+        <div class="provision-body">
+            <div class="info-section">
+                <h3>Business Details</h3>
+                <div class="info-row">
+                    <span class="info-label">Business Name:</span>
+                    <span class="info-value">{{ token.business_name }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Subdomain:</span>
+                    <span class="info-value">{{ token.subdomain }}.ayendecx.com</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Business Email:</span>
+                    <span class="info-value">{{ token.business_email }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Business Phone:</span>
+                    <span class="info-value">{{ token.business_phone|default:"Not provided" }}</span>
+                </div>
+            </div>
+            
+            <div class="info-section">
+                <h3>Owner Details</h3>
+                <div class="info-row">
+                    <span class="info-label">Name:</span>
+                    <span class="info-value">{{ token.owner_first_name }} {{ token.owner_last_name }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Email:</span>
+                    <span class="info-value">{{ token.owner_email }}</span>
+                </div>
+            </div>
+            
+            <div class="info-section">
+                <h3>Branding</h3>
+                <div class="info-row">
+                    <span class="info-label">Primary Color:</span>
+                    <span class="info-value">
+                        <span class="color-preview" style="background: {{ token.primary_color }};"></span>
+                        {{ token.primary_color }}
+                    </span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Secondary Color:</span>
+                    <span class="info-value">
+                        <span class="color-preview" style="background: {{ token.secondary_color }};"></span>
+                        {{ token.secondary_color }}
+                    </span>
+                </div>
+            </div>
+            
+            <div class="warning-box">
+                <h4 style="margin: 0 0 10px 0;">This action will:</h4>
+                <ul style="margin: 0; padding-left: 20px;">
+                    <li>Create a new CRM tenant: <strong>{{ token.business_name }}</strong></li>
+                    <li>Set up subdomain: <strong>{{ token.subdomain }}.ayendecx.com</strong></li>
+                    <li>Create owner account for: <strong>{{ token.owner_email }}</strong></li>
+                    <li>Enable POS - CRM sync</li>
+                    <li>Send setup wizard email to owner</li>
+                </ul>
+            </div>
+            
+            <form method="post" action="{% url 'provisioning:execute_provision' %}">
+                {% csrf_token %}
+                <input type="hidden" name="token_id" value="{{ token.id }}">
+                
+                <div class="action-buttons">
+                    <a href="{% url 'admin:index' %}" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Confirm & Provision</button>

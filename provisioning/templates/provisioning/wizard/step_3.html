@@ -1,0 +1,98 @@
+{% extends "provisioning/wizard/base.html" %}
+
+{% block title %}Step 3: Configure Loyalty{% endblock %}
+
+{% block content %}
+<div class="wizard-card">
+    <div class="card-header">
+        <h2>Step 3: Configure Loyalty Program</h2>
+        <p>Set up how customers earn and redeem rewards</p>
+    </div>
+    
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="checkbox-group">
+                <input type="checkbox" 
+                       id="loyalty_enabled" 
+                       name="loyalty_enabled"
+                       {% if tenant_settings.loyalty_enabled %}checked{% endif %}>
+                <label for="loyalty_enabled" style="font-weight: 500;">
+                    Enable Loyalty Program
+                </label>
+            </div>
+            
+            <div id="loyalty-settings">
+                <div class="info-box">
+                    <strong>How it works:</strong><br>
+                    Customers earn points based on their spending. Points can be redeemed for discounts on future purchases.
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="points_per_currency">Points Earned Per Currency Unit Spent</label>
+                    <input type="number" 
+                           id="points_per_currency" 
+                           name="points_per_currency" 
+                           class="form-input" 
+                           value="{{ tenant_settings.points_per_currency|default:1 }}"
+                           min="1"
+                           max="100">
+                    <p class="form-hint">
+                        Example: If set to 1, a 100 unit purchase earns 100 points
+                    </p>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="points_redemption_rate">Points Required for 1 Unit Discount</label>
+                    <input type="number" 
+                           id="points_redemption_rate" 
+                           name="points_redemption_rate" 
+                           class="form-input" 
+                           value="{{ tenant_settings.points_redemption_rate|default:100 }}"
+                           min="1"
+                           max="10000">
+                    <p class="form-hint">
+                        Example: If set to 100, customer needs 100 points to get 1 unit off
+                    </p>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="welcome_bonus_points">Welcome Bonus Points</label>
+                    <input type="number" 
+                           id="welcome_bonus_points" 
+                           name="welcome_bonus_points" 
+                           class="form-input" 
+                           value="{{ tenant_settings.welcome_bonus_points|default:0 }}"
+                           min="0"
+                           max="10000">
+                    <p class="form-hint">
+                        Points given to new customers when they sign up (0 = no bonus)
+                    </p>
+                </div>
+            </div>
+            
+            <div class="button-group">
+                <a href="{% url 'provisioning:wizard_step' step=2 %}" class="btn btn-secondary">
+                    ← Back
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    Save & Continue →
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const loyaltyCheckbox = document.getElementById('loyalty_enabled');
+    const loyaltySettings = document.getElementById('loyalty-settings');
+    
+    function toggleLoyaltySettings() {
+        loyaltySettings.style.display = loyaltyCheckbox.checked ? 'block' : 'none';
+    }
+    
+    loyaltyCheckbox.addEventListener('change', toggleLoyaltySettings);
+    toggleLoyaltySettings();
+</script>
+{% endblock %}

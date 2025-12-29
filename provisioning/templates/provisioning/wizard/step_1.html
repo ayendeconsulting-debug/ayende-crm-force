@@ -1,0 +1,58 @@
+{% extends "provisioning/wizard/base.html" %}
+
+{% block title %}Step 1: Verify Details{% endblock %}
+
+{% block content %}
+<div class="wizard-card">
+    <div class="card-header">
+        <h2>Step 1: Verify Your Business Details</h2>
+        <p>Please confirm that the information below is correct</p>
+    </div>
+    
+    <div class="card-body">
+        <div class="info-box">
+            <strong>Review your details</strong><br>
+            This information was provided during your POS registration. If anything is incorrect, 
+            you can update it in your CRM settings after completing setup.
+        </div>
+        
+        <h3 style="margin-bottom: 15px; color: #1f2937;">Business Information</h3>
+        <div class="detail-row">
+            <span class="detail-label">Business Name:</span>
+            <span class="detail-value">{{ tenant.name }}</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Subdomain:</span>
+            <span class="detail-value">{{ tenant.subdomain }}.ayendecx.com</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Email:</span>
+            <span class="detail-value">{{ tenant.email }}</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Phone:</span>
+            <span class="detail-value">{{ tenant.phone|default:"Not provided" }}</span>
+        </div>
+        
+        <h3 style="margin: 25px 0 15px 0; color: #1f2937;">Owner Information</h3>
+        <div class="detail-row">
+            <span class="detail-label">Name:</span>
+            <span class="detail-value">{{ owner.first_name }} {{ owner.last_name }}</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Email:</span>
+            <span class="detail-value">{{ owner.email }}</span>
+        </div>
+        
+        <form method="post">
+            {% csrf_token %}
+            <div class="button-group">
+                <span></span>
+                <button type="submit" class="btn btn-primary">
+                    Confirm & Continue →
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

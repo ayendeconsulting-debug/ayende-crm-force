@@ -1,0 +1,44 @@
+{% extends "provisioning/wizard/base.html" %}
+
+{% block title %}Setup Error{% endblock %}
+
+{% block content %}
+<div class="wizard-card">
+    <div class="card-header" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
+        <div style="font-size: 60px; margin-bottom: 15px;">⚠️</div>
+        <h2>Unable to Continue Setup</h2>
+        <p>There was a problem with your setup link</p>
+    </div>
+    
+    <div class="card-body" style="text-align: center;">
+        <div style="background: #fee2e2; border-left: 4px solid #ef4444; padding: 20px; border-radius: 0 8px 8px 0; margin-bottom: 25px; text-align: left;">
+            <strong style="color: #991b1b;">Error:</strong>
+            <p style="margin: 10px 0 0 0; color: #7f1d1d;">{{ error }}</p>
+        </div>
+        
+        <div style="background: #f9fafb; padding: 25px; border-radius: 8px; margin-bottom: 25px;">
+            <h3 style="margin: 0 0 15px 0; color: #374151;">What can you do?</h3>
+            <ul style="text-align: left; margin: 0; padding-left: 20px; color: #4b5563;">
+                <li>Check your email for a newer setup link</li>
+                <li>Contact support to request a new setup link</li>
+                <li>If you've already completed setup, try logging in directly</li>
+            </ul>
+        </div>
+        
+        <div style="display: flex; gap: 15px; justify-content: center;">
+            <a href="mailto:support@ayendecx.com?subject=CRM Setup Help" class="btn btn-primary" style="text-decoration: none;">
+                Contact Support
+            </a>
+            <a href="https://ayendecx.com/login/" class="btn btn-secondary" style="text-decoration: none;">
+                Go to Login
+            </a>
+        </div>
+        
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+            <p style="color: #6b7280; font-size: 14px;">
+                Support email: <a href="mailto:support@ayendecx.com">support@ayendecx.com</a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
