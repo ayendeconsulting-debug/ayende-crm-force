@@ -375,20 +375,31 @@
                     <div class="text-sm text-slate-500 mb-8 border-b pb-4">CONFIDENTIAL - Q1 2025</div>
                     
                     <h4 class="font-bold text-lg mt-6 mb-2">Executive Summary</h4>
-                    <p class="mb-4">AyendeCX is building the first multi-tenant POS-CRM platform designed specifically for African businesses, addressing a $4.2B market opportunity.</p>
-
+                    <p class="mb-4">AyendeCX is building the first multi-tenant POS-CRM platform designed specifically for African businesses, addressing a $4.2B market opportunity in Nigeria, Ghana, Kenya, and South Africa.</p>
+    
                     <h4 class="font-bold text-lg mt-6 mb-2">The Problem</h4>
                     <ul class="list-disc pl-5 space-y-2 mb-4">
-                        <li><strong>Currency Volatility:</strong> Existing systems lock businesses into USD/EUR.</li>
-                        <li><strong>Unreliable Connectivity:</strong> 60% of locations have intermittent internet.</li>
-                        <li><strong>Informal Commerce:</strong> 80% of transactions are cash-based.</li>
+                        <li><strong>Fragmented Customer Data:</strong> Businesses lack adequate data on their customers, leading to lost opportunities for repeat business, personalized engagement, and revenue growth. Most African SMBs have no unified view of customer purchase history or preferences.</li>
+                        <li><strong>Currency Volatility:</strong> Existing POS systems lock businesses into USD/EUR pricing, exposing them to exchange rate fluctuations that can erode margins overnight.</li>
+                        <li><strong>Unreliable Connectivity:</strong> Over 60% of African retail locations experience intermittent internet, making cloud-only solutions impractical for daily operations.</li>
+                        <li><strong>One-Size-Fits-All Solutions:</strong> Global POS platforms don't account for hybrid retail/rental models, mobile money integration, or informal supplier relationships common in African markets.</li>
                     </ul>
-
+    
                     <h4 class="font-bold text-lg mt-6 mb-2">The Solution</h4>
-                    <p class="mb-4">An offline-first, multi-currency platform priced for the African SMB market ($50-200/mo).</p>
-
+                    <p class="mb-4">An offline-first, multi-currency POS-CRM platform that unifies customer data, works without internet, and is specifically priced for the African SMB market ($50-200/mo).</p>
+    
+                    <h4 class="font-bold text-lg mt-6 mb-2">Key Features</h4>
+                    <ul class="list-disc pl-5 space-y-2 mb-4">
+                        <li>Offline-first architecture with automatic sync when connected</li>
+                        <li>Multi-currency support (NGN, GHS, KES, ZAR, USD)</li>
+                        <li>Integrated CRM with customer purchase history and loyalty programs</li>
+                        <li>Targeted messaging and re-engagement campaigns</li>
+                        <li>Multi-tenant SaaS model for scalability</li>
+                    </ul>
+    
                     <div class="bg-blue-50 p-4 rounded mt-8 text-center">
-                        <p class="font-bold text-blue-900">Full detailed document available upon interest.</p>
+                        <p class="font-bold text-blue-900">Full detailed document and financial projections available upon request.</p>
+                        <p class="text-sm text-slate-600 mt-2">Contact: <a href="mailto:adesanya@ayendecx.com" class="text-blue-600 hover:underline">adesanya@ayendecx.com</a></p>
                     </div>
                 </div>
             </div>
@@ -396,14 +407,23 @@
     </div>
 
     <script>
-        // Form submission
+                // Form submission
+                // Form submission
         document.getElementById('investment-form').addEventListener('submit', function(e) {
             e.preventDefault();
+            
             const formData = new FormData(this);
             const errorDiv = document.getElementById('form-errors');
             const successDiv = document.getElementById('form-success');
+            const submitBtn = this.querySelector('button[type="submit"]');
+            
+            // Clear previous messages
             errorDiv.classList.add('hidden');
             successDiv.classList.add('hidden');
+            
+            // Disable submit button
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
             
             fetch('{% url "investment:landing" %}', {
                 method: 'POST',
@@ -413,19 +433,36 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    successDiv.textContent = data.message;
+                    // Show success message
+                    successDiv.innerHTML = '<strong>Success!</strong> ' + data.message + '<br>Check your email for next steps.';
                     successDiv.classList.remove('hidden');
+                    
+                    // Reset form
+                    this.reset();
+                    
+                    // Close modal after 3 seconds
                     setTimeout(() => {
                         document.getElementById('invest-modal').classList.add('hidden');
-                        document.getElementById('investment-form').reset();
-                    }, 2000);
+                        successDiv.classList.add('hidden');
+                    }, 3000);
                 } else {
-                    errorDiv.innerHTML = Object.values(data.errors).join('<br>');
+                    // Show errors
+                    errorDiv.innerHTML = '<strong>Error:</strong> ' + Object.values(data.errors).join('<br>');
                     errorDiv.classList.remove('hidden');
                 }
+            })
+            .catch(error => {
+                console.error('Submission error:', error);
+                errorDiv.innerHTML = '<strong>Error:</strong> Something went wrong. Please try again or email admin@ayendecx.com';
+                errorDiv.classList.remove('hidden');
+            })
+            .finally(() => {
+                // Re-enable submit button
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Interest';
             });
+            
         });
-
         // Calculator
         const CAP = 600000;
         const scenarios = [
