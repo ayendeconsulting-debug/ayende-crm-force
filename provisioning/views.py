@@ -459,7 +459,7 @@ def wizard_complete(request):
     
     if tenant_id:
         try:
-            tenant = Tenant.objects.get(id=tenant_id)
+            tenant = Tenant.objects.get(tenant_uuid=tenant_id)
         except Tenant.DoesNotExist:
             pass
     
@@ -518,3 +518,4 @@ def pending_provisions(request):
         'title': 'Pending CRM Provisions',
     }
     return render(request, 'provisioning/pending_list.html', context)
+
