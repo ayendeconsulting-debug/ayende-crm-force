@@ -183,7 +183,7 @@ def execute_provision(request):
             f'Successfully provisioned CRM for "{prov_token.business_name}"! '
             f'Setup wizard email sent to {prov_token.owner_email}.'
         )
-        return redirect('admin:tenants_tenant_change', tenant.id)
+        return redirect('admin:tenants_tenant_change', tenant.tenant_uuid)
         
     except Exception as e:
         prov_token.mark_failed(str(e))
@@ -327,7 +327,7 @@ def setup_wizard(request):
     
     # Store token in session
     request.session['setup_token'] = setup_token
-    request.session['tenant_id'] = str(progress.tenant.id)
+    request.session['tenant_id'] = str(progress.tenant.tenant_uuid)
     
     # Redirect to current step
     return redirect('provisioning:wizard_step', step=progress.current_step)
