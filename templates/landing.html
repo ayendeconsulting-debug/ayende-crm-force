@@ -1,10 +1,49 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ayende CX | CRM Software Solutions</title>
+    <title>AyendeCX - Run Your Business Back Home | For Diaspora Entrepreneurs</title>
+    <meta name="description" content="Manage your retail business in Africa from Canada, UK, or US. Real-time sales tracking, inventory control, staff accountability. 14-day free trial.">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'favicon-32x32.png' %}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{% static 'favicon-16x16.png' %}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'apple-touch-icon.png' %}">
+    <link rel="shortcut icon" href="{% static 'favicon.ico' %}?v=2">
+    <link rel="manifest" href="{% static 'site.webmanifest' %}">
+    <!-- AyendeCX Chatbot CSS -->
+    <link rel="stylesheet" href="{% static 'chatbot/css/chatbot.css' %}?v=3">
+    
+    <!-- Google Analytics 4 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-R9ZRHDK177');
+    </script>
+    
+    <!-- Facebook Pixel -->
+    <script>
+        !function(f,b,e,v,n,t,s)
+        {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+        n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+        if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+        n.queue=[];t=b.createElement(e);t.async=!0;
+        t.src=v;s=b.getElementsByTagName(e)[0];
+        s.parentNode.insertBefore(t,s)}(window, document,'script',
+        'https://connect.facebook.net/en_US/fbevents.js');
+        fbq('init', 'YOUR_PIXEL_ID');
+        fbq('track', 'PageView');
+    </script>
+    <noscript><img height="1" width="1" style="display:none"
+        src="https://www.facebook.com/tr?id=YOUR_PIXEL_ID&ev=PageView&noscript=1"/></noscript>
+    
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
         * {
             margin: 0;
             padding: 0;
@@ -16,27 +55,41 @@
             --medium-blue: #1e3a5f;
             --light-blue: #4a90e2;
             --bright-blue: #60a5fa;
+            --accent-orange: #f97316;
+            --accent-gold: #f59e0b;
             --dark-grey: #2d3748;
+            --medium-grey: #64748b;
             --light-grey: #e2e8f0;
             --white: #ffffff;
+            --light-bg: #f8fafc;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             line-height: 1.6;
             color: var(--dark-grey);
             background-color: var(--white);
+            overflow-x: hidden;
         }
 
-        /* Navigation */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        /* Navigation - Modern Glassmorphism */
         nav {
-            background: linear-gradient(135deg, var(--dark-blue) 0%, var(--medium-blue) 100%);
+            background: rgba(10, 30, 61, 0.8);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
             padding: 1rem 0;
             position: fixed;
             width: 100%;
             top: 0;
             z-index: 1000;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
         }
 
         .nav-container {
@@ -49,46 +102,89 @@
         }
 
         .logo {
-            font-size: 1.5rem;
-            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.6rem;
+            font-weight: 800;
             color: var(--white);
             text-decoration: none;
+            letter-spacing: -0.5px;
+            transition: all 0.3s ease;
+        }
+
+        .logo:hover {
+            transform: scale(1.05);
+        }
+
+        .logo img {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            object-fit: cover;
         }
 
         .logo span {
-            color: var(--bright-blue);
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .nav-links {
             display: flex;
-            gap: 2rem;
+            gap: 2.5rem;
             list-style: none;
+            align-items: center;
         }
 
         .nav-links a {
-            color: var(--white);
+            color: rgba(255, 255, 255, 0.9);
             text-decoration: none;
-            transition: color 0.3s;
+            transition: all 0.3s ease;
             font-weight: 500;
+            font-size: 0.95rem;
+            position: relative;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--bright-blue);
+            transition: width 0.3s ease;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
         }
 
         .nav-links a:hover {
-            color: var(--bright-blue);
-        }
-
-        .nav-links .access-dashboard {
-            background: var(--bright-blue);
-            padding: 0.5rem 1.5rem;
-            border-radius: 25px;
-            font-weight: 600;
-        }
-
-        .nav-links .access-dashboard:hover {
-            background: var(--light-blue);
             color: var(--white);
         }
 
-        /* Mobile Menu Toggle Button */
+        .nav-links .admin-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 0.6rem 1.8rem;
+            border-radius: 50px;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .nav-links .admin-btn::after {
+            display: none;
+        }
+
+        .nav-links .admin-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        /* Mobile Menu Toggle */
         .mobile-menu-toggle {
             display: none;
             flex-direction: column;
@@ -99,7 +195,6 @@
             border: none;
             cursor: pointer;
             padding: 0;
-            z-index: 1001;
         }
 
         .mobile-menu-toggle span {
@@ -108,540 +203,64 @@
             background: var(--white);
             border-radius: 3px;
             transition: all 0.3s ease;
-            transform-origin: center;
         }
 
-        .mobile-menu-toggle.active span:nth-child(1) {
-            transform: translateY(8px) rotate(45deg);
-        }
-
-        .mobile-menu-toggle.active span:nth-child(2) {
-            opacity: 0;
-        }
-
-        .mobile-menu-toggle.active span:nth-child(3) {
-            transform: translateY(-8px) rotate(-45deg);
-        }
-
-        /* Hero Section */
+        /* Hero Section - Ultra Modern with Urban City Background */
         .hero {
-            background: linear-gradient(135deg, rgba(10, 30, 61, 0.92) 0%, rgba(30, 77, 139, 0.90) 50%, rgba(37, 99, 184, 0.88) 100%),
-                        url('/static/images/hero-background.jpg');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
+            background: 
+                linear-gradient(135deg, 
+                    rgba(10, 30, 61, 0.95) 0%, 
+                    rgba(30, 58, 95, 0.92) 50%, 
+                    rgba(74, 144, 226, 0.88) 100%),
+                url('https://images.unsplash.com/photo-1449824913935-59a10b8d2000?q=80&w=2000&auto=format&fit=crop') center center / cover no-repeat;
             color: var(--white);
-            padding: 150px 2rem 100px;
+            padding: 180px 2rem 120px;
             margin-top: 60px;
-            text-align: center;
             position: relative;
-        }
-
-        .hero h1 {
-            font-size: 3.5rem;
-            margin-bottom: 1rem;
-            animation: fadeInUp 1s ease;
-        }
-
-        .hero .tagline {
-            font-size: 1.8rem;
-            margin-bottom: 1rem;
-            color: var(--bright-blue);
-            font-weight: 600;
-        }
-
-        .hero p {
-            font-size: 1.2rem;
-            max-width: 800px;
-            margin: 0 auto 2rem;
-            opacity: 0.95;
-        }
-
-        .cta-buttons {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .btn {
-            padding: 1rem 2.5rem;
-            border: none;
-            border-radius: 50px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-decoration: none;
-            display: inline-block;
-        }
-
-        .btn-primary {
-            background: var(--bright-blue);
-            color: var(--white);
-        }
-
-        .btn-primary:hover {
-            background: var(--light-blue);
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(74, 144, 226, 0.4);
-        }
-
-        .btn-secondary {
-            background: transparent;
-            color: var(--white);
-            border: 2px solid var(--white);
-        }
-
-        .btn-secondary:hover {
-            background: var(--white);
-            color: var(--dark-blue);
-            transform: translateY(-2px);
-        }
-
-        /* Certifications Badge */
-        .certifications {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            padding: 1.5rem 2.5rem;
-            border-radius: 15px;
-            margin-top: 3rem;
-            display: inline-block;
-            border: 2px solid rgba(96, 165, 250, 0.3);
-        }
-
-        .certifications h3 {
-            color: var(--white);
-            margin-bottom: 0.5rem;
-            text-shadow: none;
-            font-size: 1.2rem;
-        }
-        
-        .certifications p {
-            text-shadow: none;
-            opacity: 0.9;
-        }
-
-        /* Registration Section */
-        .registration {
-            padding: 100px 2rem;
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            text-align: center;
-        }
-
-        .registration h2 {
-            color: var(--dark-blue);
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .registration p {
-            font-size: 1.2rem;
-            color: var(--dark-grey);
-            margin-bottom: 2rem;
-            max-width: 800px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .registration-cta {
-            background: linear-gradient(135deg, var(--dark-blue) 0%, var(--medium-blue) 100%);
-            color: white;
-            padding: 3rem;
-            border-radius: 15px;
-            max-width: 600px;
-            margin: 0 auto;
-            box-shadow: 0 10px 40px rgba(10, 30, 61, 0.15);
-        }
-
-        .registration-cta h3 {
-            font-size: 2rem;
-            margin-bottom: 1rem;
-            color: white;
-        }
-
-        .registration-cta p {
-            font-size: 1.1rem;
-            margin-bottom: 2rem;
-            opacity: 0.95;
-            color: white;
-        }
-
-        .registration-cta .btn {
-            background: white;
-            color: var(--dark-blue);
-            font-size: 1.2rem;
-            padding: 1.2rem 3rem;
-        }
-
-        .registration-cta .btn:hover {
-            background: var(--light-grey);
-            transform: translateY(-3px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-
-        /* About Section */
-        .about {
-            padding: 100px 2rem;
-            background: var(--white);
-        }
-
-        .about-content {
-            display: grid;
-            grid-template-columns: 400px 1fr;
-            gap: 4rem;
-            align-items: start;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .about-image {
-            width: 100%;
-            height: auto;
-            border-radius: 15px;
-            box-shadow: 0 20px 60px rgba(10, 30, 61, 0.3);
-            border: 5px solid var(--light-blue);
-        }
-
-        .about-text h2 {
-            color: var(--dark-blue);
-            font-size: 2.5rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .about-text .intro {
-            font-size: 1.2rem;
-            color: var(--dark-grey);
-            margin-bottom: 2rem;
-            line-height: 1.8;
-        }
-
-        .about-text p {
-            margin-bottom: 1.5rem;
-            line-height: 1.8;
-        }
-
-        .about-text .philosophy {
-            background: linear-gradient(135deg, rgba(74, 144, 226, 0.1) 0%, rgba(96, 165, 250, 0.1) 100%);
-            padding: 1.5rem;
-            border-left: 4px solid var(--bright-blue);
-            font-style: italic;
-            border-radius: 8px;
-        }
-
-        .credentials {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1.5rem;
-            margin-top: 1.5rem;
-        }
-
-        .credential-item {
-            background: linear-gradient(135deg, rgba(74, 144, 226, 0.05) 0%, rgba(96, 165, 250, 0.05) 100%);
-            padding: 1.5rem;
-            border-radius: 10px;
-            border-left: 3px solid var(--bright-blue);
-        }
-
-        .credential-item h4 {
-            color: var(--dark-blue);
-            margin-bottom: 0.5rem;
-            font-size: 1.1rem;
-        }
-
-        /* Services Section */
-        .services {
-            padding: 100px 2rem;
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .section-title {
-            text-align: center;
-            font-size: 2.5rem;
-            color: var(--dark-blue);
-            margin-bottom: 3rem;
-        }
-
-        .services-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-        }
-
-        .service-card {
-            background: white;
-            padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-
-        .service-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.2);
-        }
-
-        .service-card h3 {
-            color: var(--dark-blue);
-            margin-bottom: 1rem;
-            font-size: 1.5rem;
-        }
-
-        .service-card p {
-            color: var(--dark-grey);
-            line-height: 1.8;
-        }
-
-        /* Pricing Section */
-        .pricing {
-            padding: 100px 2rem;
-            background: var(--white);
-        }
-
-        .pricing-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-            max-width: 1200px;
-            margin: 0 auto 3rem;
-        }
-
-        .pricing-card {
-            background: white;
-            border-radius: 15px;
             overflow: hidden;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-            transition: transform 0.3s, box-shadow 0.3s;
-            position: relative;
         }
 
-        .pricing-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.2);
-        }
-
-        .pricing-card.featured {
-            border: 3px solid var(--bright-blue);
-            transform: scale(1.05);
-        }
-
-        .featured-badge {
-            background: var(--bright-blue);
-            color: white;
-            padding: 0.5rem 1.5rem;
+        .hero::before {
+            content: '';
             position: absolute;
-            top: 20px;
-            right: -35px;
-            transform: rotate(45deg);
-            font-weight: 600;
-            font-size: 0.9rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800"><defs><linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:%231e3a5f;stop-opacity:0.3"/><stop offset="100%" style="stop-color:%234a90e2;stop-opacity:0.1"/></linearGradient></defs><circle cx="200" cy="150" r="120" fill="url(%23grad1)"/><circle cx="1000" cy="600" r="180" fill="url(%23grad1)"/><circle cx="600" cy="200" r="90" fill="%2360a5fa" opacity="0.1"/><path d="M0,400 Q300,350 600,420 T1200,400 L1200,800 L0,800 Z" fill="%230a1e3d" opacity="0.4"/></svg>');
+            opacity: 0.6;
+            animation: float 20s ease-in-out infinite;
         }
 
-        .pricing-header {
-            background: linear-gradient(135deg, var(--dark-blue) 0%, var(--medium-blue) 100%);
-            color: white;
-            padding: 2rem;
-            text-align: center;
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
         }
 
-        .pricing-header h3 {
-            font-size: 1.8rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .pricing-subtitle {
-            opacity: 0.9;
-            font-size: 1rem;
-        }
-
-        .pricing-body {
-            padding: 2rem;
-        }
-
-        .price-display {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-
-        .price-amount {
-            font-size: 2.5rem;
-            color: var(--dark-blue);
-            font-weight: 700;
-        }
-
-        .price-period {
-            color: var(--dark-grey);
-            font-size: 1rem;
-        }
-
-        .price-label {
-            font-size: 1.5rem;
-            color: var(--dark-blue);
-            font-weight: 700;
-        }
-
-        .pricing-features {
-            list-style: none;
-            margin-bottom: 1.5rem;
-        }
-
-        .pricing-features li {
-            padding: 0.75rem 0;
-            border-bottom: 1px solid var(--light-grey);
-            display: flex;
-            align-items: center;
-        }
-
-        .pricing-features li:before {
-            content: "✓";
-            color: var(--bright-blue);
-            font-weight: bold;
-            margin-right: 10px;
-        }
-
-        .pricing-note {
-            color: var(--dark-grey);
-            font-style: italic;
-            font-size: 0.9rem;
-        }
-
-        .pricing-cta {
-            text-align: center;
-            margin-top: 3rem;
-        }
-
-        /* Contact Section */
-        .contact {
-            padding: 100px 2rem;
-            background: linear-gradient(135deg, var(--dark-blue) 0%, var(--medium-blue) 100%);
-        }
-
-        .contact-content {
-            max-width: 700px;
-            margin: 0 auto;
-        }
-
-        .contact .section-title {
-            color: white;
-        }
-
-        .contact-info {
-            text-align: center;
-            margin-bottom: 3rem;
-        }
-
-        .contact-info h3 {
-            color: white;
-            margin-bottom: 1rem;
-            font-size: 1.5rem;
-        }
-
-        .contact-info p {
-            color: white;
-            font-size: 1.1rem;
-            opacity: 0.95;
-        }
-
-        .contact-info a {
-            color: var(--bright-blue);
-            text-decoration: none;
-            font-weight: 600;
-        }
-
-        .contact-info a:hover {
-            text-decoration: underline;
-        }
-
-        .form-row {
+        .hero-content {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 5rem;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
         }
 
-        .form-group {
+        .hero-left h1 {
+            font-size: 4rem;
             margin-bottom: 1.5rem;
+            line-height: 1.15;
+            font-weight: 900;
+            letter-spacing: -1.5px;
+            background: linear-gradient(135deg, #ffffff 0%, #e0e7ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: fadeInUp 0.8s ease;
         }
 
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            color: white;
-            font-weight: 600;
-        }
-
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 1rem;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: border-color 0.3s;
-            font-family: inherit;
-            background: rgba(255, 255, 255, 0.95);
-            color: var(--dark-grey);
-        }
-
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: var(--bright-blue);
-            background: white;
-        }
-
-        .form-group textarea {
-            min-height: 150px;
-            resize: vertical;
-        }
-
-        .form-group input::placeholder,
-        .form-group textarea::placeholder {
-            color: #999;
-        }
-
-        .form-success,
-        .form-error {
-            padding: 1rem;
-            border-radius: 8px;
-            margin-bottom: 1.5rem;
-            display: none;
-            text-align: center;
-        }
-
-        .form-success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .form-error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        /* Footer */
-        footer {
-            background: linear-gradient(135deg, var(--dark-blue) 0%, var(--medium-blue) 100%);
-            color: var(--white);
-            padding: 3rem 2rem;
-            text-align: center;
-        }
-
-        footer p {
-            margin: 0.5rem 0;
-        }
-
-        /* Animations */
         @keyframes fadeInUp {
             from {
                 opacity: 0;
@@ -653,83 +272,1345 @@
             }
         }
 
-        /* Mobile Responsive */
-        @media (max-width: 768px) {
-            .mobile-menu-toggle {
-                display: flex;
-            }
+        .hero-left .subheadline {
+            font-size: 1.5rem;
+            color: rgba(255, 255, 255, 0.95);
+            margin-bottom: 1.5rem;
+            font-weight: 500;
+            line-height: 1.6;
+            animation: fadeInUp 0.8s ease 0.2s both;
+        }
 
-            .nav-links {
-                position: fixed;
-                top: 60px;
-                left: 0;
-                right: 0;
-                background: linear-gradient(135deg, var(--dark-blue) 0%, var(--medium-blue) 100%);
-                flex-direction: column;
-                gap: 0;
-                padding: 1rem 0;
-                transform: translateX(-100%);
-                transition: transform 0.3s ease;
-                box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-            }
+        .hero-left .secondary-line {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.75);
+            margin-bottom: 1.5rem;
+            font-style: italic;
+            font-weight: 400;
+            animation: fadeInUp 0.8s ease 0.3s both;
+        }
 
-            .nav-links.active {
-                transform: translateX(0);
-            }
+        .hero-left .highlight {
+            color: #fbbf24;
+            font-weight: 600;
+        }
 
-            .nav-links li {
-                text-align: center;
-                padding: 0.75rem 2rem;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            }
+        .hero-left > p {
+            font-size: 1.15rem;
+            margin-bottom: 2.5rem;
+            opacity: 0.9;
+            line-height: 1.8;
+            animation: fadeInUp 0.8s ease 0.4s both;
+        }
 
-            .nav-links li:last-child {
-                border-bottom: none;
-            }
+        .hero-right {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: fadeInUp 0.8s ease 0.6s both;
+        }
 
-            .hero h1 {
-                font-size: 2rem;
-            }
+        /* Modern Dashboard Preview */
+        .dashboard-container {
+            position: relative;
+            max-width: 500px;
+            width: 100%;
+        }
 
-            .hero .tagline {
-                font-size: 1.3rem;
-            }
+        .dashboard-image {
+            width: 100%;
+            height: auto;
+            border-radius: 20px;
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.4),
+                0 0 0 1px rgba(255, 255, 255, 0.1);
+            transition: all 0.5s ease;
+            animation: float-dashboard 6s ease-in-out infinite;
+        }
 
-            .hero p {
-                font-size: 1rem;
-            }
+        @keyframes float-dashboard {
+            0%, 100% { transform: translateY(0px) scale(1); }
+            50% { transform: translateY(-15px) scale(1.02); }
+        }
 
-            .about-content {
-                grid-template-columns: 1fr;
-                gap: 2rem;
-            }
+        .dashboard-image:hover {
+            transform: scale(1.05) translateY(-10px);
+            box-shadow: 
+                0 30px 80px rgba(96, 165, 250, 0.4),
+                0 0 0 1px rgba(255, 255, 255, 0.2);
+        }
 
-            .about-image {
-                max-width: 350px;
-                margin: 0 auto;
-                display: block;
-            }
+        .dashboard-glow {
+            position: absolute;
+            top: -50px;
+            left: -50px;
+            right: -50px;
+            bottom: -50px;
+            background: radial-gradient(circle, rgba(96, 165, 250, 0.3) 0%, transparent 70%);
+            filter: blur(40px);
+            z-index: -1;
+            animation: glow-pulse 4s ease-in-out infinite;
+        }
 
-            .pricing-card.featured {
+        @keyframes glow-pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 0.8; }
+        }
+
+        /* CTA Buttons - Premium Style */
+        .cta-primary {
+            display: inline-block;
+            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+            color: var(--white);
+            padding: 1.3rem 3.5rem;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 
+                0 10px 30px rgba(249, 115, 22, 0.4),
+                0 0 0 0 rgba(249, 115, 22, 0);
+            position: relative;
+            overflow: hidden;
+            animation: fadeInUp 0.8s ease 0.6s both;
+        }
+
+        .cta-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .cta-primary:hover::before {
+            left: 100%;
+        }
+
+        .cta-primary:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 
+                0 15px 40px rgba(249, 115, 22, 0.5),
+                0 0 0 8px rgba(249, 115, 22, 0.1);
+        }
+
+        .cta-primary:active {
+            transform: translateY(-1px) scale(1.02);
+        }
+
+        .cta-small-text {
+            display: block;
+            margin-top: 1.2rem;
+            font-size: 0.95rem;
+            opacity: 0.85;
+            animation: fadeInUp 0.8s ease 0.7s both;
+        }
+
+        /* Section Styling - Modern Approach */
+        section {
+            padding: 100px 2rem;
+            position: relative;
+        }
+
+        .section-title {
+            font-size: 3rem;
+            text-align: center;
+            margin-bottom: 1rem;
+            color: var(--dark-blue);
+            font-weight: 900;
+            letter-spacing: -1px;
+            line-height: 1.2;
+        }
+
+        .section-subtitle {
+            text-align: center;
+            font-size: 1.2rem;
+            color: var(--medium-grey);
+            margin-bottom: 4rem;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Problem Section - Card Hover Effects */
+        .problem-section {
+            background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+        }
+
+        .problem-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2.5rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .problem-card {
+            background: white;
+            padding: 3rem 2.5rem;
+            border-radius: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            text-align: center;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .problem-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #f97316, #ea580c);
+            transform: scaleX(0);
+            transition: transform 0.4s ease;
+        }
+
+        .problem-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .problem-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12);
+            border-color: rgba(249, 115, 22, 0.2);
+        }
+
+        .problem-icon {
+            font-size: 3.5rem;
+            margin-bottom: 1.5rem;
+            filter: grayscale(20%);
+            transition: all 0.3s ease;
+        }
+
+        .problem-card:hover .problem-icon {
+            transform: scale(1.1) rotate(5deg);
+            filter: grayscale(0%);
+        }
+
+        .problem-card h3 {
+            font-size: 1.6rem;
+            margin-bottom: 1rem;
+            color: var(--dark-blue);
+            font-weight: 700;
+        }
+
+        .problem-card p {
+            color: var(--medium-grey);
+            line-height: 1.8;
+            font-size: 1.05rem;
+        }
+
+        /* Solution Section - Premium Dashboard Slider */
+        .solution-section {
+            background: white;
+        }
+
+        /* Dashboard Slider Styles */
+        .dashboard-slider-wrapper {
+            max-width: 1100px;
+            margin: 3rem auto;
+            position: relative;
+            overflow: hidden;
+            border-radius: 24px;
+            box-shadow: 
+                0 25px 80px rgba(0, 0, 0, 0.15),
+                0 0 0 1px rgba(0, 0, 0, 0.05);
+        }
+
+        .dashboard-slider {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .slider-container {
+            display: flex;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .slider-slide {
+            min-width: 100%;
+            position: relative;
+        }
+
+        .slider-slide img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* Slider Navigation Arrows */
+        .slider-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: none;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 10;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: var(--dark-blue);
+        }
+
+        .slider-arrow:hover {
+            background: white;
+            transform: translateY(-50%) scale(1.1);
+            box-shadow: 0 6px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .slider-arrow.prev {
+            left: 20px;
+        }
+
+        .slider-arrow.next {
+            right: 20px;
+        }
+
+        /* Slider Dots */
+        .slider-dots {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 12px;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 12px 20px;
+            border-radius: 50px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .slider-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--medium-grey);
+            opacity: 0.4;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            padding: 0;
+        }
+
+        .slider-dot.active {
+            background: var(--accent-orange);
+            opacity: 1;
+            transform: scale(1.3);
+        }
+
+        .slider-dot:hover {
+            opacity: 0.7;
+            transform: scale(1.2);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 2.5rem;
+            max-width: 1200px;
+            margin: 4rem auto 0;
+        }
+
+        .feature-item {
+            display: flex;
+            gap: 1.5rem;
+            align-items: start;
+            padding: 2rem;
+            background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+            border-radius: 20px;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .feature-item:hover {
+            background: white;
+            border-color: rgba(249, 115, 22, 0.2);
+            transform: translateX(5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        }
+
+        .feature-icon {
+            color: var(--accent-orange);
+            font-size: 1.8rem;
+            flex-shrink: 0;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, rgba(249, 115, 22, 0.1), rgba(234, 88, 12, 0.1));
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .feature-item:hover .feature-icon {
+            transform: scale(1.1) rotate(5deg);
+            background: linear-gradient(135deg, rgba(249, 115, 22, 0.2), rgba(234, 88, 12, 0.2));
+        }
+
+        .feature-content h4 {
+            color: var(--dark-blue);
+            margin-bottom: 0.6rem;
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .feature-content p {
+            color: var(--medium-grey);
+            line-height: 1.7;
+            font-size: 1.02rem;
+        }
+
+        /* Testimonials Section - Video Grid */
+        .testimonials-section {
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+        }
+
+        .testimonial-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 3rem;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .video-placeholder {
+            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+            border-radius: 20px;
+            aspect-ratio: 16/9;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            transition: all 0.4s ease;
+        }
+
+        .video-placeholder::before {
+            content: '▶';
+            font-size: 5rem;
+            opacity: 0.15;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .video-placeholder:hover::before {
+            opacity: 0.3;
+            transform: scale(1.2);
+        }
+
+        .video-placeholder:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 60px rgba(96, 165, 250, 0.3);
+        }
+
+        .video-caption {
+            text-align: center;
+            margin-top: 1.2rem;
+            font-weight: 600;
+            color: var(--dark-blue);
+            font-size: 1.05rem;
+        }
+
+        .testimonial-quote {
+            background: white;
+            padding: 3.5rem 3rem;
+            border-radius: 24px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+            text-align: center;
+            font-style: italic;
+            font-size: 1.3rem;
+            line-height: 1.9;
+            color: var(--dark-grey);
+            margin-top: 3rem;
+            border-left: 4px solid var(--accent-orange);
+            position: relative;
+        }
+
+        .testimonial-quote::before {
+            content: '"';
+            position: absolute;
+            top: 20px;
+            left: 30px;
+            font-size: 6rem;
+            color: rgba(249, 115, 22, 0.1);
+            font-family: Georgia, serif;
+        }
+
+        .testimonial-author {
+            margin-top: 1.5rem;
+            font-style: normal;
+            font-weight: 700;
+            color: var(--dark-blue);
+            font-size: 1.1rem;
+        }
+
+        /* How It Works - Modern Timeline */
+        .how-it-works {
+            background: white;
+        }
+
+        .steps-container {
+            max-width: 900px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .steps-container::before {
+            content: '';
+            position: absolute;
+            left: 40px;
+            top: 40px;
+            bottom: 40px;
+            width: 3px;
+            background: linear-gradient(180deg, var(--bright-blue), var(--accent-orange));
+            opacity: 0.2;
+        }
+
+        .step {
+            display: grid;
+            grid-template-columns: 80px 1fr;
+            gap: 3rem;
+            margin-bottom: 4rem;
+            align-items: start;
+            position: relative;
+        }
+
+        .step-number {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: white;
+            flex-shrink: 0;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+            position: relative;
+            z-index: 1;
+            transition: all 0.3s ease;
+        }
+
+        .step:hover .step-number {
+            transform: scale(1.1) rotate(5deg);
+            box-shadow: 0 12px 35px rgba(102, 126, 234, 0.5);
+        }
+
+        .step-content {
+            background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+            padding: 2.5rem;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .step:hover .step-content {
+            transform: translateX(10px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            border-color: rgba(102, 126, 234, 0.2);
+        }
+
+        .step-content h3 {
+            font-size: 2rem;
+            color: var(--dark-blue);
+            margin-bottom: 1rem;
+            font-weight: 800;
+        }
+
+        .step-content p {
+            font-size: 1.15rem;
+            color: var(--medium-grey);
+            line-height: 1.8;
+        }
+
+        /* Pricing Section - Premium Card */
+        .pricing-section {
+            background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+        }
+
+        .pricing-card {
+            max-width: 550px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 32px;
+            padding: 3.5rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
+            border: 2px solid transparent;
+            background-image: linear-gradient(white, white), 
+                              linear-gradient(135deg, #667eea, #764ba2);
+            background-origin: border-box;
+            background-clip: padding-box, border-box;
+            transition: all 0.4s ease;
+            position: relative;
+        }
+
+        .pricing-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 30px 80px rgba(102, 126, 234, 0.25);
+        }
+
+        .pricing-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .pricing-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 0.5rem 1.5rem;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1.5rem;
+        }
+
+        .pricing-header h3 {
+            font-size: 1.8rem;
+            color: var(--dark-blue);
+            margin-bottom: 1.5rem;
+            font-weight: 800;
+        }
+
+        .pricing-price {
+            font-size: 4.5rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+            line-height: 1;
+        }
+
+        .pricing-period {
+            color: var(--medium-grey);
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+
+        .pricing-features {
+            list-style: none;
+            margin: 2.5rem 0;
+        }
+
+        .pricing-features li {
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--light-grey);
+            display: flex;
+            align-items: center;
+            gap: 1.2rem;
+            transition: all 0.2s ease;
+        }
+
+        .pricing-features li:hover {
+            padding-left: 10px;
+            background: linear-gradient(90deg, rgba(249, 115, 22, 0.05), transparent);
+        }
+
+        .pricing-features li:last-child {
+            border-bottom: none;
+        }
+
+        .pricing-features li::before {
+            content: '✓';
+            color: var(--accent-orange);
+            font-weight: 900;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .pricing-trial {
+            text-align: center;
+            background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+            padding: 1.8rem;
+            border-radius: 16px;
+            margin: 2.5rem 0;
+            font-weight: 700;
+            color: var(--dark-blue);
+            font-size: 1.05rem;
+            border: 2px dashed rgba(96, 165, 250, 0.3);
+        }
+
+        .pricing-cta {
+            text-align: center;
+        }
+
+        .pricing-annual {
+            text-align: center;
+            margin-top: 1.5rem;
+            font-size: 1rem;
+            color: var(--medium-grey);
+            font-weight: 500;
+        }
+
+        /* FAQ Section - Accordion Style */
+        .faq-section {
+            background: white;
+        }
+
+        .faq-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .faq-item {
+            background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+            padding: 2.5rem 2.5rem;
+            border-radius: 20px;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .faq-item:hover {
+            transform: translateX(10px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            border-color: rgba(102, 126, 234, 0.2);
+        }
+
+        .faq-item h4 {
+            color: var(--dark-blue);
+            font-size: 1.4rem;
+            margin-bottom: 1.2rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .faq-item h4::before {
+            content: '?';
+            width: 35px;
+            height: 35px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            flex-shrink: 0;
+        }
+
+        .faq-item p {
+            color: var(--medium-grey);
+            line-height: 1.9;
+            font-size: 1.1rem;
+        }
+
+        /* Who This Is For Section */
+        .who-section {
+            background: var(--white);
+            padding: 100px 2rem;
+        }
+
+        .who-section .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .audience-primary,
+        .audience-secondary {
+            margin-bottom: 3rem;
+        }
+
+        .audience-heading {
+            font-size: 1.5rem;
+            color: var(--dark-blue);
+            margin-bottom: 1.5rem;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .audience-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .audience-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 1.5rem;
+            background: var(--light-bg);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .audience-item:hover {
+            transform: translateY(-4px);
+            border-color: var(--bright-blue);
+            background: var(--white);
+            box-shadow: 0 8px 20px rgba(74, 144, 226, 0.15);
+        }
+
+        .audience-item .checkmark {
+            font-size: 1.5rem;
+            color: #10b981;
+            margin-right: 1rem;
+            flex-shrink: 0;
+        }
+
+        .audience-content strong {
+            display: block;
+            font-size: 1.125rem;
+            color: var(--dark-blue);
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        .audience-content p {
+            color: var(--medium-grey);
+            margin: 0;
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        .audience-bottom-line {
+            max-width: 900px;
+            margin: 3rem auto 0;
+            padding: 2rem;
+            background: linear-gradient(135deg, rgba(74, 144, 226, 0.05) 0%, rgba(96, 165, 250, 0.05) 100%);
+            border-left: 4px solid var(--bright-blue);
+            border-radius: 8px;
+        }
+
+        .emphasis-text {
+            font-size: 1.2rem;
+            color: var(--dark-blue);
+            font-style: italic;
+            margin: 0;
+            line-height: 1.7;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        /* Image Zoom Modal */
+        .image-modal {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(10px);
+            animation: fadeInModal 0.3s ease;
+        }
+
+        .image-modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .image-modal img {
+            max-width: 95%;
+            max-height: 95%;
+            object-fit: contain;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            animation: zoomInModal 0.3s ease;
+            cursor: zoom-out;
+        }
+
+        .image-modal-close {
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+            font-size: 3rem;
+            color: white;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.1);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            z-index: 10000;
+        }
+
+        .image-modal-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: rotate(90deg);
+        }
+
+        @keyframes fadeInModal {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes zoomInModal {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
                 transform: scale(1);
             }
+        }
 
-            .section-title {
+        /* Make dashboard images clickable */
+        .slider-slide img,
+        .dashboard-image {
+            cursor: zoom-in;
+            transition: opacity 0.3s ease;
+        }
+
+        .slider-slide img:hover,
+        .dashboard-image:hover {
+            opacity: 0.9;
+        }
+
+        /* Mobile adjustments for modal and who section */
+        @media (max-width: 768px) {
+            .image-modal-close {
+                top: 1rem;
+                right: 1rem;
+                width: 45px;
+                height: 45px;
                 font-size: 2rem;
             }
-
-            .credentials {
-                grid-template-columns: 1fr;
+            
+            .image-modal {
+                padding: 1rem;
             }
 
-            .form-row {
+            .audience-grid {
                 grid-template-columns: 1fr;
             }
         }
 
-        /* Smooth Scroll */
-        html {
-            scroll-behavior: smooth;
+        /* Final CTA - Hero Style */
+        .final-cta {
+            background: linear-gradient(135deg, 
+                rgba(10, 30, 61, 0.95) 0%, 
+                rgba(102, 126, 234, 0.92) 100%);
+            color: white;
+            text-align: center;
+            padding: 120px 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .final-cta::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400"><circle cx="100" cy="100" r="80" fill="%23ffffff" opacity="0.05"/><circle cx="1100" cy="300" r="120" fill="%23ffffff" opacity="0.05"/><circle cx="600" cy="150" r="60" fill="%23ffffff" opacity="0.03"/></svg>');
+            animation: float 15s ease-in-out infinite;
+        }
+
+        .final-cta h2 {
+            font-size: 3.5rem;
+            margin-bottom: 1.5rem;
+            font-weight: 900;
+            letter-spacing: -1px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .final-cta p {
+            font-size: 1.5rem;
+            margin-bottom: 2.5rem;
+            opacity: 0.95;
+            position: relative;
+            z-index: 1;
+        }
+
+        .final-cta .cta-primary {
+            background: white;
+            color: var(--dark-blue);
+            box-shadow: 0 10px 40px rgba(255, 255, 255, 0.3);
+        }
+
+        .final-cta .cta-primary:hover {
+            background: var(--light-grey);
+            box-shadow: 0 15px 50px rgba(255, 255, 255, 0.4);
+        }
+
+        /* Footer - Clean & Modern */
+        footer {
+            background: linear-gradient(135deg, #0a1e3d 0%, #1e3a5f 100%);
+            color: white;
+            padding: 4rem 2rem 2.5rem;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .footer-brand {
+            font-size: 2rem;
+            font-weight: 900;
+            margin-bottom: 0.8rem;
+            letter-spacing: -0.5px;
+        }
+
+        .footer-tagline {
+            font-size: 1.2rem;
+            margin-bottom: 2.5rem;
+            opacity: 0.85;
+            font-weight: 500;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            flex-wrap: wrap;
+            margin-bottom: 2.5rem;
+        }
+
+        .footer-links a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            position: relative;
+        }
+
+        .footer-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--bright-blue);
+            transition: width 0.3s ease;
+        }
+
+        .footer-links a:hover::after {
+            width: 100%;
+        }
+
+        .footer-links a:hover {
+            color: white;
+        }
+
+        .footer-contact {
+            margin-bottom: 2rem;
+            opacity: 0.85;
+            font-size: 1.05rem;
+        }
+
+        .footer-copyright {
+            padding-top: 2.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.15);
+            opacity: 0.7;
+            font-size: 0.95rem;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 968px) {
+            .hero-content {
+                grid-template-columns: 1fr;
+                gap: 4rem;
+            }
+
+            .hero-left h1 {
+                font-size: 2.8rem;
+            }
+
+            .dashboard-container {
+                max-width: 400px;
+            }
+
+            .testimonial-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-links {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: rgba(10, 30, 61, 0.98);
+                backdrop-filter: blur(20px);
+                flex-direction: column;
+                padding: 2rem;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+                gap: 1.5rem;
+            }
+
+            .nav-links.active {
+                display: flex;
+            }
+
+            .mobile-menu-toggle {
+                display: flex;
+            }
+
+            .section-title {
+                font-size: 2.2rem;
+            }
+
+            .features-grid,
+            .problem-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .steps-container::before {
+                display: none;
+            }
+
+            .slider-arrow {
+                width: 45px;
+                height: 45px;
+                font-size: 1.2rem;
+            }
+
+            .slider-arrow.prev {
+                left: 10px;
+            }
+
+            .slider-arrow.next {
+                right: 10px;
+            }
+
+            .slider-dots {
+                bottom: 20px;
+                padding: 8px 15px;
+                gap: 8px;
+            }
+
+            .slider-dot {
+                width: 8px;
+                height: 8px;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .hero {
+                padding: 140px 1.5rem 80px;
+            }
+
+            .hero-left h1 {
+                font-size: 2.2rem;
+            }
+
+            .hero-left .subheadline {
+                font-size: 1.2rem;
+            }
+
+            .cta-primary {
+                padding: 1.1rem 2.5rem;
+                font-size: 1.05rem;
+            }
+
+            .final-cta h2 {
+                font-size: 2.2rem;
+            }
+
+            .pricing-price {
+                font-size: 3rem;
+            }
+
+            section {
+                padding: 60px 1.5rem;
+            }
+
+            .dashboard-container {
+                max-width: 320px;
+            }
+
+            .slider-arrow {
+                width: 40px;
+                height: 40px;
+                font-size: 1rem;
+            }
+
+            .slider-dots {
+                padding: 6px 12px;
+                gap: 6px;
+            }
+
+            .slider-dot {
+                width: 6px;
+                height: 6px;
+            }
+        }
+
+        /* Modal Styles for Privacy and Terms */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.7);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal.active {
+            display: block;
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 0;
+            width: 90%;
+            max-width: 800px;
+            border-radius: 15px;
+            box-shadow: 0 20px 80px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s ease;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 2rem;
+            border-bottom: 1px solid var(--light-grey);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(135deg, #0a1e3d 0%, #1e3a5f 100%);
+            color: white;
+            border-radius: 15px 15px 0 0;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            color: white;
+            font-size: 2rem;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            background: none;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .modal-close:hover {
+            color: var(--bright-blue);
+            transform: scale(1.1);
+        }
+
+        .modal-body {
+            padding: 2.5rem;
+            line-height: 1.8;
+            color: var(--dark-grey);
+        }
+
+        .modal-body h3 {
+            color: var(--dark-blue);
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+
+        .modal-body h3:first-child {
+            margin-top: 0;
+        }
+
+        .modal-body p {
+            margin-bottom: 1rem;
+        }
+
+        .modal-body ul {
+            margin-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .modal-body li {
+            margin-bottom: 0.5rem;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .modal-content {
+                width: 95%;
+                margin: 10% auto;
+            }
+
+            .modal-header {
+                padding: 1.5rem;
+            }
+
+            .modal-header h2 {
+                font-size: 1.4rem;
+            }
+
+            .modal-body {
+                padding: 1.5rem;
+            }
         }
     </style>
 </head>
@@ -737,436 +1618,919 @@
     <!-- Navigation -->
     <nav>
         <div class="nav-container">
-            <a href="#" class="logo-container">
-                <div class="logo">AYENDE<span> CX</span></div>
+            <a href="#" class="logo">
+                <img src="{% static 'Site_Images/ayendecx-logo-80.png' %}" alt="AyendeCX Logo">
+                Ayende<span>CX</span>
             </a>
-            <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle menu">
+            
+            <button class="mobile-menu-toggle" id="mobileMenuToggle">
                 <span></span>
                 <span></span>
                 <span></span>
             </button>
+
             <ul class="nav-links" id="navLinks">
-                <li><a href="#home">Home</a></li>
-                <li><a href="#about">About</a></li>
-                <li><a href="#services">Services</a></li>
+                <li><a href="#how-it-works">How It Works</a></li>
                 <li><a href="#pricing">Pricing</a></li>
+                <li><a href="#faq">FAQ</a></li>
                 <li><a href="#contact">Contact</a></li>
-                <li><a href="https://ayendecx.com/admin/" class="access-dashboard">Access Dashboard</a></li>
+                <li><a href="https://ayendecx.com/admin/" class="admin-btn" target="_blank">Admin</a></li>
             </ul>
         </div>
     </nav>
 
-    <!-- Hero Section -->
-    <section id="home" class="hero">
-        <h1>Transform Your Business with Smart CRM Solutions</h1>
-        <p class="tagline">Built on Real Data. Powered by Technology. Designed for Growth.</p>
-        <p>We design and implement CRM systems that integrate seamlessly with your Point of Sales data, giving you clear visibility into customer behavior, purchase patterns, and growth opportunities.</p>
-        <div class="cta-buttons">
-            <a href="#register" class="btn btn-primary">Get Started Free</a>
-            <a href="#contact" class="btn btn-secondary">Schedule Consultation</a>
-        </div>
-        <div class="certifications">
-            <h3>Salesforce Certified Solution Architect</h3>
-            <p>Expert-level platform design and implementation</p>
-        </div>
-    </section>
-
-    <!-- Registration Section -->
-    <section id="register" class="registration">
-        <div class="container">
-            <h2>Register Your Business</h2>
-            <p>Get instant access to our complete CRM platform with integrated POS data synchronization</p>
-            
-            <div class="registration-cta">
-                <h3>Register Your Business</h3>
-                <p>Get instant access to our complete CRM platform with integrated POS data synchronization</p>
-                <a href="https://pos-app.ayendecx.com/register" class="btn" target="_blank">Create Free Account</a>
-                <p style="font-size: 0.9rem; margin-top: 1.5rem; opacity: 0.9;">No credit card required • Full access • Cancel anytime</p>
-            </div>
-        </div>
-    </section>
-
-    <!-- About Section -->
-    <section id="about" class="about">
-        <div class="container">
-            <div class="about-content">
-                <img src="/static/images/hero-background.jpg" alt="Ayende CX Team" class="about-image">
-                <div class="about-text">
-                    <h2>Meet Your Technology Partners</h2>
-                    <p class="intro">At Ayende CX, we built our business after spending years consulting with small and mid-sized businesses across different industries. Many shared the same challenges: scattered customer data, manual processes, limited visibility into sales activity, and no clear connection between their Point of Sales systems and how they engaged customers. We recognized a gap and decided to provide a service that brings clarity, structure, and measurable value to everyday business operations.</p>
-                    
-                    <h3 style="color: var(--bright-blue); font-size: 1.5rem; margin-top: 2rem; margin-bottom: 1rem;">Who We Are</h3>
-                    <p>We help organizations move from guesswork to informed decision-making. In our ranks, we have certified Solution Architects and experienced Software Engineers, we focus on practical solutions that strengthen customer relationships and improve how businesses operate. Our approach ensures that each client receives a tailored system built around real needs, real data, and real growth opportunities.</p>
-                    
-                    <p>Our work centres on delivering CRM solutions that are accessible and scalable. We design and implement systems powered by integrated Point of Sales data, giving business owners a clear view of customer behaviour, purchase patterns, and opportunities for deeper engagement. Whether you need a Salesforce implementation, a custom CRM platform, or enhancements to your existing environment, we provide the expertise to guide every step.</p>
-                    
-                    <p>Ayende CX is committed to long-term partnerships. With experience in software architecture, operational improvement, and customer management, we support businesses as they streamline processes, strengthen decision-making, and build sustainable growth. Our goal is simple: help local businesses use technology with confidence and achieve success through a data-driven customer experience.</p>
-                    
-                    <h3 style="color: var(--bright-blue); font-size: 1.5rem; margin-top: 2rem; margin-bottom: 1rem;">Our Promise</h3>
-                    <div class="credentials">
-                        <div class="credential-item">
-                            <div>
-                                <h4>Technical Excellence</h4>
-                                <p>With a foundation in full-stack development and engineering expertise, we apply rigorous standards in code quality, architecture, performance, and security to every project we undertake.</p>
-                            </div>
-                        </div>
-                        
-                        <div class="credential-item">
-                            <div>
-                                <h4>Business Mindset</h4>
-                                <p>Technology should serve clear business outcomes. We blend technical decisions with commercial insight to drive efficiency, growth, and measurable ROI for your organization.</p>
-                            </div>
-                        </div>
-                        
-                        <div class="credential-item">
-                            <div>
-                                <h4>Longevity and Support</h4>
-                                <p>Over 20 years in technology means we've witnessed trends evolve and transform. Our focus is on robust, maintainable solutions designed for long-term value, not fleeting innovations.</p>
-                            </div>
-                        </div>
-                        
-                        <div class="credential-item">
-                            <div>
-                                <h4>Client Partnership</h4>
-                                <p>We believe in transparency, collaboration, and accountability. You'll always understand where we are in a project, what decisions are being made, and how your investment is delivering value.</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <p class="philosophy" style="margin-top: 2rem;">Let's build something that lasts. We don't just build software—we design solutions that scale businesses, enhance operations, and drive measurable results.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Services Section -->
-    <section id="services" class="services">
-        <div class="container">
-            <h2 class="section-title">Our Services</h2>
-            <div class="services-grid">
-                <div class="service-card">
-                    <h3>Custom CRM Development</h3>
-                    <p>Tailored CRM solutions built to match your exact business processes, workflows, and customer journey requirements.</p>
-                </div>
-                <div class="service-card">
-                    <h3>Salesforce Architecture</h3>
-                    <p>Enterprise-grade Salesforce implementations designed and architected by a certified Solution Architect.</p>
-                </div>
-                <div class="service-card">
-                    <h3>POS Integration</h3>
-                    <p>Seamless integration between your Point of Sale systems and CRM for real-time customer insights.</p>
-                </div>
-                <div class="service-card">
-                    <h3>System Modernization</h3>
-                    <p>Transform legacy systems into modern, scalable platforms that grow with your business.</p>
-                </div>
-                <div class="service-card">
-                    <h3>Technical Consulting</h3>
-                    <p>Strategic guidance on technology decisions, architecture planning, and digital transformation initiatives.</p>
-                </div>
-                <div class="service-card">
-                    <h3>Ongoing Support</h3>
-                    <p>Continuous maintenance, updates, and optimization to ensure your systems deliver maximum value.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Pricing Section -->
-    <section id="pricing" class="pricing">
-        <div class="container">
-            <h2 class="section-title">Flexible Pricing Models</h2>
-            <p style="text-align: center; font-size: 1.2rem; margin-bottom: 3rem; opacity: 0.95;">Choose the pricing model that works best for your business</p>
-            
-            <div class="pricing-grid">
-                <div class="pricing-card">
-                    <div class="pricing-header">
-                        <h3>Outright Purchase</h3>
-                        <p class="pricing-subtitle">Own Your Solution</p>
-                    </div>
-                    <div class="pricing-body">
-                        <div class="price-display">
-                            <span class="price-label">Custom Quote</span>
-                        </div>
-                        <ul class="pricing-features">
-                            <li>Full ownership of source code</li>
-                            <li>One-time payment</li>
-                            <li>No recurring fees</li>
-                            <li>Lifetime license</li>
-                            <li>Complete customization rights</li>
-                            <li>Optional maintenance packages</li>
-                        </ul>
-                        <p class="pricing-note">Perfect for enterprises and organizations seeking complete control</p>
-                    </div>
-                </div>
-
-                <div class="pricing-card featured">
-                    <div class="featured-badge">Most Popular</div>
-                    <div class="pricing-header">
-                        <h3>Subscription Model</h3>
-                        <p class="pricing-subtitle">Pay As You Grow</p>
-                    </div>
-                    <div class="pricing-body">
-                        <div class="price-display">
-                            <span class="price-amount">Starting at $149</span>
-                            <span class="price-period">/month</span>
-                        </div>
-                        <ul class="pricing-features">
-                            <li>Monthly or annual billing</li>
-                            <li>Regular updates & improvements</li>
-                            <li>Ongoing technical support</li>
-                            <li>Cloud hosting included</li>
-                            <li>Security patches & maintenance</li>
-                            <li>Scale up or down anytime</li>
-                        </ul>
-                        <p class="pricing-note">Ideal for startups and growing businesses</p>
-                    </div>
-                </div>
-
-                <div class="pricing-card">
-                    <div class="pricing-header">
-                        <h3>Hybrid Model</h3>
-                        <p class="pricing-subtitle">Best of Both Worlds</p>
-                    </div>
-                    <div class="pricing-body">
-                        <div class="price-display">
-                            <span class="price-label">Custom Package</span>
-                        </div>
-                        <ul class="pricing-features">
-                            <li>Partial ownership options</li>
-                            <li>Reduced subscription rates</li>
-                            <li>Phased payment structure</li>
-                            <li>Flexible upgrade paths</li>
-                            <li>Customized to your budget</li>
-                            <li>Long-term partnership focus</li>
-                        </ul>
-                        <p class="pricing-note">Tailored solutions for unique business needs</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="pricing-cta">
-                <p style="font-size: 1.2rem; margin-bottom: 1rem;">Not sure which model fits your needs?</p>
-                <a href="#contact" class="btn btn-primary">Schedule a Consultation</a>
-            </div>
-        </div>
-    </section>
-
-    <!-- Contact Section -->
-    <section id="contact" class="contact">
-        <div class="container">
-            <div class="contact-content">
-                <h2 class="section-title">Let's Build Something Great</h2>
+    <!-- SECTION 1: HERO -->
+    <section class="hero">
+        <div class="hero-content">
+            <div class="hero-left">
+                <h1>Your Team is 5,000 Miles Away.<br>Your Business Doesn't Have to Be.</h1>
+                <p class="subheadline">Run your retail business back home with complete control—from your phone. <span class="highlight">Real-time sales. Inventory tracking. Staff accountability.</span></p>
+                <p class="secondary-line">Built for diaspora entrepreneurs. Trusted by business owners who manage remotely.</p>
+                <p>Stop wondering if your staff is stealing. Stop losing sleep. Stop flying home to "check on things." AyendeCX gives you eyes and ears in your store—24/7, from anywhere in the world.</p>
                 
-                <div class="contact-info">
-                    <h3>Get in Touch</h3>
-                    <p>Ready to scale your business with custom software solutions?</p>
-                    <p>Email us directly at: <a href="mailto:admin@ayendecx.com">admin@ayendecx.com</a></p>
-                    <p style="margin-top: 1rem; font-size: 0.95rem; opacity: 0.9;">Or fill out the form below and we'll get back to you within 24 hours</p>
-                </div>
+                <a href="https://pos-app.ayendecx.com/register" class="cta-primary" target="_blank">Start Your 14-Day Free Trial</a>
+                <span class="cta-small-text">$79/month after trial • No credit card required • Cancel anytime</span>
+            </div>
 
-                <div class="form-success" id="formSuccess">
-                    Thank you for your message! We'll get back to you within 24 hours.
+            <div class="hero-right">
+                <div class="dashboard-container">
+                    <div class="dashboard-glow"></div>
+                    <img src="{% static 'Site_Images/dashboard-main.png' %}" alt="AyendeCX Dashboard" class="dashboard-image">
                 </div>
-                <div class="form-error" id="formError">
-                    There was an error sending your message. Please email us directly at admin@ayendecx.com
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 2: THE PROBLEM -->
+    <section class="problem-section">
+        <div class="container">
+            <h2 class="section-title">You Know the Feeling...</h2>
+            <p class="section-subtitle">These problems keep diaspora entrepreneurs awake at night. You're not alone.</p>
+            <div class="problem-grid">
+                <div class="problem-card">
+                    <div class="problem-icon">📉</div>
+                    <h3>Sales Don't Add Up</h3>
+                    <p>Your inventory is disappearing, but the cash isn't showing up. Something's wrong, but you're too far away to investigate.</p>
+                </div>
+                <div class="problem-card">
+                    <div class="problem-icon">😰</div>
+                    <h3>Can't Trust Anyone</h3>
+                    <p>You hired a manager you thought you could trust. Now you're not so sure. CCTV cameras aren't enough.</p>
+                </div>
+                <div class="problem-card">
+                    <div class="problem-icon">✈️</div>
+                    <h3>Another Expensive Flight</h3>
+                    <p>$1,200 to fly "home" just to check on your store. Your family here misses you. This isn't sustainable.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 3: THE SOLUTION WITH SLIDER -->
+    <section class="solution-section">
+        <div class="container">
+            <h2 class="section-title">Finally, See Everything in Real-Time</h2>
+            <p class="section-subtitle">Complete visibility into your business operations—from anywhere in the world.</p>
+            
+            <!-- Dashboard Slider -->
+            <div class="dashboard-slider-wrapper">
+                <div class="dashboard-slider">
+                    <div class="slider-container" id="sliderContainer">
+                        <div class="slider-slide"><img src="{% static 'Site_Images/slider-1-command-center.png' %}" alt="Command Center Dashboard"></div>
+                        <div class="slider-slide"><img src="{% static 'Site_Images/dashboard-main.png' %}" alt="Main Dashboard"></div>
+                        <div class="slider-slide"><img src="{% static 'Site_Images/slider-2-communications.png' %}" alt="Customer Communications"></div>
+                        <div class="slider-slide"><img src="{% static 'Site_Images/slider-3-customer-details.png' %}" alt="Customer Details"></div>
+                        <div class="slider-slide"><img src="{% static 'Site_Images/slider-4-analytics.png' %}" alt="Analytics Dashboard"></div>
+                        <div class="slider-slide"><img src="{% static 'Site_Images/slider-5-sales-report.png' %}" alt="Sales Reports"></div>
+                        <div class="slider-slide"><img src="{% static 'Site_Images/slider-6-payment-methods.png' %}" alt="Payment Methods"></div>
+                    </div>
+                    
+                    <button class="slider-arrow prev" id="prevBtn">‹</button>
+                    <button class="slider-arrow next" id="nextBtn">›</button>
+                    
+                    <div class="slider-dots" id="sliderDots"></div>
+                </div>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-item">
+                    <div class="feature-icon">✓</div>
+                    <div class="feature-content">
+                        <h4>Every Sale, Instantly</h4>
+                        <p>See transactions the moment they happen</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">✓</div>
+                    <div class="feature-content">
+                        <h4>Inventory Truth</h4>
+                        <p>Know exactly what's in stock, what's moving, what's missing</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">✓</div>
+                    <div class="feature-content">
+                        <h4>Customer Intelligence</h4>
+                        <p>Build loyalty with data you actually own</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">✓</div>
+                    <div class="feature-content">
+                        <h4>Staff Accountability</h4>
+                        <p>Track who sold what, when, and to whom</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">✓</div>
+                    <div class="feature-content">
+                        <h4>Message Customers</h4>
+                        <p>Re-engage buyers directly from your dashboard</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">✓</div>
+                    <div class="feature-content">
+                        <h4>Works Offline</h4>
+                        <p>Syncs when internet returns (because we know Africa)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 4: TESTIMONIALS -->
+    <section class="testimonials-section">
+        <div class="container">
+            <h2 class="section-title">Diaspora Entrepreneurs Taking Back Control</h2>
+            <p class="section-subtitle">Real stories from business owners who found peace of mind.</p>
+            
+            <div class="testimonial-grid">
+                <div>
+                    <div class="video-placeholder">
+                        <!-- Future video file: Site_Videos/testimonial-sarah-toronto-lagos.mp4 -->
+                        <div style="text-align: center; padding: 2rem;">
+                            <p style="font-size: 1.3rem; margin-bottom: 0.5rem; font-weight: 600;">Video Testimonial</p>
+                            <p style="opacity: 0.7; font-size: 1.05rem;">Coming Soon</p>
+                        </div>
+                    </div>
+                    <p class="video-caption">Sarah, Toronto → Lagos</p>
                 </div>
                 
-                <form id="contactForm">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="firstName">First Name *</label>
-                            <input type="text" id="firstName" name="firstName" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="lastName">Last Name *</label>
-                            <input type="text" id="lastName" name="lastName" required>
+                <div>
+                    <div class="video-placeholder">
+                        <!-- Future video file: Site_Videos/testimonial-chioma-vancouver-abuja.mp4 -->
+                        <div style="text-align: center; padding: 2rem;">
+                            <p style="font-size: 1.3rem; margin-bottom: 0.5rem; font-weight: 600;">Video Testimonial</p>
+                            <p style="opacity: 0.7; font-size: 1.05rem;">Coming Soon</p>
                         </div>
                     </div>
+                    <p class="video-caption">Chioma, Vancouver → Abuja</p>
+                </div>
+            </div>
 
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="email">Email *</label>
-                            <input type="email" id="email" name="email" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="phone">Phone</label>
-                            <input type="tel" id="phone" name="phone">
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="company">Company</label>
-                        <input type="text" id="company" name="company">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="service">I'm interested in *</label>
-                        <select id="service" name="service" required>
-                            <option value="">Select a service</option>
-                            <option value="consultation">Consultation</option>
-                            <option value="salesforce">Salesforce Solutions</option>
-                            <option value="custom-crm">Custom CRM Development</option>
-                            <option value="pos-integration">POS Integration</option>
-                            <option value="support">Technical Support</option>
-                            <option value="other">Other</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="message">Tell us about your project *</label>
-                        <textarea id="message" name="message" required placeholder="Please describe your business needs and what you're looking to accomplish..."></textarea>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary" style="width: 100%;">Send Message</button>
-                </form>
+            <div class="testimonial-quote">
+                <p>"I can finally sleep at night knowing exactly what's happening in my store. No more surprise 'missing inventory.'"</p>
+                <p class="testimonial-author">— Verified AyendeCX Customer</p>
             </div>
         </div>
     </section>
 
-    <!-- Footer -->
+    <!-- SECTION 5: HOW IT WORKS -->
+    <section class="how-it-works" id="how-it-works">
+        <div class="container">
+            <h2 class="section-title">Get Started in 3 Simple Steps</h2>
+            <p class="section-subtitle">From signup to full control in less than 48 hours. No flying home required.</p>
+            
+            <div class="steps-container">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3>Sign Up (5 Minutes)</h3>
+                        <p>Create your account online. Tell us about your business.</p>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3>We Set You Up (24 Hours)</h3>
+                        <p>Our team remotely configures your POS and trains your staff via video call. No flying home required.</p>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3>Take Control (Immediately)</h3>
+                        <p>Start seeing real-time data from your phone, laptop, anywhere in the world.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 4rem;">
+                <a href="https://pos-app.ayendecx.com/register" class="cta-primary" target="_blank">Start Your Free Trial Now</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 6: PRICING -->
+    <section class="pricing-section" id="pricing">
+        <div class="container">
+            <h2 class="section-title">One Simple Price. Everything Included.</h2>
+            <p class="section-subtitle">No hidden fees. No surprises. Just complete control of your business.</p>
+            
+            <div class="pricing-card">
+                <div class="pricing-header">
+                    <div class="pricing-badge">Most Popular</div>
+                    <h3>Diaspora Control</h3>
+                    <div class="pricing-price">$79<span style="font-size: 1.8rem; font-weight: normal;">/mo</span></div>
+                    <p class="pricing-period">Billed monthly</p>
+                </div>
+
+                <ul class="pricing-features">
+                    <li>Unlimited transactions</li>
+                    <li>5,000 customer profiles</li>
+                    <li>Real-time dashboard access</li>
+                    <li>3 staff accounts</li>
+                    <li>Mobile + web access</li>
+                    <li>Customer messaging (in-app + email)</li>
+                    <li>Inventory tracking & alerts</li>
+                    <li>Sales reports & analytics</li>
+                    <li>Works offline, syncs automatically</li>
+                </ul>
+
+                <div class="pricing-trial">
+                    🎉 14-Day Free Trial • No Credit Card Required
+                </div>
+
+                <div class="pricing-cta">
+                    <a href="https://pos-app.ayendecx.com/register" class="cta-primary" target="_blank">Start Free Trial Now</a>
+                </div>
+
+                <p class="pricing-annual">💰 Or save 20%: $758/year ($63/month)</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 7: FAQ -->
+    <section class="faq-section" id="faq">
+        <div class="container">
+            <h2 class="section-title">Common Questions</h2>
+            <p class="section-subtitle">Everything you need to know about getting started.</p>
+            
+            <div class="faq-container">
+                <div class="faq-item">
+                    <h4>I'm not diaspora - I just travel a lot for business. Can I still use AyendeCX?</h4>
+                    <p>Absolutely! AyendeCX works for any retail business owner who can't be at their store daily - whether you're managing from another country, running multiple locations across different cities, or just need peace of mind while you focus on other priorities. If you need remote visibility and control, AyendeCX is for you.</p>
+                </div>
+
+                <div class="faq-item">
+                    <h4>Do I need special hardware?</h4>
+                    <p>No. Works on any Android tablet or phone. We'll help you set it up remotely.</p>
+                </div>
+
+                <div class="faq-item">
+                    <h4>What if my internet goes down?</h4>
+                    <p>The POS works offline and syncs automatically when connection returns. Your staff can keep selling, and you'll see all the data once internet is restored.</p>
+                </div>
+
+                <div class="faq-item">
+                    <h4>Can my staff see the same data I see?</h4>
+                    <p>You control permissions. Staff see only what they need (their own sales, inventory for checkout). Sensitive data like total revenue, profit margins, and customer information stays with you.</p>
+                </div>
+
+                <div class="faq-item">
+                    <h4>I'm in the UK/US, not Canada. Can I still use this?</h4>
+                    <p>Yes! We support business owners anywhere. Pay in CAD, USD, GBP, or EUR - whatever works for you.</p>
+                </div>
+
+                <div class="faq-item">
+                    <h4>How long does setup take?</h4>
+                    <p>24-48 hours. We do it remotely via video call with your team back home (or at your store location). No need to fly there.</p>
+                </div>
+
+                <div class="faq-item">
+                    <h4>What if I have multiple store locations?</h4>
+                    <p>Our current plan supports 1 location. Contact us about multi-location pricing - we can customize a solution for your needs.</p>
+                </div>
+
+                <div class="faq-item">
+                    <h4>Can I cancel anytime?</h4>
+                    <p>Yes. No contracts, no commitments. Cancel anytime from your dashboard. If you cancel within 14 days of your first payment, you get a full refund - no questions asked.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 7B: WHO THIS IS FOR -->
+    <section class="who-section">
+        <div class="container">
+            <h2 class="section-title">Who Benefits from AyendeCX?</h2>
+            
+            <!-- Primary Audience -->
+            <div class="audience-primary">
+                <h3 class="audience-heading">Primary Audience</h3>
+                <div class="audience-grid">
+                    <div class="audience-item">
+                        <span class="checkmark">✓</span>
+                        <div class="audience-content">
+                            <strong>Diaspora Entrepreneurs</strong>
+                            <p>Managing retail businesses back home from Canada, UK, US, or anywhere abroad</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Secondary Audiences -->
+            <div class="audience-secondary">
+                <h3 class="audience-heading">Also Perfect For</h3>
+                <div class="audience-grid">
+                    <div class="audience-item">
+                        <span class="checkmark">✓</span>
+                        <div class="audience-content">
+                            <strong>Multi-Location Owners</strong>
+                            <p>Running 2+ stores across different cities or regions</p>
+                        </div>
+                    </div>
+                    
+                    <div class="audience-item">
+                        <span class="checkmark">✓</span>
+                        <div class="audience-content">
+                            <strong>Frequent Travelers</strong>
+                            <p>Business owners constantly on the move who can't be at their store daily</p>
+                        </div>
+                    </div>
+                    
+                    <div class="audience-item">
+                        <span class="checkmark">✓</span>
+                        <div class="audience-content">
+                            <strong>Busy Professionals</strong>
+                            <p>Running a retail business as a side venture while maintaining other commitments</p>
+                        </div>
+                    </div>
+                    
+                    <div class="audience-item">
+                        <span class="checkmark">✓</span>
+                        <div class="audience-content">
+                            <strong>Growing Businesses</strong>
+                            <p>Any owner who needs better visibility and control as they scale</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Bottom Line -->
+            <div class="audience-bottom-line">
+                <p class="emphasis-text">
+                    If you can't physically be at your store every day - for any reason - AyendeCX gives you the peace of mind that comes with real-time visibility and control.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 8: FINAL CTA -->
+    <section class="final-cta" id="signup">
+        <div class="container">
+            <h2>Stop Wondering. Start Knowing.</h2>
+            <p>Join diaspora entrepreneurs who finally sleep well at night.</p>
+            <a href="https://pos-app.ayendecx.com/register" class="cta-primary" target="_blank">Start Your 14-Day Free Trial</a>
+            <span class="cta-small-text">$79/month after trial • Cancel anytime, no questions asked</span>
+        </div>
+    </section>
+
+    <!-- SECTION 9: CONTACT -->
+    <section id="contact" style="background: white; padding: 80px 2rem;">
+        <div class="container" style="max-width: 600px; text-align: center;">
+            <h2 class="section-title">Questions? We're Here to Help</h2>
+            <p style="font-size: 1.15rem; margin-bottom: 2.5rem; color: var(--medium-grey); line-height: 1.8;">
+                Email us at: <a href="mailto:admin@ayendecx.com" style="color: var(--bright-blue); font-weight: 700; text-decoration: none;">admin@ayendecx.com</a>
+            </p>
+            <p style="opacity: 0.7; font-size: 1.05rem;">We typically respond within 24 hours</p>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
     <footer>
-        <div class="container">
-            <p style="font-size: 1.2rem; font-weight: 600;">AYENDE CX</p>
-            <p>CRM Software Solutions | Certified Salesforce Architect</p>
-            <p>&copy; 2025 Ayende CX. All rights reserved.</p>
+        <div class="footer-content">
+            <div class="footer-brand">AYENDE CX</div>
+            <p class="footer-tagline">Business Control for Diaspora Entrepreneurs</p>
+            
+            <div class="footer-links">
+                <a href="#how-it-works">How It Works</a>
+                <a href="#pricing">Pricing</a>
+                <a href="#faq">FAQ</a>
+                <a href="mailto:admin@ayendecx.com">Contact</a>
+                <a href="#" onclick="openModal('privacyModal'); return false;">Privacy</a>
+                <a href="#" onclick="openModal('termsModal'); return false;">Terms</a>
+            </div>
+
+            <div class="footer-copyright">
+                <p>&copy; 2026 Ayende CX. All rights reserved.</p>
+            </div>
         </div>
     </footer>
 
     <script>
-    // Mobile menu toggle
-    const mobileMenuToggle = document.getElementById('mobileMenuToggle');
-    const navLinks = document.getElementById('navLinks');
+        // Mobile menu toggle
+        const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+        const navLinks = document.getElementById('navLinks');
 
-    mobileMenuToggle.addEventListener('click', function() {
-        this.classList.toggle('active');
-        navLinks.classList.toggle('active');
-    });
-
-    // Close mobile menu when clicking a link
-    document.querySelectorAll('.nav-links a').forEach(link => {
-        link.addEventListener('click', function() {
-            mobileMenuToggle.classList.remove('active');
-            navLinks.classList.remove('active');
+        mobileMenuToggle.addEventListener('click', function() {
+            this.classList.toggle('active');
+            navLinks.classList.toggle('active');
         });
-    });
 
-    // Close mobile menu when clicking outside
-    document.addEventListener('click', function(event) {
-        const isClickInsideNav = navLinks.contains(event.target);
-        const isClickOnToggle = mobileMenuToggle.contains(event.target);
-        
-        if (!isClickInsideNav && !isClickOnToggle && navLinks.classList.contains('active')) {
-            mobileMenuToggle.classList.remove('active');
-            navLinks.classList.remove('active');
+        // Close mobile menu when clicking a link
+        document.querySelectorAll('.nav-links a').forEach(link => {
+            link.addEventListener('click', function() {
+                mobileMenuToggle.classList.remove('active');
+                navLinks.classList.remove('active');
+            });
+        });
+
+        // Smooth scrolling
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+
+        // Dashboard Slider
+        const sliderContainer = document.getElementById('sliderContainer');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const dotsContainer = document.getElementById('sliderDots');
+        const slides = document.querySelectorAll('.slider-slide');
+        let currentSlide = 0;
+        let autoplayInterval;
+
+        // Create dots
+        slides.forEach((_, index) => {
+            const dot = document.createElement('button');
+            dot.classList.add('slider-dot');
+            if (index === 0) dot.classList.add('active');
+            dot.addEventListener('click', () => goToSlide(index));
+            dotsContainer.appendChild(dot);
+        });
+
+        const dots = document.querySelectorAll('.slider-dot');
+
+        function updateSlider() {
+            sliderContainer.style.transform = `translateX(-${currentSlide * 100}%)`;
+            dots.forEach((dot, index) => {
+                dot.classList.toggle('active', index === currentSlide);
+            });
         }
-    });
 
-    // Enhanced form handling with email configuration
-    document.getElementById('contactForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const formSuccess = document.getElementById('formSuccess');
-        const formError = document.getElementById('formError');
-        
-        // Hide previous messages
-        formSuccess.style.display = 'none';
-        formError.style.display = 'none';
-        
-        // Get form data
-        const formData = {
-            firstName: document.getElementById('firstName').value,
-            lastName: document.getElementById('lastName').value,
-            email: document.getElementById('email').value,
-            phone: document.getElementById('phone').value,
-            company: document.getElementById('company').value,
-            service: document.getElementById('service').value,
-            message: document.getElementById('message').value,
-            timestamp: new Date().toISOString(),
-            recipient: 'admin@ayendecx.com'
+        function goToSlide(index) {
+            currentSlide = index;
+            updateSlider();
+            resetAutoplay();
+        }
+
+        function nextSlide() {
+            currentSlide = (currentSlide + 1) % slides.length;
+            updateSlider();
+        }
+
+        function prevSlide() {
+            currentSlide = (currentSlide - 1 + slides.length) % slides.length;
+            updateSlider();
+        }
+
+        function startAutoplay() {
+            autoplayInterval = setInterval(nextSlide, 5000); // Change slide every 5 seconds
+        }
+
+        function stopAutoplay() {
+            clearInterval(autoplayInterval);
+        }
+
+        function resetAutoplay() {
+            stopAutoplay();
+            startAutoplay();
+        }
+
+        // Event listeners
+        nextBtn.addEventListener('click', () => {
+            nextSlide();
+            resetAutoplay();
+        });
+
+        prevBtn.addEventListener('click', () => {
+            prevSlide();
+            resetAutoplay();
+        });
+
+        // Pause on hover
+        const sliderWrapper = document.querySelector('.dashboard-slider-wrapper');
+        sliderWrapper.addEventListener('mouseenter', stopAutoplay);
+        sliderWrapper.addEventListener('mouseleave', startAutoplay);
+
+        // Start autoplay
+        startAutoplay();
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') {
+                prevSlide();
+                resetAutoplay();
+            } else if (e.key === 'ArrowRight') {
+                nextSlide();
+                resetAutoplay();
+            }
+        });
+
+        // Touch/Swipe support for mobile
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        sliderWrapper.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+            stopAutoplay();
+        });
+
+        sliderWrapper.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+            startAutoplay();
+        });
+
+        function handleSwipe() {
+            if (touchStartX - touchEndX > 50) {
+                nextSlide();
+            }
+            if (touchEndX - touchStartX > 50) {
+                prevSlide();
+            }
+        }
+
+        // Intersection Observer for fade-in animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -100px 0px'
         };
+
+        const observer = new IntersectionObserver(function(entries) {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        // Observe all sections for scroll animations
+        document.querySelectorAll('section').forEach(section => {
+            section.style.opacity = '0';
+            section.style.transform = 'translateY(20px)';
+            section.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            observer.observe(section);
+        });
+
+        // Hero section should be visible immediately
+        document.querySelector('.hero').style.opacity = '1';
+        document.querySelector('.hero').style.transform = 'translateY(0)';
+
+        // Track conversion events
+        const ctaButtons = document.querySelectorAll('a[href*="register"]');
+        ctaButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                // Google Analytics
+                if (typeof gtag !== 'undefined') {
+                    gtag('event', 'click_signup', {
+                        event_category: 'engagement',
+                        event_label: 'Start Free Trial CTA'
+                    });
+                }
+                
+                // Facebook Pixel
+                if (typeof fbq !== 'undefined') {
+                    fbq('track', 'InitiateCheckout');
+                }
+            });
+        });
+
+        // Image Zoom Functionality - Enhanced with debugging
+        console.log('Initializing image zoom functionality...');
         
-        // Show loading state
-        const submitButton = this.querySelector('button[type="submit"]');
-        const originalButtonText = submitButton.textContent;
-        submitButton.textContent = 'Sending...';
-        submitButton.disabled = true;
+        // Wait for DOM to be fully loaded
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initImageZoom);
+        } else {
+            initImageZoom();
+        }
         
-        try {
-            // Option 1: If using Django backend (recommended)
-            const response = await fetch('/api/contact/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')
-                },
-                body: JSON.stringify(formData)
+        function initImageZoom() {
+            console.log('DOM ready, setting up image zoom...');
+            
+            const imageModal = document.getElementById('imageModal');
+            const modalImage = document.getElementById('modalImage');
+            const modalClose = document.getElementById('modalClose');
+            
+            // Debug: Check if modal elements exist
+            console.log('Modal elements found:', {
+                modal: !!imageModal,
+                image: !!modalImage,
+                close: !!modalClose
             });
             
-            if (response.ok) {
-                formSuccess.style.display = 'block';
-                this.reset();
-                formSuccess.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            } else {
-                throw new Error('Form submission failed');
+            if (!imageModal || !modalImage || !modalClose) {
+                console.error('Modal elements not found! Check HTML.');
+                return;
             }
-        } catch (error) {
-            console.error('Form submission error:', error);
             
-            // Fallback: Create mailto link
-            const subject = encodeURIComponent(`Contact Form: ${formData.service}`);
-            const body = encodeURIComponent(`
-Name: ${formData.firstName} ${formData.lastName}
-Email: ${formData.email}
-Phone: ${formData.phone}
-Company: ${formData.company}
-Service Interest: ${formData.service}
-
-Message:
-${formData.message}
-            `);
+            // Get all dashboard images (slider + hero)
+            const dashboardImages = document.querySelectorAll('.slider-slide img, .dashboard-image');
             
-            window.location.href = `mailto:admin@ayendecx.com?subject=${subject}&body=${body}`;
+            console.log('Found ' + dashboardImages.length + ' dashboard images to make clickable');
             
-            formError.style.display = 'block';
-            formError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        } finally {
-            submitButton.textContent = originalButtonText;
-            submitButton.disabled = false;
-        }
-    });
-
-    // Get CSRF token for Django
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
+            if (dashboardImages.length === 0) {
+                console.warn('No dashboard images found! Check selectors.');
+                return;
+            }
+            
+            // Add click event to each image
+            dashboardImages.forEach((img, index) => {
+                console.log('Adding click handler to image ' + (index + 1) + ': ' + img.alt);
+                
+                // Make sure cursor style is applied
+                img.style.cursor = 'zoom-in';
+                
+                img.addEventListener('click', function(e) {
+                    console.log('Image clicked:', this.src);
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    modalImage.src = this.src;
+                    modalImage.alt = this.alt || 'Dashboard Preview';
+                    imageModal.classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                    
+                    console.log('Modal opened');
+                });
+            });
+            
+            // Close modal when clicking the X button
+            modalClose.addEventListener('click', function(e) {
+                console.log('Close button clicked');
+                e.preventDefault();
+                e.stopPropagation();
+                closeModal();
+            });
+            
+            // Close modal when clicking the dark background (but not the image)
+            imageModal.addEventListener('click', function(e) {
+                if (e.target === imageModal) {
+                    console.log('Clicked outside image (on background)');
+                    closeModal();
                 }
+            });
+            
+            // Also allow clicking the image itself to close
+            modalImage.addEventListener('click', function(e) {
+                console.log('Clicked on the zoomed image');
+                e.stopPropagation();
+                closeModal();
+            });
+            
+            // Close modal on ESC key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && imageModal.classList.contains('active')) {
+                    console.log('ESC key pressed');
+                    closeModal();
+                }
+            });
+            
+            function closeModal() {
+                console.log('Closing modal');
+                imageModal.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+            
+            console.log('Image zoom initialization complete!');
+        }
+
+        // Modal Functions for Privacy and Terms
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
             }
         }
-        return cookieValue;
-    }
 
-    // Smooth scrolling for navigation links
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
-            e.preventDefault();
-            const target = document.querySelector(this.getAttribute('href'));
-            if (target) {
-                target.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        }
+
+        // Close modals when clicking outside
+        window.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal')) {
+                closeModal(e.target.id);
+            }
+        });
+
+        // Close modals on ESC key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal.active').forEach(modal => {
+                    closeModal(modal.id);
                 });
             }
         });
-    });
     </script>
+
+    <!-- Image Zoom Modal -->
+    <div class="image-modal" id="imageModal">
+        <span class="image-modal-close" id="modalClose">&times;</span>
+        <img src="" alt="Dashboard Preview" id="modalImage">
+    </div>
+
+    <!-- Privacy Policy Modal -->
+    <div id="privacyModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Privacy Policy</h2>
+                <button class="modal-close" onclick="closeModal('privacyModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p><strong>Last Updated:</strong> January 2026</p>
+                
+                <h3>1. Information We Collect</h3>
+                <p>We collect information you provide directly to us, including:</p>
+                <ul>
+                    <li>Account information (name, email, business details)</li>
+                    <li>Transaction data from your point-of-sale system</li>
+                    <li>Customer data you input into the system</li>
+                    <li>Usage data and analytics</li>
+                </ul>
+
+                <h3>2. How We Use Your Information</h3>
+                <p>We use the information we collect to:</p>
+                <ul>
+                    <li>Provide, maintain, and improve our services</li>
+                    <li>Process transactions and send related information</li>
+                    <li>Send technical notices and support messages</li>
+                    <li>Respond to your comments and questions</li>
+                    <li>Monitor and analyze trends and usage</li>
+                </ul>
+
+                <h3>3. Information Sharing</h3>
+                <p>We do not sell or rent your personal information. We may share your information only in the following circumstances:</p>
+                <ul>
+                    <li>With your consent</li>
+                    <li>To comply with legal obligations</li>
+                    <li>To protect our rights and prevent fraud</li>
+                    <li>With service providers who assist in our operations</li>
+                </ul>
+
+                <h3>4. Data Security</h3>
+                <p>We implement appropriate technical and organizational measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction.</p>
+
+                <h3>5. Your Rights</h3>
+                <p>You have the right to:</p>
+                <ul>
+                    <li>Access your personal information</li>
+                    <li>Correct inaccurate data</li>
+                    <li>Request deletion of your data</li>
+                    <li>Object to processing of your data</li>
+                    <li>Export your data</li>
+                </ul>
+
+                <h3>6. Contact Us</h3>
+                <p>If you have questions about this Privacy Policy, please contact us at: <a href="mailto:admin@ayendecx.com" style="color: var(--bright-blue);">admin@ayendecx.com</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Terms of Service Modal -->
+    <div id="termsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Terms of Service</h2>
+                <button class="modal-close" onclick="closeModal('termsModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p><strong>Last Updated:</strong> January 2026</p>
+                
+                <h3>1. Acceptance of Terms</h3>
+                <p>By accessing and using AyendeCX services, you agree to be bound by these Terms of Service and all applicable laws and regulations.</p>
+
+                <h3>2. Service Description</h3>
+                <p>AyendeCX provides point-of-sale (POS) and customer relationship management (CRM) software designed for retail businesses. Our services include:</p>
+                <ul>
+                    <li>Real-time transaction processing</li>
+                    <li>Inventory management</li>
+                    <li>Customer data management</li>
+                    <li>Analytics and reporting</li>
+                    <li>Staff management tools</li>
+                </ul>
+
+                <h3>3. User Responsibilities</h3>
+                <p>You agree to:</p>
+                <ul>
+                    <li>Provide accurate and complete information</li>
+                    <li>Maintain the security of your account</li>
+                    <li>Use the service in compliance with all applicable laws</li>
+                    <li>Not misuse or attempt to gain unauthorized access to our systems</li>
+                </ul>
+
+                <h3>4. Payment Terms</h3>
+                <p>Subscription fees are billed monthly in advance. You agree to pay all charges incurred under your account. We offer a 14-day free trial with no credit card required.</p>
+
+                <h3>5. Cancellation and Refunds</h3>
+                <p>You may cancel your subscription at any time from your dashboard. If you cancel within 14 days of your first payment, you will receive a full refund. No refunds are provided for cancellations after this period.</p>
+
+                <h3>6. Data Ownership</h3>
+                <p>You retain all rights to your business data. We claim no ownership over your customer information, transaction data, or any content you input into our system.</p>
+
+                <h3>7. Service Availability</h3>
+                <p>While we strive for 99.9% uptime, we do not guarantee uninterrupted service. We are not liable for any losses resulting from service interruptions.</p>
+
+                <h3>8. Limitation of Liability</h3>
+                <p>AyendeCX shall not be liable for any indirect, incidental, special, consequential, or punitive damages resulting from your use of our services.</p>
+
+                <h3>9. Changes to Terms</h3>
+                <p>We reserve the right to modify these terms at any time. Continued use of our services after changes constitutes acceptance of the new terms.</p>
+
+                <h3>10. Contact Information</h3>
+                <p>For questions about these Terms of Service, contact us at: <a href="mailto:admin@ayendecx.com" style="color: var(--bright-blue);">admin@ayendecx.com</a></p>
+            </div>
+        </div>
+    </div>
+    <!-- AyendeCX Chatbot Widget -->
+    <div id="chatbot-container">
+        <div id="chatbot-header">
+            <div class="header-content">
+                <h3>AyendeCX</h3>
+                <span class="status-indicator online">Online</span>
+            </div>
+            <button id="chatbot-end" title="End chat">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                </svg>
+            </button>
+            <button id="chatbot-minimize" class="btn-icon" title="Minimize chat">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M3 10h14v2H3v-2z"/>
+                </svg>
+            </button>
+        </div>
+
+        <div id="chatbot-messages">
+            <!-- Messages will be populated here -->
+        </div>
+
+        <div id="chatbot-typing-indicator" style="display:none;">
+            <div class="typing-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+
+        <div id="chatbot-input-area">
+            <form id="chatbot-form">
+                <input
+                    type="text"
+                    id="chatbot-input"
+                    placeholder="Type your message..."
+                    autocomplete="off"
+                    required
+                />
+                <button type="submit" id="chatbot-send" title="Send message">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                    </svg>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <button id="chatbot-toggle" class="chatbot-fab">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+        </svg>
+        <span class="notification-badge" style="display:none;">1</span>
+    </button>
+
+    <script>
+        window.CHATBOT_CONFIG = {
+            subdomain: 'platform',
+            apiBase: '/chatbot',
+            businessName: 'AyendeCX'
+        };
+    </script>
+    <script src="{% static 'chatbot/js/chatbot.js' %}?v=3"></script>
 </body>
 </html>
