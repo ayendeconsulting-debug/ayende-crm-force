@@ -54,7 +54,7 @@ INSTALLED_APPS = [
     # Project apps
     'tenants',
     'customers',
-    'dashboard',
+    'dashboard.apps.DashboardConfig',
     'notifications',
     'rewards',
     'profile',
