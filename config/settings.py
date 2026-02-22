@@ -64,7 +64,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',  # Always include, works in both dev and prod
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'maintenance_middleware.MaintenanceModeMiddleware',
+    #'maintenance_middleware.MaintenanceModeMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -333,4 +333,4 @@ EMAIL_HOST_PASSWORD = os.environ.get('SENDGRID_API_KEY', '')
 # CRM Provisioning Settings
 PROVISIONING_SECRET_KEY = os.environ.get('PROVISIONING_SECRET_KEY', '')
 # Maintenance Mode
-MAINTENANCE_MODE = os.getenv('MAINTENANCE_MODE', 'False').lower() == 'true'
+# MAINTENANCE_MODE = os.getenv('MAINTENANCE_MODE', 'False').lower() == 'true'
