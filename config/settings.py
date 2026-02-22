@@ -39,7 +39,7 @@ ALLOWED_HOSTS = ['.ayendecx.com', 'staging.ayendecx.com', 'ayendecx.com', '.loca
 
 # Application definition
 INSTALLED_APPS = [
-    'unfold',
+   #'unfold',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
