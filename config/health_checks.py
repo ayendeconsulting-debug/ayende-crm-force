@@ -5,11 +5,11 @@ Tests critical integrations: POS API, SendGrid, Anthropic
 
 import requests
 from django.conf import settings
-from health_check.backends import BaseHealthCheckBackend
+from health_check.backends import HealthCheck
 from health_check.exceptions import ServiceUnavailable, ServiceReturnedUnexpectedResult
 
 
-class POSAPIHealthCheck(BaseHealthCheckBackend):
+class POSAPIHealthCheck(HealthCheck):
     """
     Check if POS API is reachable
     Tests the health endpoint of POS system
@@ -21,8 +21,7 @@ class POSAPIHealthCheck(BaseHealthCheckBackend):
         pos_url = getattr(settings, 'POS_API_URL', None)
         
         if not pos_url:
-            self.add_error(ServiceUnavailable("POS_API_URL not configured"))
-            return
+            raise ServiceUnavailable("POS_API_URL not configured")
         
         try:
             # Test POS health endpoint with 5 second timeout
@@ -33,23 +32,21 @@ class POSAPIHealthCheck(BaseHealthCheckBackend):
                 # POS is responding
                 return
             else:
-                self.add_error(
-                    ServiceReturnedUnexpectedResult(
-                        f"POS API returned {response.status_code}"
-                    )
+                raise ServiceReturnedUnexpectedResult(
+                    f"POS API returned {response.status_code}"
                 )
         except requests.exceptions.Timeout:
-            self.add_error(ServiceUnavailable("POS API timeout - no response in 5 seconds"))
+            raise ServiceUnavailable("POS API timeout - no response in 5 seconds")
         except requests.exceptions.ConnectionError:
-            self.add_error(ServiceUnavailable("Cannot connect to POS API"))
+            raise ServiceUnavailable("Cannot connect to POS API")
         except Exception as e:
-            self.add_error(ServiceUnavailable(f"POS API check failed: {str(e)}"))
+            raise ServiceUnavailable(f"POS API check failed: {str(e)}")
     
     def identifier(self):
         return "POS API Connection"
 
 
-class SendGridHealthCheck(BaseHealthCheckBackend):
+class SendGridHealthCheck(HealthCheck):
     """
     Check if SendGrid email service is configured
     Tests API key validity
@@ -58,11 +55,10 @@ class SendGridHealthCheck(BaseHealthCheckBackend):
     
     def check_status(self):
         """Perform the health check"""
-        api_key = getattr(settings, 'SENDGRID_API_KEY', None)
+        api_key = getattr(settings, 'EMAIL_HOST_PASSWORD', None)
         
         if not api_key:
-            self.add_error(ServiceUnavailable("SENDGRID_API_KEY not configured"))
-            return
+            raise ServiceUnavailable("SENDGRID_API_KEY not configured")
         
         try:
             # Test SendGrid API with key validation
@@ -76,23 +72,21 @@ class SendGridHealthCheck(BaseHealthCheckBackend):
                 # SendGrid API key is valid
                 return
             elif response.status_code == 401:
-                self.add_error(ServiceUnavailable("SendGrid API key is invalid"))
+                raise ServiceUnavailable("SendGrid API key is invalid")
             else:
-                self.add_error(
-                    ServiceReturnedUnexpectedResult(
-                        f"SendGrid API returned {response.status_code}"
-                    )
+                raise ServiceReturnedUnexpectedResult(
+                    f"SendGrid API returned {response.status_code}"
                 )
         except requests.exceptions.Timeout:
-            self.add_error(ServiceUnavailable("SendGrid API timeout"))
+            raise ServiceUnavailable("SendGrid API timeout")
         except Exception as e:
-            self.add_error(ServiceUnavailable(f"SendGrid check failed: {str(e)}"))
+            raise ServiceUnavailable(f"SendGrid check failed: {str(e)}")
     
     def identifier(self):
         return "SendGrid Email Service"
 
 
-class AnthropicAPIHealthCheck(BaseHealthCheckBackend):
+class AnthropicAPIHealthCheck(HealthCheck):
     """
     Check if Anthropic API is accessible
     Tests chatbot functionality
@@ -105,8 +99,7 @@ class AnthropicAPIHealthCheck(BaseHealthCheckBackend):
         
         if not api_key:
             # Chatbot is optional, so just warn
-            self.add_error(ServiceUnavailable("ANTHROPIC_API_KEY not configured (chatbot disabled)"))
-            return
+            raise ServiceUnavailable("ANTHROPIC_API_KEY not configured (chatbot disabled)")
         
         try:
             # Simple ping to Anthropic API to verify key works
@@ -126,24 +119,22 @@ class AnthropicAPIHealthCheck(BaseHealthCheckBackend):
                 # API key is valid (just wrong method/params)
                 return
             elif response.status_code == 401:
-                self.add_error(ServiceUnavailable("Anthropic API key is invalid"))
+                raise ServiceUnavailable("Anthropic API key is invalid")
             else:
                 # API might be down or other issue
-                self.add_error(
-                    ServiceReturnedUnexpectedResult(
-                        f"Anthropic API returned {response.status_code}"
-                    )
+                raise ServiceReturnedUnexpectedResult(
+                    f"Anthropic API returned {response.status_code}"
                 )
         except requests.exceptions.Timeout:
-            self.add_error(ServiceUnavailable("Anthropic API timeout"))
+            raise ServiceUnavailable("Anthropic API timeout")
         except Exception as e:
-            self.add_error(ServiceUnavailable(f"Anthropic check failed: {str(e)}"))
+            raise ServiceUnavailable(f"Anthropic check failed: {str(e)}")
     
     def identifier(self):
         return "Anthropic Chatbot API"
 
 
-class WebhookSyncHealthCheck(BaseHealthCheckBackend):
+class WebhookSyncHealthCheck(HealthCheck):
     """
     Check recent webhook sync status
     Warns if there are recent sync failures
@@ -166,10 +157,8 @@ class WebhookSyncHealthCheck(BaseHealthCheckBackend):
             
             if recent_failures > 10:
                 # More than 10 failures in last hour is concerning
-                self.add_error(
-                    ServiceReturnedUnexpectedResult(
-                        f"{recent_failures} webhook sync failures in last hour"
-                    )
+                raise ServiceReturnedUnexpectedResult(
+                    f"{recent_failures} webhook sync failures in last hour"
                 )
             elif recent_failures > 0:
                 # Some failures but not critical
