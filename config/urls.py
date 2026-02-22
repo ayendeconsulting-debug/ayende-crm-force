@@ -8,9 +8,15 @@ from dashboard.views import sync_views
 
 
 urlpatterns = [
+    # Health monitoring
+    path('health/', include('health_check.urls')),
+    
     # Public landing page (homepage)
     path('', landing_page, name='landing'),
     path('api/contact/', contact_form_view, name='contact_form'),
+    
+    # Health monitoring
+    path('health/', include('health_check.urls')),
     
     # Debug endpoint (bypass tenant middleware)
     path('api/debug/tenants', get_tenant_info, name='debug_tenants'),  # ← Add this line
