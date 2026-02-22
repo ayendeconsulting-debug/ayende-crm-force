@@ -1,5 +1,5 @@
 from django.contrib import admin
-from unfold.admin import ModelAdmin
+## Unfold removed - using Django default admin
 from .models import InvestmentLead, LeadActivity, LeadNote
 
 
@@ -21,7 +21,7 @@ class LeadNoteInline(admin.TabularInline):
 
 
 @admin.register(InvestmentLead)
-class InvestmentLeadAdmin(ModelAdmin):
+class InvestmentLeadAdmin(admin.ModelAdmin):
     list_display = [
         'full_name',
         'email',
@@ -119,7 +119,7 @@ class InvestmentLeadAdmin(ModelAdmin):
 
 
 @admin.register(LeadActivity)
-class LeadActivityAdmin(ModelAdmin):
+class LeadActivityAdmin(admin.ModelAdmin):
     list_display = [
         'lead',
         'activity_type',
@@ -149,7 +149,7 @@ class LeadActivityAdmin(ModelAdmin):
 
 
 @admin.register(LeadNote)
-class LeadNoteAdmin(ModelAdmin):
+class LeadNoteAdmin(admin.ModelAdmin):
     list_display = [
         'lead',
         'note_preview',

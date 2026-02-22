@@ -6,7 +6,7 @@ WITH Platform Admin Support
 
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from unfold.admin import ModelAdmin
+## Unfold removed - using Django default admin
 from .models import Customer, TenantCustomer, Transaction, SyncLog, SystemMapping
 
 
@@ -56,7 +56,7 @@ class PlatformAdminMixin:
 
 
 @admin.register(Customer)
-class CustomerAdmin(PlatformAdminMixin, ModelAdmin):
+class CustomerAdmin(PlatformAdminMixin, admin.ModelAdmin):
     """Admin interface for global Customer model (identity only)"""
     
     list_display = [
@@ -96,7 +96,7 @@ class CustomerAdmin(PlatformAdminMixin, ModelAdmin):
 
 
 @admin.register(TenantCustomer)
-class TenantCustomerAdmin(PlatformAdminMixin, BaseUserAdmin, ModelAdmin):
+class TenantCustomerAdmin(PlatformAdminMixin, BaseUserAdmin, admin.ModelAdmin):
     """Admin interface for TenantCustomer (authentication + tenant-specific data)"""
     
     list_display = [
@@ -259,7 +259,7 @@ class TenantCustomerAdmin(PlatformAdminMixin, BaseUserAdmin, ModelAdmin):
 
 
 @admin.register(Transaction)
-class TransactionAdmin(PlatformAdminMixin, ModelAdmin):
+class TransactionAdmin(PlatformAdminMixin, admin.ModelAdmin):
     """Admin interface for Transaction model"""
     
     list_display = [
@@ -355,7 +355,7 @@ class TransactionAdmin(PlatformAdminMixin, ModelAdmin):
 
 
 @admin.register(SyncLog)
-class SyncLogAdmin(PlatformAdminMixin, ModelAdmin):
+class SyncLogAdmin(PlatformAdminMixin, admin.ModelAdmin):
     """Admin interface for SyncLog model"""
     
     list_display = [
@@ -392,7 +392,7 @@ class SyncLogAdmin(PlatformAdminMixin, ModelAdmin):
 
 
 @admin.register(SystemMapping)
-class SystemMappingAdmin(PlatformAdminMixin, ModelAdmin):
+class SystemMappingAdmin(PlatformAdminMixin, admin.ModelAdmin):
     """Admin interface for SystemMapping model"""
     
     list_display = [

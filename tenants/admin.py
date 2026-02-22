@@ -11,13 +11,13 @@ from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from django.utils.text import slugify
 from django.utils import timezone
-from unfold.admin import ModelAdmin
-from unfold.decorators import display
+## Unfold removed - using Django default admin
+#
 from .models import Tenant, TenantSettings
 
 
 @admin.register(Tenant)
-class TenantAdmin(ModelAdmin):
+class TenantAdmin(Admin.ModelAdmin):
     """
     Modern admin interface for Tenant model with trial period management
     """
@@ -84,7 +84,7 @@ class TenantAdmin(ModelAdmin):
         }),
         ('Subscription & Trial Management', {
             'fields': (
-                'subscription_status',
+              #  'subscription_status',
                 'trial_ends_at',
                 'display_trial_status',
                 'is_active',
@@ -113,7 +113,7 @@ class TenantAdmin(ModelAdmin):
         }
         js = ('admin/js/tenant_admin.js',)
     
-    @display(description='Business Name')
+    
     def display_name_with_status(self, obj):
         """Display tenant name with active status badge"""
         if obj.is_active:
@@ -123,7 +123,7 @@ class TenantAdmin(ModelAdmin):
         
         return mark_safe(f'<strong>{obj.name}</strong> {badge_html}')
     
-    @display(description='Subscription')
+    
     def display_subscription_with_trial(self, obj):
         """Display subscription status with trial info if applicable"""
         status_colors = {
@@ -155,7 +155,7 @@ class TenantAdmin(ModelAdmin):
         
         return mark_safe(f'<span class="badge badge-{color}">{status_display.upper()}</span>')
     
-    @display(description='Trial Status')
+    
     def display_trial_status(self, obj):
         """Display detailed trial status in the form"""
         if obj.subscription_status != 'trial':
@@ -186,7 +186,7 @@ class TenantAdmin(ModelAdmin):
             f'<div style="color: #666; font-size: 0.9em; margin-top: 4px;">Ends: {trial_end_date}</div>'
         )
     
-    @display(description='Currency')
+    
     def display_currency(self, obj):
         """Display currency with symbol"""
         symbol = getattr(obj, 'currency_symbol', '$')
@@ -241,7 +241,7 @@ class TenantAdmin(ModelAdmin):
 
 
 @admin.register(TenantSettings)
-class TenantSettingsAdmin(ModelAdmin):
+class TenantSettingsAdmin(admin.ModelAdmin):
     """
     Admin interface for Tenant Settings
     """
