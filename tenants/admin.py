@@ -17,7 +17,7 @@ from .models import Tenant, TenantSettings
 
 
 @admin.register(Tenant)
-class TenantAdmin(Admin.ModelAdmin):
+class TenantAdmin(admin.ModelAdmin):
     """
     Modern admin interface for Tenant model with trial period management
     """
