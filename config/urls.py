@@ -4,14 +4,15 @@ from django.conf import settings
 from django.conf.urls.static import static
 from dashboard.views.main import landing_page, get_tenant_info, contact_form_view
 from dashboard.views import sync_views
+from dashboard.views.health import health_check_view
 
 urlpatterns = [
     # Public landing page (homepage)
     path('', landing_page, name='landing'),
     path('api/contact/', contact_form_view, name='contact_form'),
     
-    # Health monitoring
-    path('health/', include('health_check.urls')),
+    # Health monitoring (custom view using all registered plugins)
+    path('health/', health_check_view, name='health_check'),
     
     # Debug endpoint (bypass tenant middleware)
     path('api/debug/tenants', get_tenant_info, name='debug_tenants'),
