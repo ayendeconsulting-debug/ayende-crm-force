@@ -20,6 +20,7 @@ from django.db import transaction
 from django.core.mail import send_mail
 
 from .models import ProvisioningToken, SetupWizardProgress
+from dashboard.services.pos_integration import POSIntegrationService
 from tenants.models import Tenant, TenantSettings
 from customers.models import TenantCustomer
 
@@ -518,4 +519,5 @@ def pending_provisions(request):
         'title': 'Pending CRM Provisions',
     }
     return render(request, 'provisioning/pending_list.html', context)
+
 

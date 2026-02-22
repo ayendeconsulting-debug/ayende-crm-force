@@ -193,7 +193,20 @@ class ProvisioningTokenAdmin(admin.ModelAdmin):
                     # 6. Mark completed
                     prov_token.mark_completed(tenant, request.user.email)
                     
-                    # 7. Send setup email
+                    # 7. Link POS Business to CRM (auto-configure webhooks)
+                    from dashboard.services.pos_integration import POSIntegrationService
+                    try:
+                        pos_business = POSIntegrationService.get_business_by_subdomain(prov_token.subdomain)
+                        if pos_business and pos_business.get('id'):
+                            POSIntegrationService.link_business_to_crm(
+                                pos_business_id=pos_business['id'],
+                                crm_tenant_uuid=str(tenant.tenant_uuid),
+                                subdomain=prov_token.subdomain
+                            )
+                    except Exception:
+                        pass  # Don't fail provisioning if webhook config fails
+                    
+                    # 8. Send setup email
                     send_setup_wizard_email(
                         owner_email=prov_token.owner_email,
                         owner_name=f"{prov_token.owner_first_name} {prov_token.owner_last_name}",
@@ -361,4 +374,5 @@ class SetupWizardProgressAdmin(admin.ModelAdmin):
 
     def has_add_permission(self, request):
         return False
+
 
