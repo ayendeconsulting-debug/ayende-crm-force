@@ -105,7 +105,8 @@ class Command(BaseCommand):
 
         for url in urls_to_test:
             try:
-                response = client.get(url, follow=False)
+                # Use staging.ayendecx.com as HTTP_HOST (from ALLOWED_HOSTS)
+                response = client.get(url, HTTP_HOST='staging.ayendecx.com', follow=False)
                 status = response.status_code
                 
                 # Consider 200, 302 (redirect) as success
