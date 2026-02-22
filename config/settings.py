@@ -60,7 +60,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    # 'maintenance_middleware.MaintenanceModeMiddleware',  # DISABLED - not deployed
+    'maintenance_middleware.MaintenanceModeMiddleware',  # DISABLED - not deployed
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -264,4 +264,4 @@ WEBHOOK_TIMEOUT = 10
 PROVISIONING_SECRET_KEY = os.environ.get('PROVISIONING_SECRET_KEY', '')
 
 # Maintenance Mode (disabled - not deployed yet)
-# MAINTENANCE_MODE = os.getenv('MAINTENANCE_MODE', 'False').lower() == 'true'
+MAINTENANCE_MODE = os.getenv('MAINTENANCE_MODE', 'False').lower() == 'true'
