@@ -17,7 +17,12 @@ def health_check_view(request):
     
     for plugin_class, options in plugin_dir._registry:
         plugin = plugin_class(**options)
-        plugin_id = plugin.identifier()
+        
+        # Get identifier - use identifier() method if available, otherwise use class name
+        if hasattr(plugin, 'identifier'):
+            plugin_id = plugin.identifier()
+        else:
+            plugin_id = plugin_class.__name__
         
         try:
             plugin.run_check()
