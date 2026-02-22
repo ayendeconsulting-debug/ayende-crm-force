@@ -44,6 +44,14 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    
+    # Health monitoring
+    'health_check',
+    'health_check.db',
+    'health_check.cache',
+    'health_check.storage',
+    
+    # Project apps
     'tenants',
     'customers',
     'dashboard',
@@ -263,5 +271,25 @@ WEBHOOK_TIMEOUT = 10
 # CRM Provisioning
 PROVISIONING_SECRET_KEY = os.environ.get('PROVISIONING_SECRET_KEY', '')
 
-# Maintenance Mode (disabled - not deployed yet)
+# Maintenance Mode
 MAINTENANCE_MODE = os.getenv('MAINTENANCE_MODE', 'False').lower() == 'true'
+
+# Anthropic API (for chatbot)
+ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY', '')
+
+# ====================
+# HEALTH CHECK CONFIGURATION
+# ====================
+HEALTH_CHECK = {
+    'BACKENDS': [
+        # Built-in checks
+        'health_check.db.backends.DatabaseBackend',
+        'health_check.storage.backends.DefaultFileStorageHealthCheck',
+        
+        # Custom integration checks
+        'config.health_checks.POSAPIHealthCheck',
+        'config.health_checks.SendGridHealthCheck',
+        'config.health_checks.AnthropicAPIHealthCheck',
+        'config.health_checks.WebhookSyncHealthCheck',
+    ]
+}

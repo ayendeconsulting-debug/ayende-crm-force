@@ -2,15 +2,10 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from dashboard.views.main import landing_page, get_tenant_info  # ← Add get_tenant_info here
 from dashboard.views.main import landing_page, get_tenant_info, contact_form_view
 from dashboard.views import sync_views
 
-
 urlpatterns = [
-    # Health monitoring
-    path('health/', include('health_check.urls')),
-    
     # Public landing page (homepage)
     path('', landing_page, name='landing'),
     path('api/contact/', contact_form_view, name='contact_form'),
@@ -19,10 +14,11 @@ urlpatterns = [
     path('health/', include('health_check.urls')),
     
     # Debug endpoint (bypass tenant middleware)
-    path('api/debug/tenants', get_tenant_info, name='debug_tenants'),  # ← Add this line
+    path('api/debug/tenants', get_tenant_info, name='debug_tenants'),
     
     # Admin panel
     path('admin/', admin.site.urls),
+    
     path('', include('dashboard.urls')),
     path('notifications/', include('notifications.urls')),
     path('rewards/', include('rewards.urls')),
