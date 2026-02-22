@@ -5,11 +5,8 @@ WITH CUSTOM DOMAIN SUPPORT
 
 import os
 from pathlib import Path
-# Load environment variables from .env file
 from dotenv import load_dotenv
 from django.urls import reverse_lazy
-
-
 
 
 # Build paths
@@ -39,7 +36,7 @@ ALLOWED_HOSTS = ['.ayendecx.com', 'staging.ayendecx.com', 'ayendecx.com', '.loca
 
 # Application definition
 INSTALLED_APPS = [
-   #'unfold',
+    # 'unfold',  # DISABLED - causing admin errors
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -57,14 +54,13 @@ INSTALLED_APPS = [
     'billing',
     'investment',
     'provisioning',
-    
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # Always include, works in both dev and prod
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    #'maintenance_middleware.MaintenanceModeMiddleware',
+    # 'maintenance_middleware.MaintenanceModeMiddleware',  # DISABLED - not deployed
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -130,11 +126,7 @@ USE_TZ = True
 # Static files
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-
-
-# Static files directories - needed in BOTH dev and production
 STATICFILES_DIRS = [BASE_DIR / 'static']
-
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
     
 # Media files
@@ -154,25 +146,24 @@ LOGOUT_REDIRECT_URL = '/'
 
 # Authentication Backends
 # Order matters: Django tries each backend in order until one succeeds
-# Platform admin backend first to allow cross-tenant admin access
 AUTHENTICATION_BACKENDS = [
     'customers.authentication.PlatformAdminBackend',  # Platform administrators (cross-tenant)
     'customers.authentication.TenantCustomerAuthBackend',  # Tenant-specific users
     'customers.authentication.TenantCustomerEmailAuthBackend',  # Email-based tenant auth
 ]
 
-# ===== EMAIL CONFIGURATION - SENDGRID =====
+# Email Configuration - SendGrid
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.sendgrid.net'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'apikey'  # This is literally the word "apikey"
 EMAIL_HOST_PASSWORD = os.getenv('SENDGRID_API_KEY')
-DEFAULT_FROM_EMAIL = 'noreply@ayendecx.com'  # Match your verified sender exactly
+DEFAULT_FROM_EMAIL = 'noreply@ayendecx.com'
 SERVER_EMAIL = 'noreply@ayendecx.com'
 EMAIL_TIMEOUT = 30
 
-# Security settings for production
+# Security settings
 ENABLE_HTTPS_REDIRECT = os.environ.get('ENABLE_HTTPS_REDIRECT', 'False') == 'True'
 
 if not DEBUG and ENABLE_HTTPS_REDIRECT:
@@ -187,7 +178,7 @@ else:
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 
-# CSRF trusted origins - Include custom domain
+# CSRF Configuration
 CSRF_TRUSTED_ORIGINS = [
     'https://*.railway.app',
     'https://*.ayendecx.com',
@@ -203,9 +194,6 @@ if CUSTOM_DOMAIN:
         f'https://{CUSTOM_DOMAIN}',
         f'https://*.{CUSTOM_DOMAIN}',
     ])
-
-# Cookie domain configuration for multi-tenant subdomains
-if CUSTOM_DOMAIN:
     SESSION_COOKIE_DOMAIN = f'.{CUSTOM_DOMAIN}'
     CSRF_COOKIE_DOMAIN = f'.{CUSTOM_DOMAIN}'
 
@@ -219,40 +207,6 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
-}
-
-# ========================================
-# MODERN ADMIN DASHBOARD (django-unfold)
-# ========================================
-UNFOLD = {
-    "SITE_TITLE": "Ayende CX Platform",
-    "SITE_HEADER": "Ayende CX - Platform Administration",
-    "SITE_URL": "/",
-    "SITE_ICON": None,
-    "SITE_LOGO": None,
-    "SITE_SYMBOL": "analytics",
-    "SHOW_HISTORY": True,
-    "SHOW_VIEW_ON_SITE": True,
-    "ENVIRONMENT": "production" if not DEBUG else "development",
-    "COLORS": {
-        "primary": {
-            "50": "240 249 255",
-            "100": "224 242 254",
-            "200": "186 230 253",
-            "300": "125 211 252",
-            "400": "56 189 248",
-            "500": "14 165 233",
-            "600": "2 132 199",
-            "700": "3 105 161",
-            "800": "7 89 133",
-            "900": "12 74 110",
-            "950": "8 47 73",
-        },
-    },
-    "SIDEBAR": {
-        "show_search": True,
-        "show_all_applications": True,
-    },
 }
 
 # Loyalty Settings
@@ -287,50 +241,27 @@ LOGGING = {
     },
 }
 
-# ============================================
-# POS INTEGRATION SETTINGS
-# ============================================
-# Integration secret for webhook authentication (CONSOLIDATED)
+# POS Integration Settings
 INTEGRATION_SECRET = os.environ.get('INTEGRATION_SECRET', '31YMBwf4R4OetvSJ/nIf+5D1ndnMxruRL1QcJsCM9jM=')
-
-# POS Backend URL
 POS_BASE_URL = os.environ.get('POS_BASE_URL', 'https://pos-staging.ayendecx.com')
 POS_API_URL = os.getenv('POS_API_URL', 'https://pos-staging.ayendecx.com')
 POS_API_TIMEOUT = int(os.getenv('POS_API_TIMEOUT', '30000'))
-
-# POS Webhook URL (for sending webhooks TO POS)
 POS_WEBHOOK_URL = os.getenv('POS_WEBHOOK_URL', 'https://pos-staging.ayendecx.com')
 
 # Sync Configuration
 ENABLE_CUSTOMER_SYNC_TO_POS = os.getenv('ENABLE_CUSTOMER_SYNC_TO_POS', 'True').lower() == 'true'
 CUSTOMER_SYNC_INTERVAL = int(os.getenv('CUSTOMER_SYNC_INTERVAL', '3600'))
 SYNC_BATCH_SIZE = int(os.getenv('SYNC_BATCH_SIZE', '100'))
-
-# Enable CRM sync and webhooks (CONSOLIDATED)
 ENABLE_POS_SYNC = True
 ENABLE_CRM_SYNC = os.environ.get('ENABLE_CRM_SYNC', 'True').lower() in ('true', '1', 'yes')
 ENABLE_WEBHOOKS = True
 
-# Webhook retry configuration
+# Webhook Configuration
 WEBHOOK_MAX_RETRIES = 3
-WEBHOOK_TIMEOUT = 10  # seconds
+WEBHOOK_TIMEOUT = 10
 
-# Email Configuration
-DEFAULT_FROM_EMAIL = 'noreply@ayendecx.com'
-SERVER_EMAIL = 'noreply@ayendecx.com'
-
-# SendGrid SMTP (recommended for production)
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.sendgrid.net'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'apikey'
-EMAIL_HOST_PASSWORD = os.environ.get('SENDGRID_API_KEY', '')
-
-# For testing locally, you can use console backend instead:
-# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-
-# CRM Provisioning Settings
+# CRM Provisioning
 PROVISIONING_SECRET_KEY = os.environ.get('PROVISIONING_SECRET_KEY', '')
-# Maintenance Mode
+
+# Maintenance Mode (disabled - not deployed yet)
 # MAINTENANCE_MODE = os.getenv('MAINTENANCE_MODE', 'False').lower() == 'true'
