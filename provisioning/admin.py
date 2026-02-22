@@ -1,5 +1,5 @@
 """
-Provisioning Admin
+Provisioning Admin - Enhanced with Link Regeneration
 Django admin interface for provisioning management
 
 Location: provisioning/admin.py
@@ -9,6 +9,10 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.urls import reverse
 from django.utils import timezone
+from django.contrib import messages
+from django.shortcuts import redirect
+from datetime import timedelta
+import secrets
 
 from .models import ProvisioningToken, SetupWizardProgress
 
@@ -25,20 +29,21 @@ class ProvisioningTokenAdmin(admin.ModelAdmin):
         'created_at',
         'action_buttons',
     ]
-    
+
     list_filter = ['status', 'created_at']
     search_fields = ['business_name', 'subdomain', 'owner_email', 'business_email']
     readonly_fields = [
-        'id', 'token', 'signature', 'created_at', 
+        'id', 'token', 'signature', 'created_at',
         'provisioned_at', 'provisioned_by', 'error_message',
     ]
-    
+    actions = ['reset_to_pending']
+
     fieldsets = (
         ('Status', {
             'fields': ('status', 'error_message'),
         }),
         ('Business Information', {
-            'fields': ('business_name', 'subdomain', 'business_email', 'business_phone'),
+            'fields': ('business_name', 'subdomain', 'business_email', 'business_phone'),        
         }),
         ('Owner Information', {
             'fields': ('owner_first_name', 'owner_last_name', 'owner_email'),
@@ -56,7 +61,7 @@ class ProvisioningTokenAdmin(admin.ModelAdmin):
             'classes': ('collapse',),
         }),
     )
-    
+
     def status_badge(self, obj):
         """Display status as colored badge"""
         colors = {
@@ -73,7 +78,7 @@ class ProvisioningTokenAdmin(admin.ModelAdmin):
             obj.status.upper()
         )
     status_badge.short_description = 'Status'
-    
+
     def action_buttons(self, obj):
         """Display action buttons based on status"""
         if obj.status == 'pending' and not obj.is_expired:
@@ -92,9 +97,31 @@ class ProvisioningTokenAdmin(admin.ModelAdmin):
                 'font-size: 12px;">View Tenant</a>',
                 url
             )
+        elif obj.status in ['expired', 'failed']:
+            return format_html(
+                '<span style="color: #6b7280; font-size: 12px;">Use "Reset to Pending" action</span>'
+            )
         return '-'
     action_buttons.short_description = 'Actions'
-    
+
+    def reset_to_pending(self, request, queryset):
+        """Reset failed/expired tokens to pending status for retry"""
+        count = 0
+        for token in queryset:
+            if token.status in ['expired', 'failed']:
+                token.status = 'pending'
+                token.expires_at = timezone.now() + timedelta(hours=72)
+                token.error_message = None
+                token.save()
+                count += 1
+        
+        self.message_user(
+            request,
+            f'Reset {count} token(s) to pending status with new 72-hour expiration.',
+            messages.SUCCESS
+        )
+    reset_to_pending.short_description = 'Reset selected to Pending (for retry)'
+
     def has_add_permission(self, request):
         return False
 
@@ -102,22 +129,24 @@ class ProvisioningTokenAdmin(admin.ModelAdmin):
 @admin.register(SetupWizardProgress)
 class SetupWizardProgressAdmin(admin.ModelAdmin):
     """Admin interface for setup wizard progress"""
-    
+
     list_display = [
         'tenant',
         'progress_display',
         'status_badge',
         'created_at',
         'completed_at',
+        'action_buttons',
     ]
-    
+
     list_filter = ['step_5_completed', 'created_at']
     search_fields = ['tenant__name', 'tenant__subdomain']
     readonly_fields = [
         'id', 'setup_token', 'setup_token_expires_at',
         'created_at', 'completed_at',
     ]
-    
+    actions = ['regenerate_setup_links', 'resend_setup_emails']
+
     def progress_display(self, obj):
         """Display step progress"""
         completed = sum([
@@ -128,16 +157,16 @@ class SetupWizardProgressAdmin(admin.ModelAdmin):
             obj.step_5_completed,
         ])
         percentage = (completed / 5) * 100
-        
+
         return format_html(
             '<div style="width: 100px; background: #e5e7eb; border-radius: 4px;">'
-            '<div style="width: {}%; background: #10b981; height: 20px; text-align: center; '
+            '<div style="width: {}%; background: #10b981; height: 20px; text-align: center; '    
             'color: white; font-size: 11px; line-height: 20px; border-radius: 4px;">{}/5</div></div>',
             percentage,
             completed
         )
     progress_display.short_description = 'Progress'
-    
+
     def status_badge(self, obj):
         """Display completion status"""
         if obj.is_completed:
@@ -156,6 +185,79 @@ class SetupWizardProgressAdmin(admin.ModelAdmin):
                 'border-radius: 4px; font-size: 11px;">IN PROGRESS</span>'
             )
     status_badge.short_description = 'Status'
-    
+
+    def action_buttons(self, obj):
+        """Display action buttons"""
+        if not obj.is_completed:
+            setup_url = reverse('provisioning:setup_wizard') + f'?token={obj.setup_token}'
+            return format_html(
+                '<a href="{}" target="_blank" style="background: #3b82f6; color: white; '
+                'padding: 6px 12px; border-radius: 4px; text-decoration: none; '
+                'font-size: 12px;">Open Wizard</a>',
+                setup_url
+            )
+        return '-'
+    action_buttons.short_description = 'Actions'
+
+    def regenerate_setup_links(self, request, queryset):
+        """Regenerate setup wizard tokens for expired/broken links"""
+        count = 0
+        for progress in queryset:
+            if not progress.is_completed:
+                # Generate new token
+                progress.setup_token = secrets.token_urlsafe(32)
+                progress.setup_token_expires_at = timezone.now() + timedelta(days=7)
+                progress.save()
+                count += 1
+        
+        self.message_user(
+            request,
+            f'Regenerated setup links for {count} tenant(s). Use "Resend Setup Emails" to notify owners.',
+            messages.SUCCESS
+        )
+    regenerate_setup_links.short_description = 'Regenerate Setup Links (new tokens)'
+
+    def resend_setup_emails(self, request, queryset):
+        """Resend setup wizard emails with current valid links"""
+        from .views import send_setup_wizard_email
+        
+        sent = 0
+        failed = 0
+        
+        for progress in queryset:
+            if not progress.is_completed and progress.is_token_valid:
+                try:
+                    tenant = progress.tenant
+                    owner = tenant.tenantcustomer_set.filter(role='owner').first()
+                    
+                    if owner:
+                        send_setup_wizard_email(
+                            owner_email=owner.email,
+                            owner_name=f"{owner.first_name} {owner.last_name}",
+                            business_name=tenant.name,
+                            subdomain=tenant.subdomain,
+                            setup_token=progress.setup_token,
+                        )
+                        sent += 1
+                    else:
+                        failed += 1
+                except Exception as e:
+                    failed += 1
+                    print(f"Failed to send email: {str(e)}")
+        
+        if sent > 0:
+            self.message_user(
+                request,
+                f'Sent {sent} setup wizard email(s). {failed} failed.',
+                messages.SUCCESS if failed == 0 else messages.WARNING
+            )
+        else:
+            self.message_user(
+                request,
+                'No valid setup wizards to send emails for.',
+                messages.WARNING
+            )
+    resend_setup_emails.short_description = 'Resend Setup Wizard Emails'
+
     def has_add_permission(self, request):
         return False
