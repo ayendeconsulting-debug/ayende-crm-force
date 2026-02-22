@@ -85,7 +85,7 @@ class ProvisioningTokenAdmin(admin.ModelAdmin):
                 url
             )
         elif obj.status == 'completed' and obj.tenant:
-            url = reverse('admin:tenants_tenant_change', args=[obj.tenant.id])
+            url = reverse('admin:tenants_tenant_change', args=[obj.tenant.tenant_uuid])
             return format_html(
                 '<a href="{}" style="background: #3b82f6; color: white; '
                 'padding: 6px 12px; border-radius: 4px; text-decoration: none; '
