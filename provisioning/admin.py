@@ -36,7 +36,7 @@ class ProvisioningTokenAdmin(admin.ModelAdmin):
         'id', 'token', 'signature', 'created_at',
         'provisioned_at', 'provisioned_by', 'error_message',
     ]
-    actions = ['reset_to_pending']
+    actions = ['reset_to_pending', 'provision_directly']
 
     fieldsets = (
         ('Status', {
@@ -122,6 +122,106 @@ class ProvisioningTokenAdmin(admin.ModelAdmin):
         )
     reset_to_pending.short_description = 'Reset selected to Pending (for retry)'
 
+    def provision_directly(self, request, queryset):
+        """
+        Provision tenant directly from admin panel (bypasses broken links)
+        Works even when token/signature is corrupted
+        """
+        from django.db import transaction
+        from tenants.models import Tenant, TenantSettings
+        from customers.models import TenantCustomer
+        from .views import send_setup_wizard_email
+        
+        provisioned = 0
+        skipped = 0
+        errors = []
+        
+        for prov_token in queryset:
+            # Validate token is pending
+            if not prov_token.is_valid:
+                skipped += 1
+                errors.append(f"{prov_token.business_name}: Status is {prov_token.status}")
+                continue
+            
+            # Check if subdomain already exists
+            if Tenant.objects.filter(subdomain=prov_token.subdomain).exists():
+                skipped += 1
+                errors.append(f"{prov_token.business_name}: Subdomain already exists")
+                continue
+            
+            try:
+                with transaction.atomic():
+                    # 1. Create Tenant
+                    tenant = Tenant.objects.create(
+                        name=prov_token.business_name,
+                        subdomain=prov_token.subdomain,
+                        email=prov_token.business_email,
+                        phone=prov_token.business_phone or '',
+                        is_active=True,
+                    )
+                    
+                    # 2. Create TenantSettings
+                    TenantSettings.objects.create(
+                        tenant=tenant,
+                        primary_color=prov_token.primary_color,
+                        secondary_color=prov_token.secondary_color,
+                        loyalty_enabled=True,
+                        points_per_currency=1,
+                        points_redemption_rate=100,
+                        welcome_bonus_points=0,
+                        pos_sync_enabled=True,
+                        pos_api_url='https://pos-staging.ayendecx.com/api/v1',
+                    )
+                    
+                    # 3. Create Owner
+                    owner = TenantCustomer.objects.create(
+                        tenant=tenant,
+                        email=prov_token.owner_email,
+                        first_name=prov_token.owner_first_name,
+                        last_name=prov_token.owner_last_name,
+                        role='owner',
+                        is_active=True,
+                    )
+                    
+                    # 4. Set tenant owner
+                    tenant.owner = owner
+                    tenant.save()
+                    
+                    # 5. Create setup wizard
+                    setup_progress = SetupWizardProgress.create_for_tenant(tenant)
+                    
+                    # 6. Mark completed
+                    prov_token.mark_completed(tenant, request.user.email)
+                    
+                    # 7. Send setup email
+                    send_setup_wizard_email(
+                        owner_email=prov_token.owner_email,
+                        owner_name=f"{prov_token.owner_first_name} {prov_token.owner_last_name}",
+                        business_name=prov_token.business_name,
+                        subdomain=prov_token.subdomain,
+                        setup_token=setup_progress.setup_token,
+                    )
+                    
+                    provisioned += 1
+                    
+            except Exception as e:
+                prov_token.mark_failed(str(e))
+                errors.append(f"{prov_token.business_name}: {str(e)}")
+                skipped += 1
+        
+        # Show results
+        if provisioned > 0:
+            self.message_user(
+                request,
+                f'Successfully provisioned {provisioned} tenant(s)!',
+                messages.SUCCESS
+            )
+        
+        if skipped > 0:
+            error_msg = f'Skipped {skipped} token(s). Check individual records for details.'
+            self.message_user(request, error_msg, messages.WARNING)
+    
+    provision_directly.short_description = 'Provision CRM Directly (bypasses broken links)'
     def has_add_permission(self, request):
         return False
 
@@ -261,3 +361,4 @@ class SetupWizardProgressAdmin(admin.ModelAdmin):
 
     def has_add_permission(self, request):
         return False
+
