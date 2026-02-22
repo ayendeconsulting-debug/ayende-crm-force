@@ -1,10 +1,11 @@
-from django.contrib import admin
+﻿from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from dashboard.views.main import landing_page, get_tenant_info, contact_form_view
 from dashboard.views import sync_views
 from dashboard.views.health import health_check_view
+from dashboard.views import chatbot
 
 urlpatterns = [
     # Public landing page (homepage)
@@ -14,12 +15,17 @@ urlpatterns = [
     # Health monitoring (custom view using all registered plugins)
     path('health/', health_check_view, name='health_check'),
     
+    # Chatbot API endpoints
+    path('chatbot/<str:subdomain>/init/', chatbot.initialize_session, name='chatbot_init'),
+    path('chatbot/<str:subdomain>/message/', chatbot.send_message, name='chatbot_message'),
+    path('chatbot/<str:subdomain>/close/', chatbot.close_session, name='chatbot_close'),
+    
     # Debug endpoint (bypass tenant middleware)
     path('api/debug/tenants', get_tenant_info, name='debug_tenants'),
-    
+
     # Admin panel
     path('admin/', admin.site.urls),
-    
+
     path('', include('dashboard.urls')),
     path('notifications/', include('notifications.urls')),
     path('rewards/', include('rewards.urls')),
@@ -27,9 +33,9 @@ urlpatterns = [
     path('reports/', include('reports.urls')),
     path('investment/', include('investment.urls')),
     path('provisioning/', include('provisioning.urls')),
-    
+
     # ===== PHASE 2D: POS-to-CRM Sync Endpoints =====
-    path('api/v1/sync/transaction', sync_views.receive_transaction, name='sync_transaction'),
+    path('api/v1/sync/transaction', sync_views.receive_transaction, name='sync_transaction'),    
     path('api/v1/sync/customer', sync_views.receive_customer, name='sync_customer'),
     path('api/v1/sync/health', sync_views.sync_health, name='sync_health'),
 ]
