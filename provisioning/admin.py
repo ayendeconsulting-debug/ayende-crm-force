@@ -155,8 +155,6 @@ class ProvisioningTokenAdmin(admin.ModelAdmin):
                     tenant = Tenant.objects.create(
                         name=prov_token.business_name,
                         subdomain=prov_token.subdomain,
-                        email=prov_token.business_email,
-                        phone=prov_token.business_phone or '',
                         is_active=True,
                     )
                     
