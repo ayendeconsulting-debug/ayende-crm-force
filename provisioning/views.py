@@ -7,8 +7,8 @@ Location: provisioning/views.py
 
 import json
 import secrets
-import logging
-import requests  # ✅ ADDED: For POS webhook
+import logging  # ✅ ADDED
+import requests  # ✅ ADDED
 from datetime import timedelta
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
@@ -22,11 +22,10 @@ from django.db import transaction
 from django.core.mail import send_mail
 
 from .models import ProvisioningToken, SetupWizardProgress
-from dashboard.services.pos_integration import POSIntegrationService
 from tenants.models import Tenant, TenantSettings
-from customers.models import TenantCustomer
+from customers.models import TenantCustomer, SystemMapping
 
-logger = logging.getLogger(__name__)  # ✅ ADDED: Logger
+logger = logging.getLogger(__name__)  # ✅ ADDED
 
 
 @staff_member_required
@@ -136,20 +135,16 @@ def execute_provision(request):
             tenant = Tenant.objects.create(
                 name=prov_token.business_name,
                 subdomain=prov_token.subdomain,
-                is_active=True,
+                slug=prov_token.subdomain,  # Use subdomain as slug
             )
             
-            # 2. Create TenantSettings
-            TenantSettings.objects.create(
+           # 2. Create or update TenantSettings
+            TenantSettings.objects.update_or_create(
                 tenant=tenant,
-                primary_color=prov_token.primary_color,
-                secondary_color=prov_token.secondary_color,
-                loyalty_enabled=True,
-                points_per_currency=1,
-                points_redemption_rate=100,
-                welcome_bonus_points=0,
-                pos_sync_enabled=True,
-                pos_api_url='https://pos-staging.ayendecx.com/api/v1',
+                defaults={
+                    'enable_loyalty_points': True,
+                    'points_per_dollar': 1.00,
+                }
             )
             
             # 3. Create Owner as TenantCustomer with role='owner'
@@ -165,14 +160,25 @@ def execute_provision(request):
             # 4. Set tenant owner reference
             tenant.owner = owner
             tenant.save()
+
+	    # 5. Create System Mapping for POS-CRM sync
+            SystemMapping.objects.update_or_create(
+                entity_type='Business',
+                pos_id=prov_token.business_id,
+                defaults={
+                    'crm_id': tenant.pk,
+                    'tenant': tenant,
+                    'sync_status': 'active',
+                }
+            )
             
-            # 5. Create setup wizard progress
+            # 6. Create setup wizard progress
             setup_progress = SetupWizardProgress.create_for_tenant(tenant)
             
-            # 6. Mark provisioning token as completed
+            # 7. Mark provisioning token as completed
             prov_token.mark_completed(tenant, request.user.email)
             
-            # 7. Send setup wizard email to owner
+            # 8. Send setup wizard email to owner
             send_setup_wizard_email(
                 owner_email=prov_token.owner_email,
                 owner_name=f"{prov_token.owner_first_name} {prov_token.owner_last_name}",
@@ -183,8 +189,8 @@ def execute_provision(request):
         
         # ✅ ADDED: Notify POS that provisioning is complete (AFTER transaction)
         notify_pos_provisioning_complete(
-            pos_business_id=prov_token.pos_business_id,
-            crm_tenant_id=str(tenant.tenant_uuid),
+            pos_business_id=prov_token.business_id,
+            crm_tenant_id=str(tenant.pk),
             subdomain=tenant.subdomain,
         )
         
@@ -193,7 +199,7 @@ def execute_provision(request):
             f'Successfully provisioned CRM for "{prov_token.business_name}"! '
             f'Setup wizard email sent to {prov_token.owner_email}.'
         )
-        return redirect('admin:tenants_tenant_change', tenant.tenant_uuid)
+        return redirect('admin:tenants_tenant_change', tenant.pk)
         
     except Exception as e:
         prov_token.mark_failed(str(e))
@@ -308,7 +314,7 @@ def notify_pos_provisioning_complete(pos_business_id, crm_tenant_id, subdomain):
     
     Args:
         pos_business_id: POS business UUID
-        crm_tenant_id: CRM tenant UUID
+        crm_tenant_id: CRM tenant UUID (tenant.pk)
         subdomain: Business subdomain
     """
     try:
@@ -366,5 +372,252 @@ def setup_wizard(request):
     Main setup wizard entry point.
     URL: /provisioning/wizard/?token=xxx
     """
-    # Rest of the file remains unchanged...
-    pass
+    setup_token = request.GET.get('token')
+    
+    if not setup_token:
+        return render(request, 'provisioning/wizard/error.html', {
+            'error': 'Missing setup token. Please use the link from your email.'
+        })
+    
+    try:
+        progress = SetupWizardProgress.objects.select_related('tenant').get(
+            setup_token=setup_token
+        )
+    except SetupWizardProgress.DoesNotExist:
+        return render(request, 'provisioning/wizard/error.html', {
+            'error': 'Invalid setup token. Please contact support.'
+        })
+    
+    if not progress.is_token_valid:
+        return render(request, 'provisioning/wizard/error.html', {
+            'error': 'This setup link has expired. Please contact support for a new link.'
+        })
+    
+    if progress.is_completed:
+        return render(request, 'provisioning/wizard/complete.html', {
+            'tenant': progress.tenant,
+        })
+    
+    # Store token in session
+    request.session['setup_token'] = setup_token
+    request.session['tenant_id'] = str(progress.tenant.pk)
+    
+    # Redirect to current step
+    return redirect('provisioning:wizard_step', step=progress.current_step)
+
+
+def wizard_step(request, step):
+    """Handle individual wizard steps (1-5)"""
+    setup_token = request.session.get('setup_token')
+    
+    if not setup_token:
+        return redirect('provisioning:setup_wizard')
+    
+    try:
+        progress = SetupWizardProgress.objects.select_related('tenant').get(
+            setup_token=setup_token
+        )
+    except SetupWizardProgress.DoesNotExist:
+        return redirect('provisioning:setup_wizard')
+    
+    tenant = progress.tenant
+    
+    try:
+        tenant_settings = tenant.settings
+    except TenantSettings.DoesNotExist:
+        tenant_settings = None
+    
+    try:
+        owner = TenantCustomer.objects.get(tenant=tenant, role='owner')
+    except TenantCustomer.DoesNotExist:
+        owner = None
+    
+    # Get branding colors from provisioning token
+    prov_token = ProvisioningToken.objects.filter(
+        subdomain=tenant.subdomain,
+        status='completed'
+    ).first()
+    
+    primary_color = '#10B981'
+    secondary_color = '#059669'
+    
+    if prov_token:
+        primary_color = prov_token.primary_color or primary_color
+        secondary_color = prov_token.secondary_color or secondary_color
+    
+    context = {
+        'tenant': tenant,
+        'tenant_settings': tenant_settings,
+        'owner': owner,
+        'progress': progress,
+        'current_step': step,
+        'primary_color': primary_color,
+        'secondary_color': secondary_color,
+    }
+    
+    if request.method == 'POST':
+        return handle_wizard_step_post(request, step, progress, tenant, owner, tenant_settings)
+    
+    template_name = f'provisioning/wizard/step_{step}.html'
+    return render(request, template_name, context)
+
+
+def handle_wizard_step_post(request, step, progress, tenant, owner, tenant_settings):
+    """Handle POST for each wizard step"""
+    
+    step = int(step)
+    
+    if step == 1:
+        progress.complete_step(1)
+        messages.success(request, 'Business details confirmed!')
+        return redirect('provisioning:wizard_step', step=2)
+    
+    elif step == 2:
+        password = request.POST.get('password')
+        confirm_password = request.POST.get('confirm_password')
+        
+        if not password or len(password) < 8:
+            messages.error(request, 'Password must be at least 8 characters.')
+            return redirect('provisioning:wizard_step', step=2)
+        
+        if password != confirm_password:
+            messages.error(request, 'Passwords do not match.')
+            return redirect('provisioning:wizard_step', step=2)
+        
+        from django.contrib.auth.hashers import make_password
+        owner.password_hash = make_password(password)
+        owner.save()
+        
+        progress.complete_step(2)
+        messages.success(request, 'Password set successfully!')
+        return redirect('provisioning:wizard_step', step=3)
+    
+    elif step == 3:
+        loyalty_enabled = request.POST.get('loyalty_enabled') == 'on'
+        points_per_currency = request.POST.get('points_per_currency', 1)
+        points_redemption_rate = request.POST.get('points_redemption_rate', 100)
+        welcome_bonus = request.POST.get('welcome_bonus_points', 0)
+        
+        if tenant_settings:
+            tenant_settings.loyalty_enabled = loyalty_enabled
+            tenant_settings.points_per_currency = int(points_per_currency)
+            tenant_settings.points_redemption_rate = int(points_redemption_rate)
+            tenant_settings.welcome_bonus_points = int(welcome_bonus)
+            tenant_settings.save()
+        
+        progress.complete_step(3)
+        messages.success(request, 'Loyalty program configured!')
+        return redirect('provisioning:wizard_step', step=4)
+    
+    elif step == 4:
+        csv_file = request.FILES.get('customer_csv')
+        
+        if csv_file:
+            try:
+                import_result = import_customers_from_csv(csv_file, tenant)
+                messages.success(
+                    request, 
+                    f'Imported {import_result["imported"]} customers. '
+                    f'{import_result["skipped"]} skipped.'
+                )
+            except Exception as e:
+                messages.warning(request, f'Import had issues: {str(e)}')
+        
+        progress.complete_step(4)
+        return redirect('provisioning:wizard_step', step=5)
+    
+    elif step == 5:
+        progress.complete_step(5)
+        
+        if 'setup_token' in request.session:
+            del request.session['setup_token']
+        if 'tenant_id' in request.session:
+            del request.session['tenant_id']
+        
+        messages.success(request, 'Setup complete! Your CRM is ready to use.')
+        return redirect('provisioning:wizard_complete')
+    
+    return redirect('provisioning:wizard_step', step=step)
+
+
+def wizard_complete(request):
+    """Setup wizard completion page"""
+    tenant_id = request.session.get('tenant_id')
+    tenant = None
+    
+    if tenant_id:
+        try:
+            tenant = Tenant.objects.get(id=tenant_id)
+        except Tenant.DoesNotExist:
+            pass
+    
+    # Get branding colors
+    primary_color = '#10B981'
+    secondary_color = '#059669'
+    
+    if tenant:
+        prov_token = ProvisioningToken.objects.filter(
+            subdomain=tenant.subdomain,
+            status='completed'
+        ).first()
+        if prov_token:
+            primary_color = prov_token.primary_color or primary_color
+            secondary_color = prov_token.secondary_color or secondary_color
+    
+    return render(request, 'provisioning/wizard/complete.html', {
+        'tenant': tenant,
+        'primary_color': primary_color,
+        'secondary_color': secondary_color,
+    })
+
+
+def import_customers_from_csv(csv_file, tenant):
+    """Import customers from CSV file"""
+    import csv
+    import io
+    
+    decoded_file = csv_file.read().decode('utf-8')
+    io_string = io.StringIO(decoded_file)
+    reader = csv.DictReader(io_string)
+    
+    imported = 0
+    skipped = 0
+    
+    for row in reader:
+        email = row.get('email', '').strip()
+        
+        if not email:
+            skipped += 1
+            continue
+        
+        if TenantCustomer.objects.filter(tenant=tenant, email=email).exists():
+            skipped += 1
+            continue
+        
+        try:
+            TenantCustomer.objects.create(
+                tenant=tenant,
+                email=email,
+                first_name=row.get('first_name', '').strip(),
+                last_name=row.get('last_name', '').strip(),
+                phone=row.get('phone', '').strip(),
+                role='customer',
+                is_active=True,
+            )
+            imported += 1
+        except Exception:
+            skipped += 1
+    
+    return {'imported': imported, 'skipped': skipped}
+
+
+@staff_member_required
+def pending_provisions(request):
+    """View pending provisioning requests"""
+    pending = ProvisioningToken.objects.filter(status='pending').order_by('-created_at')
+    
+    context = {
+        'pending_tokens': pending,
+        'title': 'Pending CRM Provisions',
+    }
+    return render(request, 'provisioning/pending_list.html', context)
