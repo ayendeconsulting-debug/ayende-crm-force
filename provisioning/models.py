@@ -144,12 +144,18 @@ class ProvisioningToken(models.Model):
     
     @staticmethod
     def decode_payload(payload_b64):
-   	"""Decode base64 payload to dict"""
-    try:
-        payload_json = base64.urlsafe_b64decode(payload_b64.encode('utf-8')).decode('utf-8')
-        return json.loads(payload_json)
-    except Exception as e:
-        raise ValueError(f"Invalid payload encoding: {str(e)}")
+        """Decode base64 payload to dict"""
+        try:
+            # Fix padding for base64url (Node.js base64url doesn't include padding)
+            # Python's urlsafe_b64decode requires proper padding
+            missing_padding = len(payload_b64) % 4
+            if missing_padding:
+                payload_b64 += '=' * (4 - missing_padding)
+            
+            payload_json = base64.urlsafe_b64decode(payload_b64.encode('utf-8')).decode('utf-8')
+            return json.loads(payload_json)
+        except Exception as e:
+            raise ValueError(f"Invalid payload encoding: {str(e)}")
 
 
 class SetupWizardProgress(models.Model):
