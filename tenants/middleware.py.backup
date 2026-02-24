@@ -1,0 +1,84 @@
+from django.shortcuts import render
+from django.utils.deprecation import MiddlewareMixin
+from .models import Tenant
+
+class TenantMiddleware(MiddlewareMixin):
+    """
+    Middleware to set the current tenant based on subdomain.
+    Bypasses tenant detection for admin, static files, media, and sync API.
+    Landing page (/) SHOULD detect tenant to show tenant-specific branding.
+    
+    FIXED: Platform admin detection now uses user.role instead of is_platform_admin
+    """
+    
+    def process_request(self, request):
+        """
+        Detect tenant from subdomain and set on request object.
+        Bypass tenant detection for platform admins.
+        """
+        # FIXED: Platform Admin Bypass - Check role field
+        # Check FIRST if user is platform admin (before any tenant detection)
+        if hasattr(request, 'user') and request.user.is_authenticated:
+            # ✅ FIXED: Check role field instead of is_platform_admin attribute
+            if hasattr(request.user, 'role') and request.user.role == 'platform_admin':
+                # Platform admins have no tenant - bypass tenant detection
+                request.tenant = None
+                return None
+
+        # Get the host from the request (for all non-platform-admin users)
+        host = request.get_host().split(':')[0].lower()
+
+        # IMPORTANT: Bypass tenant detection for these paths ONLY
+        exempt_paths = [
+            '/admin/',
+            '/static/',
+            '/media/',
+            '/api/v1/',       # All API v1 endpoints (use JWT auth instead)
+            '/api/sync/',     # REST Framework sync endpoints
+            '/api/debug/',    # Debug/diagnostic endpoints
+        ]
+
+        # Check if the current path should bypass tenant detection
+        for path in exempt_paths:
+            if request.path.startswith(path):
+                request.tenant = None
+                return None
+
+        # Extract subdomain (if exists)
+        subdomain = None
+        parts = host.split('.')
+
+        # Determine subdomain based on host pattern
+        if len(parts) >= 2:
+            # Check for special localhost case
+            if parts[-1] == 'localhost':
+                # For localhost: subdomain.localhost
+                if len(parts) == 2 and parts[0] not in ['localhost', 'www']:
+                    subdomain = parts[0]
+            elif 'railway.app' in host:
+                # For Railway: subdomain.railway.app or service.up.railway.app
+                if len(parts) >= 3:
+                    subdomain = parts[0]
+            elif len(parts) >= 3:
+                # For custom domains: subdomain.example.com
+                # Skip if it's www or the base domain
+                if parts[0] not in ['www', 'ayendecx']:
+                    subdomain = parts[0]
+        
+        # If no subdomain, set tenant to None
+        if not subdomain:
+            request.tenant = None
+            return None
+
+        # Try to get tenant by subdomain
+        try:
+            tenant = Tenant.objects.get(subdomain=subdomain, is_active=True)
+            request.tenant = tenant
+        except Tenant.DoesNotExist:
+            request.tenant = None
+            # Show "Business Not Found" page
+            return render(request, 'errors/business_not_found.html', {
+                'subdomain': subdomain,
+            }, status=404)
+
+        return None

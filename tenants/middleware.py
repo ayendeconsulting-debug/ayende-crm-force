@@ -7,6 +7,8 @@ class TenantMiddleware(MiddlewareMixin):
     Middleware to set the current tenant based on subdomain.
     Bypasses tenant detection for admin, static files, media, and sync API.
     Landing page (/) SHOULD detect tenant to show tenant-specific branding.
+    
+    FIXED: Platform admin detection now uses user.role instead of is_platform_admin
     """
     
     def process_request(self, request):
@@ -14,17 +16,18 @@ class TenantMiddleware(MiddlewareMixin):
         Detect tenant from subdomain and set on request object.
         Bypass tenant detection for platform admins.
         """
-        # === NEW: Platform Admin Bypass ===
+        # FIXED: Platform Admin Bypass - Check role field
         # Check FIRST if user is platform admin (before any tenant detection)
         if hasattr(request, 'user') and request.user.is_authenticated:
-            if getattr(request.user, 'is_platform_admin', False):
+            # ✅ FIXED: Check role field instead of is_platform_admin attribute
+            if hasattr(request.user, 'role') and request.user.role == 'platform_admin':
                 # Platform admins have no tenant - bypass tenant detection
                 request.tenant = None
                 return None
-        
+
         # Get the host from the request (for all non-platform-admin users)
         host = request.get_host().split(':')[0].lower()
-        
+
         # IMPORTANT: Bypass tenant detection for these paths ONLY
         exempt_paths = [
             '/admin/',
@@ -34,17 +37,17 @@ class TenantMiddleware(MiddlewareMixin):
             '/api/sync/',     # REST Framework sync endpoints
             '/api/debug/',    # Debug/diagnostic endpoints
         ]
-        
+
         # Check if the current path should bypass tenant detection
         for path in exempt_paths:
             if request.path.startswith(path):
                 request.tenant = None
                 return None
-        
+
         # Extract subdomain (if exists)
         subdomain = None
         parts = host.split('.')
-        
+
         # Determine subdomain based on host pattern
         if len(parts) >= 2:
             # Check for special localhost case
@@ -66,7 +69,7 @@ class TenantMiddleware(MiddlewareMixin):
         if not subdomain:
             request.tenant = None
             return None
-        
+
         # Try to get tenant by subdomain
         try:
             tenant = Tenant.objects.get(subdomain=subdomain, is_active=True)
@@ -77,5 +80,5 @@ class TenantMiddleware(MiddlewareMixin):
             return render(request, 'errors/business_not_found.html', {
                 'subdomain': subdomain,
             }, status=404)
-        
+
         return None

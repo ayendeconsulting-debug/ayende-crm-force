@@ -457,7 +457,7 @@ def customer_login_view(request):
             
             # Role-based redirect
             # Platform admins go to Django admin
-            if getattr(user, 'is_platform_admin', False):
+            if hasattr(user, 'role') and user.role == 'platform_admin':
                 return redirect('/admin/')
 
             # Tenant admins/owners/managers/staff go to reports
@@ -494,17 +494,19 @@ def dashboard_redirect(request):
     """
     Smart redirect based on user role.
     This should be the root dashboard URL.
+    
+    FIXED: Platform admin detection now uses role field
     """
     user = request.user
     
-    # Platform admins go to Django admin
-    if getattr(user, 'is_platform_admin', False):
+    # ✅ FIXED: Platform admins go to Django admin (check role field)
+    if hasattr(user, 'role') and user.role == 'platform_admin':
         return redirect('/admin/')
-    
+
     # Tenant admins/owners/managers/staff go to reports
-    if user.role in ['owner', 'admin', 'manager', 'staff']:
+    if hasattr(user, 'role') and user.role in ['owner', 'admin', 'manager', 'staff']:
         return redirect('/reports/')
-    
+
     # Customers go to customer dashboard
     return redirect('/dashboard/')
 
@@ -513,19 +515,36 @@ def dashboard_home(request):
     """
     Enhanced customer dashboard home page
     Shows customer's transactions, loyalty points, profile summary, and unread counts
-    """
-    tenant = get_tenant_from_request(request)
     
-    # Platform admins should use Django admin
-    if getattr(request.user, 'is_platform_admin', False):
+    FIXED: Platform admin detection and role-based routing
+    """
+    user = request.user
+    
+    # ✅ FIXED: Platform admins should use Django admin
+    if hasattr(user, 'role') and user.role == 'platform_admin':
         return redirect('/admin/')
     
+    # ✅ FIXED: Business owners/admins should go to reports dashboard
+    if hasattr(user, 'role') and user.role in ['owner', 'admin', 'manager', 'staff']:
+        return redirect('/reports/')
+    
+    user = request.user
+    
+    # Platform admins should use Django admin
+    if hasattr(user, 'role') and user.role == 'platform_admin':
+        return redirect('/admin/')
+    
+    # Business owners/admins should go to reports dashboard
+    if hasattr(user, 'role') and user.role in ['owner', 'admin', 'manager', 'staff']:
+        return redirect('/reports/')
+    
+    # Now get tenant for customer dashboard
+    tenant = get_tenant_from_request(request)
+    
     if not tenant:
-        messages.error(request, 'Unable to identify business.')
-        return redirect('/')
     
     # Get TenantCustomer for current user
-    tenant_customer = request.user
+     tenant_customer = request.user
     
     # Get recent transactions
     recent_transactions = Transaction.objects.filter(

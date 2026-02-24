@@ -1,0 +1,96 @@
+{
+  "products": [
+    {
+      "category": "Processors",
+      "items": [
+        {"name": "Intel Core i9-14900K", "sku": "CPU-INT-I9-14900K", "price": 589000, "stock": 15, "description": "24-core flagship processor, 6.0GHz boost"},
+        {"name": "Intel Core i7-14700K", "sku": "CPU-INT-I7-14700K", "price": 419000, "stock": 25, "description": "20-core gaming processor, 5.6GHz boost"},
+        {"name": "Intel Core i5-14600K", "sku": "CPU-INT-I5-14600K", "price": 289000, "stock": 40, "description": "14-core mainstream processor"},
+        {"name": "AMD Ryzen 9 7950X", "sku": "CPU-AMD-R9-7950X", "price": 599000, "stock": 12, "description": "16-core workstation processor, 5.7GHz boost"},
+        {"name": "AMD Ryzen 7 7800X3D", "sku": "CPU-AMD-R7-7800X3D", "price": 449000, "stock": 20, "description": "8-core gaming champion with 3D V-Cache"},
+        {"name": "AMD Ryzen 5 7600X", "sku": "CPU-AMD-R5-7600X", "price": 249000, "stock": 35, "description": "6-core budget gaming processor"}
+      ]
+    },
+    {
+      "category": "Graphics Cards",
+      "items": [
+        {"name": "NVIDIA RTX 4090", "sku": "GPU-NV-RTX4090", "price": 1899000, "stock": 5, "description": "Ultimate 4K gaming, 24GB GDDR6X"},
+        {"name": "NVIDIA RTX 4080 SUPER", "sku": "GPU-NV-RTX4080S", "price": 1199000, "stock": 10, "description": "High-end 4K gaming, 16GB GDDR6X"},
+        {"name": "NVIDIA RTX 4070 Ti SUPER", "sku": "GPU-NV-RTX4070TiS", "price": 849000, "stock": 18, "description": "1440p/4K gaming, 16GB GDDR6X"},
+        {"name": "NVIDIA RTX 4060 Ti", "sku": "GPU-NV-RTX4060Ti", "price": 449000, "stock": 30, "description": "1080p/1440p gaming, 8GB GDDR6"},
+        {"name": "AMD Radeon RX 7900 XTX", "sku": "GPU-AMD-RX7900XTX", "price": 999000, "stock": 8, "description": "4K gaming powerhouse, 24GB GDDR6"},
+        {"name": "AMD Radeon RX 7800 XT", "sku": "GPU-AMD-RX7800XT", "price": 549000, "stock": 22, "description": "1440p gaming sweet spot, 16GB GDDR6"}
+      ]
+    },
+    {
+      "category": "Motherboards",
+      "items": [
+        {"name": "ASUS ROG Maximus Z790 Hero", "sku": "MB-ASUS-Z790-HERO", "price": 629000, "stock": 8, "description": "Premium Intel Z790, DDR5, WiFi 7"},
+        {"name": "MSI MPG B760 Gaming Plus", "sku": "MB-MSI-B760-PLUS", "price": 189000, "stock": 25, "description": "Mid-range Intel B760, DDR5 support"},
+        {"name": "ASUS TUF Gaming X670E-Plus", "sku": "MB-ASUS-X670E", "price": 329000, "stock": 15, "description": "AMD X670E, PCIe 5.0, DDR5"},
+        {"name": "Gigabyte B650 AORUS Elite", "sku": "MB-GB-B650-ELITE", "price": 199000, "stock": 30, "description": "AMD B650, DDR5, PCIe 4.0"}
+      ]
+    },
+    {
+      "category": "Memory (RAM)",
+      "items": [
+        {"name": "Corsair Vengeance DDR5 32GB (2x16GB) 6000MHz", "sku": "RAM-CORS-DDR5-32GB", "price": 149000, "stock": 40, "description": "High-speed DDR5, RGB lighting"},
+        {"name": "G.Skill Trident Z5 RGB 32GB (2x16GB) 6400MHz", "sku": "RAM-GS-DDR5-32GB", "price": 179000, "stock": 25, "description": "Premium DDR5, extreme speeds"},
+        {"name": "Kingston Fury Beast DDR5 16GB (2x8GB) 5600MHz", "sku": "RAM-KING-DDR5-16GB", "price": 79000, "stock": 50, "description": "Budget DDR5, reliable performance"},
+        {"name": "Corsair Vengeance DDR4 32GB (2x16GB) 3200MHz", "sku": "RAM-CORS-DDR4-32GB", "price": 89000, "stock": 60, "description": "DDR4 value option"}
+      ]
+    },
+    {
+      "category": "Storage",
+      "items": [
+        {"name": "Samsung 990 PRO 2TB NVMe SSD", "sku": "SSD-SAM-990PRO-2TB", "price": 199000, "stock": 35, "description": "PCIe 4.0, 7450MB/s read, flagship performance"},
+        {"name": "WD Black SN850X 1TB NVMe SSD", "sku": "SSD-WD-SN850X-1TB", "price": 119000, "stock": 45, "description": "PCIe 4.0, gaming optimized, 7300MB/s"},
+        {"name": "Crucial P3 Plus 1TB NVMe SSD", "sku": "SSD-CRUC-P3-1TB", "price": 69000, "stock": 70, "description": "PCIe 4.0 budget option, 5000MB/s"},
+        {"name": "Seagate BarraCuda 4TB HDD", "sku": "HDD-SEAG-4TB", "price": 89000, "stock": 40, "description": "Mass storage, 7200RPM"}
+      ]
+    },
+    {
+      "category": "Power Supplies",
+      "items": [
+        {"name": "Corsair RM1000x 1000W 80+ Gold", "sku": "PSU-CORS-RM1000X", "price": 179000, "stock": 20, "description": "Fully modular, 10-year warranty"},
+        {"name": "EVGA SuperNOVA 850 G6 850W 80+ Gold", "sku": "PSU-EVGA-850G6", "price": 139000, "stock": 30, "description": "Compact design, fully modular"},
+        {"name": "Cooler Master MWE 750W 80+ Bronze", "sku": "PSU-CM-MWE750", "price": 79000, "stock": 45, "description": "Budget-friendly, reliable"}
+      ]
+    },
+    {
+      "category": "PC Cases",
+      "items": [
+        {"name": "Lian Li O11 Dynamic EVO", "sku": "CASE-LL-O11-EVO", "price": 169000, "stock": 15, "description": "Premium dual-chamber design, tempered glass"},
+        {"name": "NZXT H510 Flow", "sku": "CASE-NZXT-H510", "price": 89000, "stock": 35, "description": "Airflow-optimized, cable management"},
+        {"name": "Fractal Design Meshify 2", "sku": "CASE-FD-MESH2", "price": 129000, "stock": 20, "description": "High airflow mesh, modular design"}
+      ]
+    },
+    {
+      "category": "Cooling",
+      "items": [
+        {"name": "NZXT Kraken X73 360mm AIO", "sku": "COOL-NZXT-X73", "price": 199000, "stock": 18, "description": "RGB liquid cooling, 360mm radiator"},
+        {"name": "Corsair iCUE H150i Elite 360mm AIO", "sku": "COOL-CORS-H150i", "price": 229000, "stock": 12, "description": "Premium AIO, RGB fans, low noise"},
+        {"name": "Noctua NH-D15 chromax.black", "sku": "COOL-NOCT-NHD15", "price": 119000, "stock": 25, "description": "Legendary air cooler, ultra-quiet"},
+        {"name": "be quiet! Dark Rock Pro 4", "sku": "COOL-BQ-DRP4", "price": 89000, "stock": 30, "description": "Silent operation, excellent cooling"}
+      ]
+    },
+    {
+      "category": "Peripherals",
+      "items": [
+        {"name": "Logitech G Pro X Superlight", "sku": "MOUSE-LOG-GPRO", "price": 149000, "stock": 40, "description": "Wireless gaming mouse, 63g ultralight"},
+        {"name": "Razer DeathAdder V3", "sku": "MOUSE-RAZ-DAV3", "price": 69000, "stock": 55, "description": "Ergonomic gaming mouse, 30K DPI"},
+        {"name": "Corsair K70 RGB Pro", "sku": "KB-CORS-K70", "price": 179000, "stock": 30, "description": "Mechanical keyboard, Cherry MX switches"},
+        {"name": "SteelSeries Apex Pro TKL", "sku": "KB-SS-APTTKL", "price": 199000, "stock": 20, "description": "Adjustable actuation, OLED display"}
+      ]
+    },
+    {
+      "category": "Monitors",
+      "items": [
+        {"name": "ASUS ROG Swift PG27AQN 27\" 1440p 360Hz", "sku": "MON-ASUS-PG27AQN", "price": 899000, "stock": 8, "description": "Fast Nano IPS, G-SYNC Ultimate"},
+        {"name": "LG UltraGear 27GP850 27\" 1440p 165Hz", "sku": "MON-LG-27GP850", "price": 349000, "stock": 25, "description": "Nano IPS, 1ms response, HDR10"},
+        {"name": "Samsung Odyssey G7 32\" 1440p 240Hz", "sku": "MON-SAM-G7", "price": 599000, "stock": 12, "description": "Curved VA, 1000R, HDR600"},
+        {"name": "Dell S2722DGM 27\" 1440p 165Hz", "sku": "MON-DELL-S2722", "price": 279000, "stock": 30, "description": "Curved VA panel, budget gaming"}
+      ]
+    }
+  ]
+}

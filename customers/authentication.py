@@ -2,6 +2,8 @@
 Authentication Module for Ayende CX
 Contains POS Integration JWT authentication, Multi-Tenant Customer authentication,
 and Platform Admin authentication
+
+FIXED: Changed is_platform_admin to role='platform_admin'
 """
 
 import jwt
@@ -24,7 +26,7 @@ class IntegrationJWTAuthentication(authentication.BaseAuthentication):
     JWT authentication for POS system integration.
     Validates tokens from POS system for sync operations.
     """
-    
+
     def authenticate(self, request):
         """
         Authenticate the request using JWT token from Authorization header.
@@ -34,10 +36,10 @@ class IntegrationJWTAuthentication(authentication.BaseAuthentication):
             None if authentication fails
         """
         auth_header = request.headers.get('Authorization', '')
-        
+
         if not auth_header:
             return None
-        
+
         # Extract token from "Bearer <token>"
         try:
             token = auth_header.split(' ')[1] if ' ' in auth_header else auth_header
@@ -51,25 +53,25 @@ class IntegrationJWTAuthentication(authentication.BaseAuthentication):
                 settings.INTEGRATION_SECRET,
                 algorithms=['HS256']
             )
-            
+
             # Validate issuer
             if payload.get('iss') != 'ayende-pos':
                 raise exceptions.AuthenticationFailed('Invalid token issuer')
-            
+
             # Validate scope
             if payload.get('scope') != 'integration':
                 raise exceptions.AuthenticationFailed('Invalid token scope')
-            
+
             # Return None for user (system-to-system), payload for tenant context
             return (None, payload)
-            
+
         except jwt.ExpiredSignatureError:
             raise exceptions.AuthenticationFailed('Token has expired')
         except jwt.InvalidTokenError:
             raise exceptions.AuthenticationFailed('Invalid token')
         except Exception as e:
             raise exceptions.AuthenticationFailed(f'Authentication error: {str(e)}')
-    
+
     def authenticate_header(self, request):
         """
         Return WWW-Authenticate header for 401 responses
@@ -78,7 +80,7 @@ class IntegrationJWTAuthentication(authentication.BaseAuthentication):
 
 
 # ============================================
-# PLATFORM ADMIN AUTHENTICATION (New)
+# PLATFORM ADMIN AUTHENTICATION
 # For platform administrators with cross-tenant access
 # ============================================
 
@@ -86,70 +88,73 @@ class PlatformAdminBackend(BaseBackend):
     """
     Authentication backend for platform administrators.
     Allows login without tenant context.
-    Platform admins can access staging.ayendecx.com/admin/
-    """
+    Platform admins can access ayendecx.com/admin/
     
+    FIXED: Uses role='platform_admin' instead of is_platform_admin field
+    """
+
     def authenticate(self, request, username=None, password=None, **kwargs):
         """
         Authenticate a platform administrator.
-        
+
         Args:
             request: HTTP request
             username: Platform admin username
             password: Password
-        
+
         Returns:
             TenantCustomer object if authentication succeeds, None otherwise
         """
         if not username or not password:
             return None
-        
+
         try:
-            # Look for platform admin (no tenant required)
+            # FIXED: Look for platform admin by role, not is_platform_admin field
             user = TenantCustomer.objects.get(
                 username=username,
-                is_platform_admin=True,
+                role='platform_admin',  # ✅ FIXED: Use role field
                 is_active=True
             )
-            
+
             # Check password
             if user.check_password(password):
                 return user
-            
+
         except TenantCustomer.DoesNotExist:
             # Run the default password hasher once to reduce timing
             # difference between existing and non-existing users
             TenantCustomer().set_password(password)
-        
+
         return None
-    
+
     def get_user(self, user_id):
         """
         Get a platform admin by ID.
         Used by Django to retrieve the user from the session.
         """
         try:
+            # FIXED: Check role instead of is_platform_admin
             return TenantCustomer.objects.get(
                 pk=user_id,
-                is_platform_admin=True
+                role='platform_admin'  # ✅ FIXED: Use role field
             )
         except TenantCustomer.DoesNotExist:
             return None
 
 
 # ============================================
-# MULTI-TENANT CUSTOMER AUTHENTICATION (Existing)
+# MULTI-TENANT CUSTOMER AUTHENTICATION
 # For customer login with username + tenant
 # ============================================
 
 class TenantCustomerAuthBackend(BaseBackend):
     """
     Authenticates TenantCustomer using username + tenant context.
-    
+
     The tenant is determined from:
     1. Request subdomain (e.g., mybusiness.ayendecx.com -> "mybusiness")
     2. Explicit tenant_id or tenant_subdomain in credentials
-    
+
     Usage in login view:
         tenant = get_tenant_from_request(request)
         user = authenticate(
@@ -159,7 +164,7 @@ class TenantCustomerAuthBackend(BaseBackend):
             tenant=tenant
         )
     """
-    
+
     def authenticate(self, request, username=None, password=None, tenant=None, tenant_id=None, tenant_subdomain=None, **kwargs):
         """
         Authenticate a TenantCustomer.
@@ -171,11 +176,11 @@ class TenantCustomerAuthBackend(BaseBackend):
             tenant: Tenant object (preferred)
             tenant_id: Tenant UUID (alternative)
             tenant_subdomain: Tenant subdomain (alternative)
-        
+
         Returns:
             TenantCustomer object if authentication succeeds, None otherwise
         """
-        
+
         # Determine tenant
         if not tenant:
             if tenant_id:
@@ -191,45 +196,43 @@ class TenantCustomerAuthBackend(BaseBackend):
             elif request:
                 # Extract tenant from request subdomain
                 tenant = self._get_tenant_from_request(request)
-        
+
         if not tenant or not username or not password:
             return None
-        
+
         try:
             # Look up TenantCustomer by tenant + username
-            # Note: customer field is nullable, so we don't select_related('customer')
             tenant_customer = TenantCustomer.objects.select_related('tenant').get(
                 tenant=tenant,
                 username=username,
                 is_active=True
             )
-            
+
             # Check password
             if tenant_customer.check_password(password):
                 return tenant_customer
-            
+
         except TenantCustomer.DoesNotExist:
             # Run the default password hasher once to reduce timing
             # difference between existing and non-existing users
             TenantCustomer().set_password(password)
-        
+
         return None
-    
+
     def get_user(self, user_id):
         """
         Get a TenantCustomer by ID.
         Used by Django to retrieve the user from the session.
         """
         try:
-            # Note: customer field is nullable, so we don't select_related('customer')
             return TenantCustomer.objects.select_related('tenant').get(pk=user_id)
         except TenantCustomer.DoesNotExist:
             return None
-    
+
     def _get_tenant_from_request(self, request):
         """
         Extract tenant from request subdomain.
-        
+
         Examples:
             mybusiness.ayendecx.com -> subdomain = "mybusiness"
             staging.ayendecx.com -> subdomain = "staging"
@@ -237,23 +240,21 @@ class TenantCustomerAuthBackend(BaseBackend):
         """
         if not request:
             return None
-        
+
         host = request.get_host().split(':')[0]  # Remove port
         parts = host.split('.')
-        
+
         # If we have multiple parts (subdomain.domain.tld)
         if len(parts) >= 3:
             subdomain = parts[0]
-            
+
             # Skip common non-tenant subdomains
             if subdomain not in ['www', 'api', 'admin']:
                 try:
                     return Tenant.objects.get(subdomain=subdomain)
                 except Tenant.DoesNotExist:
                     pass
-        
-        # For localhost or no subdomain, could return a default tenant
-        # or return None to require explicit tenant specification
+
         return None
 
 
@@ -261,15 +262,15 @@ class TenantCustomerEmailAuthBackend(BaseBackend):
     """
     Alternative authentication backend using email + tenant.
     Useful for scenarios where username is not available (e.g., password reset).
-    
+
     Note: Since email is NOT unique across tenants, tenant context is required.
     """
-    
+
     def authenticate(self, request, email=None, password=None, tenant=None, tenant_id=None, tenant_subdomain=None, **kwargs):
         """
         Authenticate using email + tenant + password.
         """
-        
+
         # Determine tenant
         if not tenant:
             if tenant_id:
@@ -284,23 +285,22 @@ class TenantCustomerEmailAuthBackend(BaseBackend):
                     return None
             elif request:
                 tenant = self._get_tenant_from_request(request)
-        
+
         if not tenant or not email or not password:
             return None
-        
+
         try:
             # Look up TenantCustomer by tenant + email
-            # Note: customer field is nullable, so we don't select_related('customer')
             tenant_customer = TenantCustomer.objects.select_related('tenant').get(
                 tenant=tenant,
                 email=email,
                 is_active=True
             )
-            
+
             # Check password
             if tenant_customer.check_password(password):
                 return tenant_customer
-            
+
         except TenantCustomer.DoesNotExist:
             TenantCustomer().set_password(password)
         except TenantCustomer.MultipleObjectsReturned:
@@ -309,32 +309,31 @@ class TenantCustomerEmailAuthBackend(BaseBackend):
             return None
         
         return None
-    
+
     def get_user(self, user_id):
         """Get a TenantCustomer by ID"""
         try:
-            # Note: customer field is nullable, so we don't select_related('customer')
             return TenantCustomer.objects.select_related('tenant').get(pk=user_id)
         except TenantCustomer.DoesNotExist:
             return None
-    
+
     def _get_tenant_from_request(self, request):
         """Extract tenant from request subdomain"""
         if not request:
             return None
-        
+
         host = request.get_host().split(':')[0]
         parts = host.split('.')
-        
+
         if len(parts) >= 3:
             subdomain = parts[0]
-            
+
             if subdomain not in ['www', 'api', 'admin']:
                 try:
                     return Tenant.objects.get(subdomain=subdomain)
                 except Tenant.DoesNotExist:
                     pass
-        
+
         return None
 
 
@@ -346,12 +345,12 @@ def get_tenant_from_request(request):
     """
     Helper function to extract tenant from request.
     Use this in views before calling authenticate().
-    
+
     Usage:
         tenant = get_tenant_from_request(request)
         if not tenant:
             return Response({'error': 'Invalid tenant'}, status=400)
-        
+
         user = authenticate(
             request=request,
             username=username,
@@ -361,24 +360,19 @@ def get_tenant_from_request(request):
     """
     if not request:
         return None
-    
+
     host = request.get_host().split(':')[0]  # Remove port
     parts = host.split('.')
-    
+
     # Extract subdomain
     if len(parts) >= 3:
         subdomain = parts[0]
-        
+
         # Skip common non-tenant subdomains
         if subdomain not in ['www', 'api', 'admin']:
             try:
                 return Tenant.objects.get(subdomain=subdomain)
             except Tenant.DoesNotExist:
                 return None
-    
-    # For localhost development, you might want to:
-    # 1. Return a default tenant
-    # 2. Check for a tenant in session/cookies
-    # 3. Return None and require explicit tenant selection
-    
+
     return None
